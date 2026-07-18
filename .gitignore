@@ -1,0 +1,106 @@
+# ── Python ──────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.whl
+
+# ── Django ──────────────────────────────────────────────────────────
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-wal
+db.sqlite3-shm
+media/
+staticfiles/
+*.log
+local_settings.py
+
+# ── Virtual Environment ────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# ── IDE / Editor ───────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Node.js / Frontend ─────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+npm-debug.log*
+yarn-error.log*
+yarn-debug.log*
+.pnpm-debug.log*
+
+# ── Environment Variables ──────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── 参考项目 ─────────────────────────────────────
+WeKnora/
+MiMo-Code/
+open-webui/
+
+# ── Docker / Neo4j ─────────────────────────────────────────────────
+neo4j-data/
+docker-compose.override.yml
+
+# ── Testing ────────────────────────────────────────────────────────
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# ── Miscellaneous ──────────────────────────────────────────────────
+tmp/
+*.tmp
+*.bak
+*.cache
+.mypy_cache/
+.ruff_cache/
+
+# ── Claude Code / Codex ───────────────────────────────────────────
+.claude/
+.codex/
+.agents/
+.understand-anything/
+.superpowers/
+.worktrees/
+skills-lock.json
+
+# ── Other Projects ────────────────────────────────────────────────
+xiaolinnote_ai/
+
+# ── Local Evidence / App Specs ───────────────────────────────────
+6 类证据文件/
+accounts/spec.md
+knowledge/spec.md
+chat/spec.md
+wiki/spec.md
+agent/spec.md
+models_config/spec.md
+personal_knowledge_base/spec.md
+
+# ── Private Interview Notes ───────────────────────────────────────
+interview_materials/00_明天先看这份.md
+interview_materials/02_三分钟演示脚本.md
+interview_materials/03_高频问答手册.md
+interview_materials/04_简历修订建议.md

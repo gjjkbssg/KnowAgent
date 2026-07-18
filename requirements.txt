@@ -1,0 +1,37 @@
+# Django 核心
+Django==5.2.15
+djangorestframework==3.14.0
+
+# 数据库
+sqlite-vec==0.1.9
+
+# HTTP 客户端
+requests>=2.32.0
+
+# 文档处理
+pypdf>=5.0.0
+python-docx>=1.1.0
+PyMuPDF>=1.24.0
+Pillow>=10.4.0
+python-pptx>=1.0.0
+CairoSVG>=2.7.0
+
+# Neo4j 图数据库
+neo4j>=5.28.0
+
+# 生产部署
+gunicorn>=22.0.0
+
+# CORS 支持
+django-cors-headers>=4.4.0
+
+# 环境变量管理
+python-dotenv>=1.0.0
+
+# Token 估算（BPE 编码）
+tiktoken>=0.7.0
+
+# RAG 评估
+ragas>=0.1.0
+datasets>=2.14.0
+langchain-openai>=0.1.0

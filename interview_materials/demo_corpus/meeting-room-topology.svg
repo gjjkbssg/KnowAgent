@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620">
+  <rect width="1000" height="620" fill="#f6f8fb"/>
+  <text x="500" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#17233d">智能会议室设备拓扑（合成演示）</text>
+  <rect x="375" y="225" width="250" height="120" rx="18" fill="#ff6900"/>
+  <text x="500" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="white">XH-100</text>
+  <text x="500" y="312" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="white">中枢网关</text>
+  <g stroke="#667085" stroke-width="5" fill="none">
+    <path d="M375 270 L235 175"/><path d="M625 270 L765 175"/>
+    <path d="M375 315 L235 445"/><path d="M625 315 L765 445"/>
+  </g>
+  <g font-family="Arial, sans-serif" text-anchor="middle">
+    <rect x="75" y="105" width="250" height="110" rx="16" fill="#e8f1ff" stroke="#3b82f6" stroke-width="3"/>
+    <text x="200" y="150" font-size="25" font-weight="700" fill="#1d4ed8">ES-20</text><text x="200" y="185" font-size="19" fill="#344054">环境传感器</text>
+    <rect x="675" y="105" width="250" height="110" rx="16" fill="#eafaf1" stroke="#22a06b" stroke-width="3"/>
+    <text x="800" y="150" font-size="25" font-weight="700" fill="#067647">AP-50</text><text x="800" y="185" font-size="19" fill="#344054">空气净化器</text>
+    <rect x="75" y="405" width="250" height="110" rx="16" fill="#fff7df" stroke="#f4b400" stroke-width="3"/>
+    <text x="200" y="450" font-size="25" font-weight="700" fill="#9a6700">LG-8</text><text x="200" y="485" font-size="19" fill="#344054">智能灯组</text>
+    <rect x="675" y="405" width="250" height="110" rx="16" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="3"/>
+    <text x="800" y="450" font-size="25" font-weight="700" fill="#6d28d9">DS-65</text><text x="800" y="485" font-size="19" fill="#344054">会议屏</text>
+  </g>
+  <text x="500" y="580" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#667085">用于展示精确检索、语义召回、关系推理与多模态解析</text>
+</svg>

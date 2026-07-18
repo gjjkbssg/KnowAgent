@@ -1,0 +1,72 @@
+[
+  {
+    "id": "exact-e42",
+    "category": "精确术语",
+    "question": "XH-100 出现 E42 时应该按什么顺序排查？",
+    "ground_truth": "先确认 2.4 GHz 网络已开启，再重新配置 XH-100 的 Wi-Fi；仍失败时检查 DNS 和出口网络。",
+    "expected_titles": ["01_智能会议室设备说明"]
+  },
+  {
+    "id": "semantic-cloud",
+    "category": "语义改写",
+    "question": "网关连不上服务器，但无线密码没有修改，还可能检查什么？",
+    "ground_truth": "检查 2.4 GHz 频段、DNS 解析和出口网络。",
+    "expected_titles": ["01_智能会议室设备说明"]
+  },
+  {
+    "id": "relation-e17-aq3",
+    "category": "跨文档关系",
+    "question": "ES-20 停止上报后为什么必须暂停 AQ-3？",
+    "ground_truth": "ES-20 数据超过 120 秒未更新会产生 E17；AQ-3 依赖传感器数据，继续使用旧数据可能错误控制 AP-50，因此必须暂停。",
+    "expected_titles": ["01_智能会议室设备说明", "02_节能与空气质量自动化规则", "03_E17故障复盘"]
+  },
+  {
+    "id": "root-cause",
+    "category": "因果推理",
+    "question": "A301 事件的触发因素和系统性根因分别是什么？",
+    "ground_truth": "ES-20 电量不足是触发因素；规则引擎没有把数据新鲜度作为 AQ-3 前置条件、缺少失效保护是系统性根因。",
+    "expected_titles": ["03_E17故障复盘"]
+  },
+  {
+    "id": "aq-threshold",
+    "category": "数值条件",
+    "question": "二氧化碳达到什么条件时净化器进入强效模式，又在什么条件下恢复？",
+    "ground_truth": "连续 3 次高于 1000 ppm 时进入强效模式；连续 5 分钟低于 800 ppm 时恢复自动模式。",
+    "expected_titles": ["02_节能与空气质量自动化规则"]
+  },
+  {
+    "id": "lighting",
+    "category": "规则组合",
+    "question": "有会议且环境较暗时灯光如何设置？投屏未结束时会议屏怎么办？",
+    "ground_truth": "环境光低于 200 lux 时 LG-8 调到 70% 亮度和 4000K；无线投屏进行中应延迟关闭 DS-65。",
+    "expected_titles": ["02_节能与空气质量自动化规则"]
+  },
+  {
+    "id": "manual-priority",
+    "category": "冲突处理",
+    "question": "人工调整设备后，自动化规则应如何处理？",
+    "ground_truth": "人工操作优先于自动化规则，并在 30 分钟后恢复自动控制。",
+    "expected_titles": ["02_节能与空气质量自动化规则"]
+  },
+  {
+    "id": "display-network",
+    "category": "设备关系",
+    "question": "DS-65 使用无线投屏需要满足什么网络条件？",
+    "ground_truth": "DS-65 与 XH-100 必须处于同一局域网。",
+    "expected_titles": ["01_智能会议室设备说明"]
+  },
+  {
+    "id": "incident-impact",
+    "category": "事件影响",
+    "question": "为什么 AP-50 没有在会议期间自动提高净化强度？",
+    "ground_truth": "ES-20 停止上报后旧版规则引擎没有暂停 AQ-3，AP-50 继续根据最后一次旧读数保持静音模式。",
+    "expected_titles": ["02_节能与空气质量自动化规则", "03_E17故障复盘"]
+  },
+  {
+    "id": "topology",
+    "category": "多模态拓扑",
+    "question": "拓扑图中位于中心、连接四类设备的组件是什么？",
+    "ground_truth": "位于中心的是 XH-100 中枢网关，它连接 ES-20、AP-50、LG-8 和 DS-65。",
+    "expected_titles": ["meeting-room-topology"]
+  }
+]

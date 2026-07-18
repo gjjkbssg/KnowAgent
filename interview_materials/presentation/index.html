@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Django-Agent｜小米训练营项目介绍</title>
+  <style>
+    :root {
+      --ink: #eef4f7;
+      --muted: #9eb0bb;
+      --bg: #07111f;
+      --panel: #0d1b2b;
+      --line: #20354a;
+      --mint: #55d6be;
+      --cyan: #50b9e8;
+      --orange: #ffb45e;
+      --red: #ff7a7a;
+      --paper: #f3f7f7;
+      --dark: #10202c;
+      --scale: 1;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body {
+      color: var(--ink);
+      background: #030914;
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+    }
+
+    button { font: inherit; }
+    .viewport {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      position: relative;
+      background:
+        linear-gradient(rgba(80,185,232,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(80,185,232,.035) 1px, transparent 1px),
+        #030914;
+      background-size: 32px 32px;
+    }
+
+    .deck {
+      width: 1600px;
+      height: 900px;
+      position: absolute;
+      transform: scale(var(--scale));
+      transform-origin: center center;
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 30px 120px rgba(0,0,0,.55);
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      padding: 64px 82px 56px;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .slide.active { display: block; }
+    .slide::after {
+      content: "";
+      position: absolute;
+      left: 82px;
+      right: 82px;
+      bottom: 34px;
+      height: 1px;
+      background: rgba(255,255,255,.09);
+    }
+    .slide.light {
+      color: var(--dark);
+      background: var(--paper);
+    }
+    .slide.light::after { background: rgba(16,32,44,.12); }
+
+    .kicker {
+      margin: 0 0 14px;
+      color: var(--mint);
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .light .kicker { color: #087c70; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      margin-bottom: 24px;
+      font-size: 80px;
+      line-height: 1.08;
+      letter-spacing: -.045em;
+      font-weight: 780;
+    }
+    h2 {
+      margin: 0;
+      max-width: 1370px;
+      font-size: 48px;
+      line-height: 1.15;
+      letter-spacing: -.03em;
+      font-weight: 760;
+    }
+    h3 {
+      font-size: 27px;
+      line-height: 1.25;
+      margin-bottom: 14px;
+    }
+    p, li {
+      font-size: 21px;
+      line-height: 1.55;
+    }
+    .subtitle {
+      max-width: 920px;
+      color: var(--muted);
+      font-size: 29px;
+      line-height: 1.45;
+    }
+    .light .subtitle { color: #536873; }
+    .accent { color: var(--mint); }
+    .accent-orange { color: var(--orange); }
+    .light .accent { color: #087c70; }
+    .mono { font-family: "SFMono-Regular", Consolas, monospace; }
+    .muted { color: var(--muted); }
+    .light .muted { color: #5d707b; }
+    .small { font-size: 16px; line-height: 1.4; }
+    .strong { font-weight: 760; }
+
+    .slide-head {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 40px;
+      margin-bottom: 42px;
+    }
+    .chapter {
+      padding-top: 8px;
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      white-space: nowrap;
+    }
+    .light .chapter { color: #607680; }
+
+    .foot {
+      position: absolute;
+      left: 82px;
+      right: 82px;
+      bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      color: rgba(238,244,247,.48);
+      font-size: 14px;
+      z-index: 8;
+    }
+    .light .foot { color: rgba(16,32,44,.52); }
+
+    /* cover */
+    .cover { padding-top: 90px; }
+    .cover-grid {
+      position: absolute;
+      inset: 0 0 0 62%;
+      opacity: .62;
+      background:
+        linear-gradient(rgba(85,214,190,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(85,214,190,.08) 1px, transparent 1px);
+      background-size: 56px 56px;
+      border-left: 1px solid rgba(85,214,190,.2);
+      transform: skewX(-8deg) translateX(80px);
+    }
+    .cover-mark {
+      position: absolute;
+      right: 125px;
+      top: 155px;
+      width: 340px;
+      height: 340px;
+      border: 2px solid rgba(85,214,190,.48);
+      border-radius: 50%;
+    }
+    .cover-mark::before,
+    .cover-mark::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(80,185,232,.42);
+      border-radius: 50%;
+    }
+    .cover-mark::before { inset: 52px; }
+    .cover-mark::after { inset: 118px; background: var(--mint); box-shadow: 0 0 60px rgba(85,214,190,.45); }
+    .orbit-label {
+      position: absolute;
+      right: 102px;
+      top: 528px;
+      width: 390px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 17px;
+      letter-spacing: .08em;
+    }
+    .cover-copy { position: relative; z-index: 2; width: 1030px; }
+    .cover-copy h1 { font-size: 90px; margin-top: 48px; }
+    .cover-tags {
+      display: flex;
+      gap: 24px;
+      margin-top: 76px;
+      color: #cce1e6;
+      font-size: 19px;
+    }
+    .cover-tags span { padding-left: 18px; border-left: 3px solid var(--mint); }
+    .author { margin-top: 54px; color: var(--muted); font-size: 20px; }
+    .cover-map {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px;
+      width: 1030px;
+      margin-top: 58px;
+    }
+    .cover-stage {
+      position: relative;
+      padding: 20px 18px;
+      border-top: 3px solid var(--mint);
+      background: rgba(13,27,43,.82);
+    }
+    .cover-stage:nth-child(2) { border-color: var(--cyan); }
+    .cover-stage:nth-child(3) { border-color: var(--orange); }
+    .cover-stage:nth-child(4) { border-color: var(--red); }
+    .cover-stage:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -19px;
+      top: 34px;
+      color: var(--muted);
+      font-size: 19px;
+    }
+    .cover-stage b { display: block; font-size: 20px; margin-bottom: 7px; }
+    .cover-stage span { color: var(--muted); font-size: 15px; line-height: 1.35; }
+    .cover .author { margin-top: 31px; }
+
+    /* implementation */
+    .react-layout {
+      display: grid;
+      grid-template-columns: .94fr 1.06fr;
+      gap: 68px;
+      height: 625px;
+      align-items: center;
+    }
+    .react-code {
+      padding: 32px 34px;
+      color: #dce8eb;
+      background: #030b14;
+      border-left: 4px solid var(--mint);
+      font: 18px/1.62 "SFMono-Regular", Consolas, monospace;
+      white-space: pre-wrap;
+      box-shadow: 16px 16px 0 rgba(80,185,232,.11);
+    }
+    .react-code .c1 { color: var(--cyan); }
+    .react-code .c2 { color: var(--orange); }
+    .react-code .c3 { color: var(--mint); }
+    .react-flow { display: grid; gap: 18px; }
+    .react-step {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 22px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .react-step b { color: var(--mint); font-size: 20px; letter-spacing: .06em; }
+    .react-step p { margin: 0; font-size: 21px; }
+    .react-stop { padding: 18px 22px; border: 1px solid rgba(255,180,94,.4); color: #ffd19a; font-size: 19px; }
+
+    .agent-layout {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 72px;
+      height: 625px;
+      align-items: center;
+    }
+    .agent-chain { display: grid; gap: 20px; }
+    .agent-box { padding: 25px 28px; border-left: 4px solid var(--mint); background: #0b1928; }
+    .agent-box.sub { border-color: var(--cyan); margin-left: 70px; }
+    .agent-box.return { border-color: var(--orange); }
+    .agent-box h3 { margin: 0 0 8px; font-size: 24px; }
+    .agent-box p { margin: 0; color: var(--muted); font-size: 18px; }
+    .agent-arrow { margin-left: 28px; color: var(--muted); font-size: 17px; }
+    .tool-groups { display: grid; gap: 22px; }
+    .tool-line { padding: 0 0 19px 28px; border-left: 3px solid var(--mint); }
+    .tool-line:nth-child(2) { border-color: var(--cyan); }
+    .tool-line:nth-child(3) { border-color: var(--orange); }
+    .tool-line:nth-child(4) { border-color: var(--red); }
+    .tool-line h3 { margin: 0 0 7px; font-size: 22px; }
+    .tool-line p { margin: 0; color: var(--muted); font-size: 17px; }
+    .tool-summary { padding: 20px 24px; border: 1px solid rgba(85,214,190,.38); color: var(--mint); font-size: 20px; }
+
+    .engineering-close {
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 70px;
+      height: 615px;
+      align-items: center;
+    }
+    .engineering-close .plain-list li { padding-bottom: 17px; margin-bottom: 14px; font-size: 19px; }
+    .close-panel { padding-left: 48px; border-left: 1px solid var(--line); }
+    .close-panel h3 { color: var(--mint); font-size: 31px; line-height: 1.35; }
+    .close-panel p { color: var(--muted); font-size: 20px; }
+    .close-panel .qa-small { margin-top: 34px; color: var(--mint); font-size: 62px; font-weight: 800; }
+
+    /* problem */
+    .problem-layout {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 66px;
+      align-items: stretch;
+      height: 650px;
+    }
+    .quote-block {
+      position: relative;
+      padding: 62px 54px;
+      background: #0c1c2b;
+      border-left: 5px solid var(--orange);
+      overflow: hidden;
+    }
+    .quote-block::after {
+      content: "?";
+      position: absolute;
+      right: 22px;
+      bottom: -90px;
+      color: rgba(255,180,94,.07);
+      font-size: 390px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .quote-block .question {
+      position: relative;
+      z-index: 2;
+      font-size: 34px;
+      line-height: 1.45;
+      font-weight: 650;
+    }
+    .question-meta {
+      position: relative;
+      z-index: 2;
+      margin-top: 42px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .compare-lines { display: grid; gap: 24px; align-content: center; }
+    .compare-line {
+      padding: 24px 0 22px;
+      border-top: 1px solid var(--line);
+    }
+    .compare-line:first-child { border-top: 0; }
+    .compare-line .label { color: var(--muted); font-size: 17px; font-weight: 700; letter-spacing: .1em; }
+    .compare-line p { margin: 8px 0 0; font-size: 27px; line-height: 1.38; }
+    .verdict {
+      margin-top: 22px;
+      padding: 20px 24px;
+      border: 1px solid rgba(85,214,190,.42);
+      color: var(--mint);
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    /* architecture */
+    .arch-wrap { display: grid; gap: 28px; }
+    .lane {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 26px;
+      align-items: center;
+      padding: 28px 34px;
+      border: 1px solid var(--line);
+      background: rgba(13,27,43,.68);
+    }
+    .lane-label {
+      font-size: 21px;
+      font-weight: 760;
+      color: var(--mint);
+    }
+    .lane-flow {
+      display: flex;
+      align-items: stretch;
+      gap: 22px;
+    }
+    .node {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      padding: 20px 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: #0a1725;
+    }
+    .node:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--cyan);
+      font-size: 24px;
+    }
+    .node b { display: block; font-size: 20px; margin-bottom: 6px; }
+    .node span { display: block; color: var(--muted); font-size: 15px; line-height: 1.35; }
+    .arch-takeaway {
+      display: grid;
+      grid-template-columns: 1.4fr .6fr;
+      gap: 38px;
+      margin-top: 18px;
+      align-items: end;
+    }
+    .arch-takeaway .big {
+      font-size: 31px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    .arch-takeaway .mini {
+      padding: 17px 20px;
+      color: var(--muted);
+      border-left: 3px solid var(--orange);
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    /* retrieval */
+    .retrieval-layout {
+      display: grid;
+      grid-template-columns: .88fr 1.12fr;
+      gap: 72px;
+      height: 620px;
+    }
+    .two-signals { display: grid; align-content: center; gap: 34px; }
+    .signal {
+      padding: 28px 0 24px 32px;
+      border-left: 4px solid var(--cyan);
+    }
+    .signal:nth-child(2) { border-color: var(--orange); }
+    .signal h3 { margin-bottom: 8px; }
+    .signal p { margin: 0; color: var(--muted); }
+    .merge {
+      padding: 24px 28px;
+      color: var(--mint);
+      border: 1px solid rgba(85,214,190,.38);
+      font-size: 24px;
+      font-weight: 730;
+      text-align: center;
+    }
+    .metric-board {
+      align-self: center;
+      padding: 38px 42px;
+      color: var(--dark);
+      background: #fff;
+      box-shadow: 18px 18px 0 rgba(80,185,232,.17);
+    }
+    .metric-board h3 { font-size: 25px; margin-bottom: 8px; }
+    .metric-board .desc { color: #61727b; font-size: 16px; margin-bottom: 28px; }
+    .metric-row {
+      display: grid;
+      grid-template-columns: 160px 1fr 82px;
+      gap: 18px;
+      align-items: center;
+      margin: 19px 0;
+      font-size: 17px;
+    }
+    .bar { height: 12px; background: #dfe9ec; overflow: hidden; }
+    .bar i { display: block; height: 100%; background: #2d879e; }
+    .metric-row.best { color: #066b62; font-weight: 750; }
+    .metric-row.best .bar i { background: #16a98f; }
+    .metric-foot {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid #dbe4e7;
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    /* ab evidence */
+    .ab-layout {
+      display: grid;
+      grid-template-columns: 1fr 128px 1fr;
+      gap: 24px;
+      align-items: stretch;
+      height: 635px;
+    }
+    .evidence-side { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
+    .evidence-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 15px; }
+    .evidence-title h3 { margin: 0; font-size: 25px; }
+    .score { font-size: 24px; font-weight: 800; }
+    .score.bad { color: var(--red); }
+    .score.good { color: var(--mint); }
+    .shot {
+      height: 500px;
+      min-height: 0;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid rgba(255,255,255,.15);
+    }
+    .shot img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: top center; }
+    .evidence-side.rag .shot img { object-position: 50% 100%; }
+    .evidence-side.agent .shot img { object-position: 50% 38%; }
+    .evidence-caption {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.4;
+    }
+    .ab-arrow {
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 15px;
+      color: var(--mint);
+      text-align: center;
+    }
+    .ab-arrow .circle {
+      display: grid;
+      place-items: center;
+      width: 72px;
+      height: 72px;
+      border: 1px solid var(--mint);
+      border-radius: 50%;
+      font-size: 30px;
+    }
+    .ab-arrow p { margin: 0; font-size: 16px; line-height: 1.4; }
+
+    /* multimodal */
+    .multi-layout {
+      display: grid;
+      grid-template-columns: .92fr 1.08fr;
+      gap: 68px;
+      height: 620px;
+      align-items: center;
+    }
+    .topology-frame {
+      padding: 22px;
+      background: #fff;
+      box-shadow: 18px 18px 0 rgba(85,214,190,.16);
+    }
+    .topology-frame img { width: 100%; display: block; }
+    .topology-frame p { margin: 14px 0 0; color: #526873; font-size: 15px; }
+    .multi-flow { display: grid; gap: 20px; }
+    .multi-step {
+      display: grid;
+      grid-template-columns: 62px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .step-num {
+      display: grid;
+      place-items: center;
+      width: 54px;
+      height: 54px;
+      color: var(--bg);
+      background: var(--mint);
+      font-weight: 800;
+      font-size: 21px;
+    }
+    .multi-step h3 { margin: 0 0 4px; font-size: 24px; }
+    .multi-step p { margin: 0; color: var(--muted); font-size: 18px; }
+    .multi-result {
+      margin-top: 10px;
+      padding: 20px 24px;
+      border: 1px solid rgba(80,185,232,.42);
+      font-size: 22px;
+      line-height: 1.45;
+    }
+
+    /* engineering */
+    .engineering-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 76px;
+      height: 590px;
+    }
+    .engineering-col { padding-top: 22px; }
+    .engineering-col h3 { font-size: 25px; margin-bottom: 28px; }
+    .plain-list { list-style: none; padding: 0; margin: 0; }
+    .plain-list li {
+      position: relative;
+      padding: 0 0 23px 34px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      font-size: 21px;
+    }
+    .plain-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 10px;
+      height: 10px;
+      background: var(--mint);
+    }
+    .engineering-col.risk .plain-list li::before { background: var(--orange); }
+    .engineering-col.risk { color: #dce5e8; }
+    .engineering-col.risk h3 { color: var(--orange); }
+    .boundary {
+      position: absolute;
+      left: 82px;
+      right: 82px;
+      bottom: 72px;
+      padding: 16px 24px;
+      border: 1px solid rgba(255,180,94,.35);
+      color: #ffd4a2;
+      font-size: 17px;
+    }
+
+    /* closing */
+    .closing {
+      display: grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 70px;
+      align-items: center;
+      height: 720px;
+    }
+    .closing h2 { font-size: 59px; line-height: 1.17; }
+    .closing p { max-width: 860px; color: var(--muted); font-size: 25px; }
+    .closing-lines { margin-top: 48px; display: grid; gap: 14px; }
+    .closing-lines div { font-size: 21px; }
+    .closing-lines b { display: inline-block; width: 98px; color: var(--mint); }
+    .qa-mark {
+      display: grid;
+      place-items: center;
+      width: 350px;
+      height: 350px;
+      border: 2px solid var(--mint);
+      border-radius: 50%;
+      color: var(--mint);
+      font-size: 74px;
+      font-weight: 800;
+      letter-spacing: -.04em;
+      box-shadow: inset 0 0 0 24px rgba(85,214,190,.04);
+    }
+    .appendix-hint { margin-top: 34px; color: var(--muted); text-align: center; font-size: 15px; }
+
+    /* appendix */
+    .appendix .kicker { color: var(--orange); }
+    .metric-defs { display: grid; grid-template-columns: repeat(3,1fr); gap: 32px; margin-top: 56px; }
+    .metric-def { padding: 34px 28px; border-top: 3px solid var(--cyan); background: #0b1928; }
+    .metric-def:nth-child(2) { border-color: var(--mint); }
+    .metric-def:nth-child(3) { border-color: var(--orange); }
+    .metric-def h3 { font-size: 29px; }
+    .metric-def .formula { color: var(--mint); font-size: 24px; margin: 20px 0; }
+    .metric-def p { color: var(--muted); font-size: 18px; }
+    .faith {
+      margin-top: 34px;
+      padding: 24px 30px;
+      background: #fff;
+      color: var(--dark);
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 30px;
+      align-items: center;
+    }
+    .faith b { font-size: 26px; }
+    .faith span { font-size: 19px; }
+
+    .guardrail-layout { display: grid; grid-template-columns: 1fr .95fr; gap: 70px; margin-top: 54px; }
+    .guard-flow { display: grid; gap: 14px; }
+    .guard-step { padding: 20px 24px; background: #0c1b2a; border-left: 4px solid var(--mint); font-size: 21px; }
+    .guard-step:nth-child(even) { border-color: var(--cyan); }
+    .guard-notes { padding: 34px; border: 1px solid var(--line); }
+    .guard-notes li { margin-bottom: 18px; color: var(--muted); }
+    .guard-notes strong { color: var(--ink); }
+
+    .roadmap { display: grid; grid-template-columns: repeat(4,1fr); gap: 28px; margin-top: 72px; }
+    .road-item { position: relative; padding: 34px 26px 30px; border-top: 3px solid var(--mint); background: #0b1928; min-height: 300px; }
+    .road-item:nth-child(2) { border-color: var(--cyan); }
+    .road-item:nth-child(3) { border-color: var(--orange); }
+    .road-item:nth-child(4) { border-color: var(--red); }
+    .road-item .num { color: var(--muted); font-size: 17px; }
+    .road-item h3 { margin-top: 30px; }
+    .road-item p { color: var(--muted); font-size: 18px; }
+    .road-note { margin-top: 40px; font-size: 24px; color: var(--mint); text-align: center; }
+
+    /* chrome */
+    .progress {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      height: 4px;
+      width: 0;
+      background: var(--mint);
+      z-index: 100;
+      transition: width .2s ease;
+    }
+    .controls {
+      position: fixed;
+      right: 18px;
+      bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 101;
+      opacity: .38;
+      transition: opacity .2s ease;
+    }
+    .controls:hover { opacity: 1; }
+    .controls button {
+      width: 38px;
+      height: 34px;
+      color: #dce8eb;
+      background: rgba(6,17,30,.88);
+      border: 1px solid rgba(255,255,255,.18);
+      cursor: pointer;
+    }
+    .counter { min-width: 58px; text-align: center; color: #aabac3; font: 14px/1 "SFMono-Regular",monospace; }
+    .notes-panel {
+      position: fixed;
+      left: 20px;
+      bottom: 22px;
+      width: min(620px, calc(100vw - 40px));
+      padding: 20px 24px;
+      color: #dbe7ea;
+      background: rgba(4,12,22,.96);
+      border: 1px solid rgba(85,214,190,.42);
+      box-shadow: 0 16px 50px rgba(0,0,0,.5);
+      z-index: 110;
+      display: none;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+    .notes-panel.visible { display: block; }
+    .notes-panel strong { display: block; margin-bottom: 8px; color: var(--mint); }
+
+    .overview .deck {
+      width: min(94vw, 1500px);
+      height: 92vh;
+      transform: none;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: 1fr;
+      gap: 12px;
+      padding: 12px;
+      overflow: auto;
+      background: #030914;
+    }
+    .overview .slide {
+      position: relative;
+      display: block;
+      width: 1600px;
+      height: 900px;
+      transform: scale(.286);
+      transform-origin: top left;
+      margin-right: -1142px;
+      margin-bottom: -643px;
+      cursor: pointer;
+      outline: 5px solid transparent;
+    }
+    .overview .slide.active { outline-color: var(--mint); }
+
+    @media print {
+      html, body { overflow: visible; background: #fff; }
+      .viewport { display: block; width: auto; height: auto; background: #fff; }
+      .deck { position: static; transform: none; width: 1600px; height: auto; border: 0; box-shadow: none; }
+      .slide { position: relative; display: block; width: 1600px; height: 900px; page-break-after: always; }
+      .controls, .progress, .notes-panel { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="viewport" id="viewport">
+    <div class="deck" id="deck">
+      <section class="slide cover active" data-title="项目全貌" data-note="35秒。先用一张图建立全貌：用户把多种格式资料导入系统，离线完成解析、分块和双索引；在线由混合检索提供候选，Agent根据证据是否充分决定继续查什么；最终输出带引用和工具轨迹的回答。后面重点展开三个特色：动态取证、混合召回和多模态入库。">
+        <div class="cover-grid"></div>
+        <div class="cover-mark"></div>
+        <div class="orbit-label">KNOWLEDGE → EVIDENCE → ANSWER</div>
+        <div class="cover-copy">
+          <p class="kicker">01 · Project Overview</p>
+          <h1>Django-Agent</h1>
+          <p class="subtitle">一个从<span class="accent">多格式知识入库</span>到<span class="accent">Agent 动态取证</span>的轻量知识工作台</p>
+          <div class="cover-map">
+            <div class="cover-stage"><b>知识输入</b><span>PDF / DOCX / PPTX / Markdown / 图片</span></div>
+            <div class="cover-stage"><b>知识构建</b><span>解析、分块、OCR、Caption、Wiki</span></div>
+            <div class="cover-stage"><b>检索推理</b><span>FTS5 + 向量 + Rerank + ReAct</span></div>
+            <div class="cover-stage"><b>可信输出</b><span>引用、工具轨迹、SSE 回放与评测</span></div>
+          </div>
+          <p class="author">高骏杰 · 小米训练营项目介绍</p>
+        </div>
+        <div class="foot"><span>项目全貌：输入 → 构建 → 检索推理 → 可信输出</span><span>01</span></div>
+      </section>
+
+      <section class="slide" data-title="整体架构" data-note="55秒。第二页讲清两条主链。离线链把不同文件转成统一证据单元，分别写入词法、向量和可选图谱；在线链先理解问题，再召回重排，最后由受控Agent决定是否继续调用专业工具。强调Django负责业务与接口，SQLite体系保证轻量部署，Neo4j是可选增强。">
+        <div class="slide-head">
+          <div><p class="kicker">02 · Architecture</p><h2>整体架构由两条链组成：离线构建知识，在线组织证据</h2></div>
+          <div class="chapter">OFFLINE + ONLINE</div>
+        </div>
+        <div class="arch-wrap">
+          <div class="lane">
+            <div class="lane-label">离线知识构建</div>
+            <div class="lane-flow">
+              <div class="node"><b>多格式解析</b><span>PDF / DOCX / PPTX / Markdown / 图片</span></div>
+              <div class="node"><b>证据单元</b><span>正文、OCR、Caption 独立分块</span></div>
+              <div class="node"><b>多路索引</b><span>FTS5 + sqlite-vec + Wiki</span></div>
+              <div class="node"><b>关系增强</b><span>实体抽取 + Neo4j（可选）</span></div>
+            </div>
+          </div>
+          <div class="lane">
+            <div class="lane-label">在线问答</div>
+            <div class="lane-flow">
+              <div class="node"><b>查询理解</b><span>意图识别、改写、简单问题快路</span></div>
+              <div class="node"><b>混合召回</b><span>稀疏 + 稠密 + 查询扩展</span></div>
+              <div class="node"><b>候选重排</b><span>Qwen Rerank + MMR / 图扩展</span></div>
+              <div class="node"><b>受控 Agent</b><span>ReAct、子Agent、引用与SSE</span></div>
+            </div>
+          </div>
+          <div class="arch-takeaway">
+            <div class="big">项目特色集中在三处：<span class="accent">动态多跳取证、可评测混合召回、多模态证据化</span>。</div>
+            <div class="mini">业务层：Django + Vue<br>存储层：SQLite / FTS5 / sqlite-vec<br>模型层：阿里云百炼兼容接口</div>
+          </div>
+        </div>
+        <div class="foot"><span>轻量部署优先；Neo4j 与外部搜索均可降级</span><span>02</span></div>
+      </section>
+
+      <section class="slide" data-title="ReAct循环实现" data-note="55秒。这一页重点回答怎么实现循环。Python for循环每轮把messages和工具Schema发给模型；如果返回tool_calls，就通过注册表执行工具，把结果包装成role=tool追加回messages，代码不return，自然进入下一轮；如果没有tool_calls就返回最终文本。最大轮数和重复检测负责兜底。">
+        <div class="slide-head">
+          <div><p class="kicker">03 · ReAct Implementation</p><h2>ReAct 循环：工具结果回填后，模型继续决策</h2></div>
+          <div class="chapter">REASON → ACT → OBSERVE</div>
+        </div>
+        <div class="react-layout">
+          <div class="react-code"><span class="c1">for</span> round <span class="c1">in</span> max_rounds:
+  response = LLM(messages, tools)
+
+  <span class="c2">if not</span> response.tool_calls:
+      <span class="c1">return</span> response.content
+
+  <span class="c3">for</span> call <span class="c1">in</span> tool_calls:
+      result = registry.execute(call)
+      messages.append({
+        "role": <span class="c3">"tool"</span>,
+        "content": result
+      })
+
+  <span class="c1"># 自然进入下一轮</span></div>
+          <div class="react-flow">
+            <div class="react-step"><b>REASON</b><p>模型读取问题、历史和工具 Schema，决定直接回答还是返回 <span class="mono">tool_calls</span></p></div>
+            <div class="react-step"><b>ACT</b><p><span class="mono">ToolRegistry</span> 校验工具名与参数，执行检索、图谱或子 Agent</p></div>
+            <div class="react-step"><b>OBSERVE</b><p>执行结果以 <span class="mono">role=tool</span> 回填上下文，成为下一轮的新证据</p></div>
+            <div class="react-stop">停止条件：无工具调用 / 达到最大轮数 / 重复响应 / 取消或错误降级</div>
+          </div>
+        </div>
+        <div class="foot"><span>核心代码：agent_engine.py · Function Calling 驱动循环</span><span>03</span></div>
+      </section>
+
+      <section class="slide" data-title="主子Agent与工具" data-note="55秒。这里解释子Agent：不是另一套模型服务，而是主Agent通过actor工具启动的独立AgentEngine，通常复用同一个model_id，但换成专业Prompt、独立上下文和最小工具白名单。当前共注册16个工具、默认白名单15个；多Agent模式下主Agent只拿actor和thinking，子Agent不能再调用actor，避免递归失控。">
+        <div class="slide-head">
+          <div><p class="kicker">04 · Agent Orchestration</p><h2>主 Agent 负责拆任务，子 Agent 用受限工具完成专业检索</h2></div>
+          <div class="chapter">NESTED REACT</div>
+        </div>
+        <div class="agent-layout">
+          <div class="agent-chain">
+            <div class="agent-box"><h3>主 Agent</h3><p>调用大模型判断任务类型；仅开放 <span class="mono">actor</span> 与 <span class="mono">thinking</span></p></div>
+            <div class="agent-arrow">↓ actor.run / actor.spawn</div>
+            <div class="agent-box sub"><h3>专业子 Agent</h3><p>新的 AgentEngine + 专业 Prompt + 独立上下文 + 工具白名单</p></div>
+            <div class="agent-arrow">↓ 子 Agent 结果作为 tool observation</div>
+            <div class="agent-box return"><h3>主 Agent 综合</h3><p>继续调度、补证，或生成带来源的最终答案</p></div>
+          </div>
+          <div class="tool-groups">
+            <div class="tool-line"><h3>文档检索 Agent</h3><p>knowledge_search / grep_chunks / list_docs / document_info</p></div>
+            <div class="tool-line"><h3>Wiki 研究 Agent</h3><p>wiki_search / read_page / list_pages / read_source</p></div>
+            <div class="tool-line"><h3>图谱推理 Agent</h3><p>query_knowledge_graph + Wiki 与文档补证</p></div>
+            <div class="tool-line"><h3>答案整理 Agent</h3><p>只开放 thinking，不允许继续检索或创建子 Agent</p></div>
+            <div class="tool-summary">16 个工具已注册，15 个进入默认白名单；真正运行时按角色继续收窄权限。</div>
+          </div>
+        </div>
+        <div class="foot"><span>子 Agent 通常复用同一 model_id，但拥有独立 Prompt、上下文和 ReAct 循环</span><span>04</span></div>
+      </section>
+
+      <section class="slide" data-title="多跳检索实证" data-note="70秒。同一个问题、同一个知识库。普通RAG的Top-5没有林晓人物访谈，所以只回答1/3。Agent第一跳确定林晓，把这个Observation变成第二跳查询，人物访谈排第一，完成3/3。这里把上一页的ReAct机制和实际效果对应起来。主动说明代价：调用更多、延迟更高，所以只对多跳问题启用。">
+        <div class="slide-head">
+          <div><p class="kicker">05 · Feature 1 / Evidence</p><h2>动态第二跳补齐了固定 Top-5 缺失的人物证据</h2></div>
+          <div class="chapter">REAL A/B RUN</div>
+        </div>
+        <div class="ab-layout">
+          <div class="evidence-side rag">
+            <div class="evidence-title"><h3>A · 一次固定 Top-5</h3><span class="score bad">1 / 3</span></div>
+            <div class="shot"><img src="../evidence/01_普通RAG证据.png" alt="普通RAG真实会话截图" /></div>
+            <div class="evidence-caption">找到《性能复盘》，但《林晓人物访谈》被8份相似档案挤出 Top-5。</div>
+          </div>
+          <div class="ab-arrow">
+            <div class="circle">→</div>
+            <p>得到新实体<br><b>林晓</b><br>再次检索</p>
+          </div>
+          <div class="evidence-side agent">
+            <div class="evidence-title"><h3>B · Agent 动态补证</h3><span class="score good">3 / 3</span></div>
+            <div class="shot"><img src="../evidence/02_Agent多跳证据.png" alt="Agent多跳检索真实会话截图" /></div>
+            <div class="evidence-caption"><span class="mono">knowledge_search("林晓")</span> → 人物访谈排名第1 → “萤火” + 周宁。</div>
+          </div>
+        </div>
+        <div class="foot"><span>公平边界：Agent 效果更完整，但增加模型调用、工具调用与延迟</span><span>05</span></div>
+      </section>
+
+      <section class="slide light" data-title="混合召回与评测" data-note="55秒。第二个特色是混合召回。FTS5负责精确词，向量负责语义相似，两路候选合并后用Qwen Rerank重新排序，再用MMR控制重复。用实测说明：Vector和Rerank的Hit都100%，但MRR从0.90到0.95，说明Rerank真正把正确证据往前提。">
+        <div class="slide-head">
+          <div><p class="kicker">06 · Feature 2 / Retrieval</p><h2>稀疏与稠密负责“多找”，Rerank 负责“排对”</h2></div>
+          <div class="chapter">RECALL → RERANK</div>
+        </div>
+        <div class="retrieval-layout">
+          <div class="two-signals">
+            <div class="signal"><h3>FTS5 稀疏召回</h3><p>找“相同的词”：错误码、人名、项目名和设备型号</p></div>
+            <div class="signal"><h3>Embedding 稠密召回</h3><p>找“相同的意思”：连不上服务器 ≈ 无法连接云端</p></div>
+            <div class="merge">候选合并 → Qwen Rerank → MMR 多样性</div>
+          </div>
+          <div class="metric-board">
+            <h3>10道合成演示题 · 检索消融</h3>
+            <div class="desc">MRR 越高，第一条正确证据越靠前</div>
+            <div class="metric-row"><span>FTS only</span><div class="bar"><i style="width:50.83%"></i></div><b>0.508</b></div>
+            <div class="metric-row"><span>Vector only</span><div class="bar"><i style="width:90%"></i></div><b>0.900</b></div>
+            <div class="metric-row"><span>Hybrid raw</span><div class="bar"><i style="width:82.5%"></i></div><b>0.825</b></div>
+            <div class="metric-row best"><span>Hybrid + Rerank</span><div class="bar"><i style="width:95%"></i></div><b>0.950</b></div>
+            <div class="metric-foot"><b>效果：</b>Hit@5、Recall@5保持100%，MRR由Vector的0.90提升到0.95。</div>
+          </div>
+        </div>
+        <div class="foot"><span>样本 n=10，仅用于组件消融与机制验证</span><span>06</span></div>
+      </section>
+
+      <section class="slide" data-title="多模态知识构建" data-note="45秒。第三个特色是图片证据化。不同文件先按格式抽图，统一进行尺寸、方向和格式处理，再分别做OCR和Caption。OCR回答图片写了什么，Caption回答对象和关系是什么；两者作为独立Chunk，和正文一起写入FTS5与向量索引。">
+        <div class="slide-head">
+          <div><p class="kicker">07 · Feature 3 / Ingestion</p><h2>OCR + Caption：让图片也能被检索</h2></div>
+          <div class="chapter">IMAGE → CHUNK → INDEX</div>
+        </div>
+        <div class="multi-layout">
+          <div class="topology-frame">
+            <img src="../demo_corpus/meeting-room-topology.svg" alt="智能会议室设备拓扑图" />
+            <p>实际演示语料：SVG拓扑图（设备名称与参数均为合成数据）</p>
+          </div>
+          <div class="multi-flow">
+            <div class="multi-step"><div class="step-num">1</div><div><h3>按文件格式抽取图片</h3><p>PDF页面与内嵌图、DOCX关系资源、PPTX Picture Shape、Markdown URL或Data URI</p></div></div>
+            <div class="multi-step"><div class="step-num">2</div><div><h3>统一视觉预处理</h3><p>尺寸校验、EXIF纠正、最大边2048、统一JPEG；SVG先栅格化</p></div></div>
+            <div class="multi-step"><div class="step-num">3</div><div><h3>生成两个独立证据块</h3><p><b>OCR：</b>图片写了什么　　<b>Caption：</b>对象、结构与关系是什么</p></div></div>
+            <div class="multi-result">1张图 → 结构容器 + <b>OCR Chunk</b> + <b>Caption Chunk</b> → FTS5 与向量索引</div>
+          </div>
+        </div>
+        <div class="foot"><span>Standalone image / PDF / DOCX / PPTX / Markdown</span><span>07</span></div>
+      </section>
+
+      <section class="slide" data-title="工程边界与总结" data-note="40秒后停止主讲。左边讲工程闭环：受控ReAct、上下文管理、SSE回放与任务恢复。右边主动承认当前限制：11.5秒延迟、内存事件流、n=10评测和融合尺度问题。最后用三句话总结：Agent解决找不全，混合检索解决找不准，多模态解决图片不可检索，然后进入提问。">
+        <div class="slide-head">
+          <div><p class="kicker">08 · Engineering + Conclusion</p><h2>特色能力必须有控制、评测和降级，才能形成工程闭环</h2></div>
+          <div class="chapter">BOUNDARY + Q&amp;A</div>
+        </div>
+        <div class="engineering-close">
+          <div class="engineering-layout" style="height:auto; gap:48px;">
+            <div class="engineering-col">
+              <h3 class="accent">已经实现</h3>
+              <ul class="plain-list">
+                <li>ReAct最大轮数、重复检测、工具错误降级</li>
+                <li>主/子Agent工具白名单与禁止递归调用</li>
+                <li>上下文50%摘要、80%滑动窗口</li>
+                <li>SSE offset回放与文档任务启动恢复</li>
+              </ul>
+            </div>
+            <div class="engineering-col risk">
+              <h3>当前边界</h3>
+              <ul class="plain-list">
+                <li>完整流水线平均约11.5秒</li>
+                <li>事件流仍是单进程内存实现</li>
+                <li>混合分数下一步改用RRF</li>
+                <li>n=10只验证机制，不代表生产准确率</li>
+              </ul>
+            </div>
+          </div>
+          <div class="close-panel">
+            <h3>动态多跳解决“找不全”<br>混合召回解决“找不准”<br>多模态入库解决“图片不可检索”</h3>
+            <p>项目的独特性不是堆叠组件，而是把三种能力接入同一条可观察、可评测的证据链。</p>
+            <div class="qa-small">Q&amp;A</div>
+          </div>
+        </div>
+        <div class="foot"><span>指标、Agent控制与下一步路线见附录</span><span>主讲结束</span></div>
+      </section>
+
+      <section class="slide appendix" data-title="附录：指标" data-note="老师问指标时使用。Hit看有没有，Recall看找全没有，MRR看第一条正确证据靠不靠前。Faithfulness是回答中有上下文依据的事实占比。">
+        <div class="slide-head">
+          <div><p class="kicker">Appendix A</p><h2>三个检索指标分别回答：找到了吗、找全了吗、排得靠前吗</h2></div>
+          <div class="chapter">METRICS</div>
+        </div>
+        <div class="metric-defs">
+          <div class="metric-def"><h3>Hit@K</h3><div class="formula">前K条是否至少命中1条</div><p>只回答“有没有”。正确资料排第1和第5都算命中。</p></div>
+          <div class="metric-def"><h3>Recall@K</h3><div class="formula">命中的正确资料 ÷ 应找资料</div><p>回答“有没有找全”。需要2份证据，只找到1份就是50%。</p></div>
+          <div class="metric-def"><h3>MRR</h3><div class="formula">平均 1 ÷ 首条正确排名</div><p>回答“第一条正确资料靠不靠前”。第1名=1，第5名=0.2。</p></div>
+        </div>
+        <div class="faith"><b>Faithfulness</b><span>把答案拆成事实声明，逐条判断是否能被检索上下文支持；忠实度 = 有依据事实数 ÷ 全部事实数。</span></div>
+        <div class="foot"><span>检索层与生成层必须分开报告</span><span>A1</span></div>
+      </section>
+
+      <section class="slide appendix" data-title="附录：Agent控制" data-note="老师问Agent如何避免无限循环时使用。强调不是无限自主：工具schema、白名单、最大轮数、重复检测、错误降级。当前注册16个，默认开放15个；同一轮独立工具最多4线程。">
+        <div class="slide-head">
+          <div><p class="kicker">Appendix B</p><h2>Agent 是受约束的决策循环，不是无限自主执行</h2></div>
+          <div class="chapter">GUARDRAILS</div>
+        </div>
+        <div class="guardrail-layout">
+          <div class="guard-flow">
+            <div class="guard-step">1　模型只看见 JSON Schema 描述的工具</div>
+            <div class="guard-step">2　默认白名单开放 15 / 16 个已注册工具</div>
+            <div class="guard-step">3　设置最大迭代轮数与重复回答检测</div>
+            <div class="guard-step">4　同一轮独立工具最多 4 线程并发</div>
+            <div class="guard-step">5　瞬态模型错误重试，工具失败可换路径或降级</div>
+          </div>
+          <div class="guard-notes">
+            <h3>我不会夸大的地方</h3>
+            <ul>
+              <li><strong>不是全工具通用重试：</strong>当前主要覆盖模型瞬态错误。</li>
+              <li><strong>去重作用域：</strong>当前是单次 Agent Run 的进程内缓存。</li>
+              <li><strong>SSE恢复作用域：</strong>单进程、内存、约1小时TTL。</li>
+            </ul>
+          </div>
+        </div>
+        <div class="foot"><span>可控性来自边界，而不是Prompt承诺</span><span>A2</span></div>
+      </section>
+
+      <section class="slide appendix" data-title="附录：下一步" data-note="老师问再给两周做什么时使用。优先级：先修检索融合与触发策略，再扩评测，最后做基础设施迁移。不要一上来就说换大模型。">
+        <div class="slide-head">
+          <div><p class="kicker">Appendix C</p><h2>下一步优先优化“检索决策与评测”，而不是先换更大的模型</h2></div>
+          <div class="chapter">ROADMAP</div>
+        </div>
+        <div class="roadmap">
+          <div class="road-item"><div class="num">01 · FUSION</div><h3>RRF融合</h3><p>替代BM25与向量原始分数相加，建立稳定的跨通道排序。</p></div>
+          <div class="road-item"><div class="num">02 · ROUTING</div><h3>按意图触发</h3><p>只有关系型问题启用GraphRAG，召回不足时才做查询扩展。</p></div>
+          <div class="road-item"><div class="num">03 · EVALUATION</div><h3>扩展标注集</h3><p>100+问题，加入负例、无答案、多跳和困难样本，报告P95与成本。</p></div>
+          <div class="road-item"><div class="num">04 · INFRA</div><h3>生产化迁移</h3><p>Redis Streams + Celery + PostgreSQL/独立向量库，多Worker恢复。</p></div>
+        </div>
+        <div class="road-note">目标：在保持证据完整度的同时，把复杂问题延迟从“十秒级”压到可交互范围。</div>
+        <div class="foot"><span>Effectiveness · Latency · Cost</span><span>A3</span></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="progress" id="progress"></div>
+  <div class="controls" aria-label="演示控制">
+    <button type="button" id="prev" title="上一页（←）">←</button>
+    <span class="counter" id="counter">1 / 10</span>
+    <button type="button" id="next" title="下一页（→）">→</button>
+    <button type="button" id="notes" title="演讲备注（N）">N</button>
+    <button type="button" id="overview" title="总览（O）">O</button>
+    <button type="button" id="fullscreen" title="全屏（F）">⛶</button>
+  </div>
+  <aside class="notes-panel" id="notesPanel"><strong id="notesTitle"></strong><span id="notesText"></span></aside>
+
+  <script>
+    (() => {
+      const viewport = document.getElementById('viewport');
+      const deck = document.getElementById('deck');
+      const slides = [...document.querySelectorAll('.slide')];
+      const progress = document.getElementById('progress');
+      const counter = document.getElementById('counter');
+      const notesPanel = document.getElementById('notesPanel');
+      const notesTitle = document.getElementById('notesTitle');
+      const notesText = document.getElementById('notesText');
+      let index = Math.max(0, Math.min(slides.length - 1, Number(location.hash.slice(1)) - 1 || 0));
+      let overview = false;
+      let touchStart = 0;
+
+      function fit() {
+        if (overview) return;
+        const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+        document.documentElement.style.setProperty('--scale', scale.toFixed(4));
+      }
+
+      function render(nextIndex = index) {
+        index = Math.max(0, Math.min(slides.length - 1, nextIndex));
+        slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+        counter.textContent = `${index + 1} / ${slides.length}`;
+        progress.style.width = `${((index + 1) / slides.length) * 100}%`;
+        location.hash = String(index + 1);
+        notesTitle.textContent = `第 ${index + 1} 页 · ${slides[index].dataset.title}`;
+        notesText.textContent = slides[index].dataset.note || '无备注';
+      }
+
+      function move(delta) { render(index + delta); }
+      function toggleNotes() { notesPanel.classList.toggle('visible'); }
+      function toggleOverview() {
+        overview = !overview;
+        document.body.classList.toggle('overview', overview);
+        if (!overview) { fit(); render(index); }
+      }
+      async function toggleFullscreen() {
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+        else await document.exitFullscreen?.();
+      }
+
+      document.getElementById('prev').addEventListener('click', () => move(-1));
+      document.getElementById('next').addEventListener('click', () => move(1));
+      document.getElementById('notes').addEventListener('click', toggleNotes);
+      document.getElementById('overview').addEventListener('click', toggleOverview);
+      document.getElementById('fullscreen').addEventListener('click', toggleFullscreen);
+      slides.forEach((slide, i) => slide.addEventListener('click', () => {
+        if (!overview) return;
+        index = i;
+        toggleOverview();
+      }));
+
+      document.addEventListener('keydown', (event) => {
+        if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(event.key)) { event.preventDefault(); move(1); }
+        if (['ArrowLeft', 'PageUp', 'Backspace'].includes(event.key)) { event.preventDefault(); move(-1); }
+        if (event.key === 'Home') render(0);
+        if (event.key === 'End') render(slides.length - 1);
+        if (event.key.toLowerCase() === 'n') toggleNotes();
+        if (event.key.toLowerCase() === 'o') toggleOverview();
+        if (event.key.toLowerCase() === 'f') toggleFullscreen();
+        if (event.key === 'Escape' && overview) toggleOverview();
+      });
+
+      document.addEventListener('touchstart', e => { touchStart = e.changedTouches[0].clientX; }, {passive: true});
+      document.addEventListener('touchend', e => {
+        const delta = e.changedTouches[0].clientX - touchStart;
+        if (Math.abs(delta) > 70) move(delta < 0 ? 1 : -1);
+      }, {passive: true});
+      window.addEventListener('resize', fit);
+      window.addEventListener('hashchange', () => {
+        const value = Number(location.hash.slice(1));
+        if (Number.isFinite(value) && value > 0) render(value - 1);
+      });
+      fit();
+      render(index);
+    })();
+  </script>
+</body>
+</html>
