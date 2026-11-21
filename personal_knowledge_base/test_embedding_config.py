@@ -9,7 +9,7 @@ from django.test import Client, TestCase, override_settings
 
 from personal_knowledge_base.model_providers import EmbeddingUnavailableError, embedding
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
-from personal_knowledge_base.search import hybrid_search, index_chunk, stable_embedding
+from personal_knowledge_base.search import _fts_search, chunk_vector, hybrid_search, index_chunk, stable_embedding
 
 EMBEDDING_ENV = {
     "LLM_EMBEDDING_API_KEY": "embedding-key",
@@ -128,9 +128,38 @@ class EmbeddingOutageTests(TestCase):
         results = hybrid_search(self.tenant.id, [self.kb.id], "kiwi", 3)
         self.assertEqual([item["chunk_id"] for item in results], [self.chunk.id])
 
-    def test_chunk_edit_embeds_before_writing_and_saves_nothing_while_the_provider_is_down(self):
+    def test_rebuild_keeps_chunks_added_or_edited_while_vectors_were_being_computed(self):
         index_chunk(self.chunk)
-        client = Client()
+        added = []
+
+        def embed_while_ingestion_continues(chunk):
+            if not added:
+                added.append(
+                    Chunk.objects.create(
+                        tenant=self.tenant,
+                        knowledge_base=self.kb,
+                        knowledge=self.chunk.knowledge,
+                        content="mango harvest log",
+                        chunk_index=1,
+                    )
+                )
+                index_chunk(added[0])
+                self.chunk.content = "papaya orchard notes"
+                self.chunk.save()
+            return chunk_vector(chunk)
+
+        with patch(
+            "personal_knowledge_base.management.commands.rebuild_vector_index.chunk_vector",
+            side_effect=embed_while_ingestion_continues,
+        ):
+            call_command("rebuild_vector_index", stdout=StringIO())
+
+        scope = (self.tenant.id, {self.kb.id})
+        self.assertEqual(list(_fts_search(*scope, "mango", 3)), [added[0].id])
+        self.assertEqual(list(_fts_search(*scope, "papaya", 3)), [self.chunk.id])
+        self.assertEqual(_fts_search(*scope, "kiwi", 3), {})
+
+    def register_owner_of_chunk(self, client):
         registered = client.post(
             "/api/v1/auth/register",
             data=json.dumps({"username": "editor", "email": "editor@example.com", "password": "pw-123456"}),
@@ -138,6 +167,29 @@ class EmbeddingOutageTests(TestCase):
         ).json()["data"]
         Chunk.objects.filter(id=self.chunk.id).update(tenant_id=registered["tenant"]["id"])
         Knowledge.objects.filter(id=self.chunk.knowledge_id).update(tenant_id=registered["tenant"]["id"])
+        return {"HTTP_AUTHORIZATION": f"Bearer {registered['token']}"}
+
+    def test_editing_a_chunk_deleted_meanwhile_does_not_bring_it_back(self):
+        index_chunk(self.chunk)
+        client = Client()
+        headers = self.register_owner_of_chunk(client)
+        url = f"/api/v1/chunks/{self.chunk.knowledge_id}/{self.chunk.id}"
+
+        def embed_while_chunk_is_deleted(chunk):
+            client.delete(url, **headers)
+            return chunk_vector(chunk)
+
+        with patch("knowledge.views.chunk_vector", side_effect=embed_while_chunk_is_deleted):
+            response = client.put(url, data=json.dumps({"content": "edited"}), content_type="application/json", **headers)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(Chunk.objects.filter(id=self.chunk.id).exists())
+        self.assertEqual(_fts_search(self.tenant.id, {self.kb.id}, "edited kiwi", 3), {})
+
+    def test_chunk_edit_embeds_before_writing_and_saves_nothing_while_the_provider_is_down(self):
+        index_chunk(self.chunk)
+        client = Client()
+        headers = self.register_owner_of_chunk(client)
         content_during_embedding = []
 
         def provider_call(*args, **kwargs):
@@ -151,7 +203,7 @@ class EmbeddingOutageTests(TestCase):
                 f"/api/v1/chunks/{self.chunk.knowledge_id}/{self.chunk.id}",
                 data=json.dumps({"content": "edited"}),
                 content_type="application/json",
-                HTTP_AUTHORIZATION=f"Bearer {registered['token']}",
+                **headers,
             )
 
         self.assertEqual(response.status_code, 503)
