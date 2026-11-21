@@ -220,6 +220,25 @@ flowchart TB
 
 复现：`python manage.py prepare_public_eval --rebuild --negatives 5000`，然后 `python manage.py run_interview_eval --kb-name "[评测] DuRetrieval 子集" --questions media/public_eval/questions.json --output-name public_retrieval_evaluation`。数据集卡片没有写许可证，所以仓库里不提交段落和问题，只提交抽样脚本和种子。
 
+### 领域困难集：相似型号、版本冲突与多跳
+
+DuRetrieval 只有单段落事实题，所以另写了一套智能楼宇领域集：16 份文档（入库后 19 个 Chunk，建了图谱），46 道题，答案按原文片段标注到 Chunk。语料里专门放了干扰项：同一错误码在 XH-100 和 XH-110 上含义不同、ES-20 和 ES-21 的阈值不同、已废止的 v2.3 规则手册和现行 v2.4 并存、需要先查设备清单再查手册的多跳题，以及 3 份无关的行政文档。评测时把 DuRetrieval 的 5,489 个段落一起检索，作为噪声（共 5,508 个 Chunk）：
+
+| 方案 | MRR | Hit@1 | Recall@3 | Recall@5 | nDCG@5 | 平均延迟 |
+|---|---:|---:|---:|---:|---:|---:|
+| FTS only | 0.5543 | 45.7% | 60.5% | 65.9% | 0.5395 | 5 ms |
+| Vector only | 0.8310 | 73.9% | 85.1% | 90.6% | 0.8008 | 738 ms |
+| Hybrid raw（RRF） | 0.8100 | 69.6% | 87.3% | 96.7% | 0.8154 | 744 ms |
+| Hybrid + Rerank | 0.8866 | 80.4% | 92.8% | 98.2% | 0.8770 | 1,776 ms |
+| Full pipeline | 0.8884 | 80.4% | 94.9% | 98.2% | 0.8785 | 3,389 ms |
+
+1. **检索不认版本**：4 道版本题里有 3 道，已废止的 v2.3 手册排在现行 v2.4 前面（Hybrid + Rerank 在这一类的 MRR 只有 0.625）。两份文档几乎一样，只有数字不同，相关性模型分不出哪份有效。需要在元数据里记录生效状态并在检索时过滤或降权。
+2. **相似型号仍会混淆**：问 XH-110 的 E42，排第一的是固件升级记录而不是 XH-110 手册。
+3. **图谱在多跳题上没有可测量的收益**：8 道多跳题上 Full pipeline 和 Hybrid + Rerank 的 MRR 都是 0.875。原因之一是这套语料一篇文档只有 1 到 2 个 Chunk，多跳要的两段证据往往靠向量就能一起召回。
+4. **这里 RRF 有用**：和 DuRetrieval 不同，领域题里有大量型号和错误码，FTS 不再是纯噪声，RRF 把 Recall@5 从 90.6% 提到 96.7%，但首位排序变差（Hit@1 从 73.9% 降到 69.6%），仍要靠 Rerank。
+
+限制：46 道题，出题人和实现者是同一个人；一类只有 1 到 8 道题，分类结果只能看方向。复现：`python manage.py prepare_interview_demo --rebuild --kb-name "[评测] 智能楼宇领域集" --corpus-dir interview_materials/domain_eval_corpus`，然后 `python manage.py run_interview_eval --kb-name "[评测] 智能楼宇领域集" --noise-kb-name "[评测] DuRetrieval 子集" --questions interview_materials/domain_eval_questions.json --output-name domain_retrieval_evaluation`。
+
 完整评估报告见 [`interview_materials/05_真实评估报告.md`](interview_materials/05_真实评估报告.md)。
 
 ## 快速开始
@@ -360,7 +379,7 @@ KnowAgent/
 - SQLite 适合个人和小团队部署，更高并发应使用 PostgreSQL、独立向量库与任务队列。
 - 中文 FTS5 仍受默认分词能力限制。
 - GraphRAG 的实体消歧、别名归一和增量一致性仍需完善。
-- 合成评测集只有 10 道题；公开基准子集有 100 道题、5,489 个 Chunk，但问题都是单段落事实型，不覆盖多跳、图谱和答案质量。
+- 评测只覆盖检索，不覆盖答案质量和引用正确率；领域困难集只有 46 道题，公开基准子集只有单段落事实题。
 
 ## License
 
