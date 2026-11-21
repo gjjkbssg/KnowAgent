@@ -37,7 +37,7 @@ from personal_knowledge_base.models import (
     TaskRecord,
 )
 from personal_knowledge_base.responses import fail, ok
-from personal_knowledge_base.search import delete_chunk_index, hybrid_search, index_chunk, update_chunk_index_scope
+from personal_knowledge_base.search import chunk_vector, delete_chunk_index, hybrid_search, index_chunk, update_chunk_index_scope
 from personal_knowledge_base.serializers import (
     DEFAULT_INDEXING_STRATEGY,
     chunk_dict,
@@ -808,11 +808,13 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
         chunk.is_enabled = data.get("is_enabled", chunk.is_enabled)
         chunk.metadata = data.get("metadata", chunk.metadata)
         try:
-            with transaction.atomic():
-                chunk.save()
-                index_chunk(chunk)
+            # 先算向量再开事务：Embedding 请求可能很慢，不能在它期间占着 SQLite 的写锁
+            vector = chunk_vector(chunk)
         except EmbeddingUnavailableError as exc:
             return fail(f"Embedding 服务不可用，切片未保存：{exc}", 503, code="embedding_unavailable")
+        with transaction.atomic():
+            chunk.save()
+            index_chunk(chunk, vector)
         return ok(chunk_dict(chunk))
     if knowledge_id and request.method == "GET":
         chunks = Chunk.objects.filter(knowledge_id=knowledge_id).order_by("chunk_index")
