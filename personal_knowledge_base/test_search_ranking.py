@@ -137,6 +137,15 @@ class DeduplicateResultsTests(SimpleTestCase):
 
         self.assertEqual([item["chunk_id"] for item in results], ["full"])
 
+    def test_containing_chunk_replaces_every_fragment_it_contains(self):
+        results = deduplicate_results([
+            {"chunk_id": "labels-a", "content": "ES-20\nXH-100\nAP-50", "score": 0.9},
+            {"chunk_id": "labels-b", "content": "LG-8\nDS-65", "score": 0.8},
+            {"chunk_id": "full", "content": self.FULL, "score": 0.5},
+        ])
+
+        self.assertEqual([item["chunk_id"] for item in results], ["full"])
+
     def test_near_duplicates_of_similar_length_keep_the_higher_score(self):
         results = deduplicate_results([
             {"chunk_id": "low", "content": self.FULL, "score": 0.2},

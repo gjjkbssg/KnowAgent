@@ -657,13 +657,12 @@ def deduplicate_results(results: list[dict]) -> list[dict]:
     ordered = sorted(by_chunk.values(), key=lambda row: float(row.get("score") or 0), reverse=True)
     unique: list[dict] = []
     for item in ordered:
-        duplicate_index = next((idx for idx, kept in enumerate(unique) if is_content_redundant(item, kept)), None)
-        if duplicate_index is None:
-            unique.append(item)
+        redundant = [idx for idx, kept in enumerate(unique) if is_content_redundant(item, kept)]
+        if any(prefer_redundant(unique[idx], item) is not item for idx in redundant):
             continue
-        preferred = prefer_redundant(unique[duplicate_index], item)
-        if preferred is item:
-            unique[duplicate_index] = item
+        # 一条完整片段可能同时包含好几条已保留的短片段，全部换掉
+        unique = [kept for idx, kept in enumerate(unique) if idx not in redundant]
+        unique.append(item)
     return sorted(unique, key=lambda row: float(row.get("score") or 0), reverse=True)
 
 
