@@ -63,6 +63,36 @@ class GraphSearchTests(TestCase):
         self.assertEqual([item["chunk_id"] for item in results], [self.chunk.id])
         self.assertEqual(relations, [relation])
 
+    def test_relations_backed_only_by_disabled_chunks_are_not_returned(self):
+        relation = {"node1": "CO2 传感器", "node2": "E17", "type": "causes"}
+        graph = {"node": [{"name": "E17", "chunks": [self.chunk.id]}, {"name": "CO2 传感器", "chunks": [self.chunk.id]}], "relation": [relation]}
+        Chunk.objects.filter(id=self.chunk.id).update(is_enabled=False)
+
+        self.assertEqual(self.search(graph), ([], []))
+
+    def test_relation_is_kept_while_one_of_its_chunks_is_still_enabled(self):
+        other = Chunk.objects.create(
+            tenant=self.tenant, knowledge_base=self.kb, knowledge=self.chunk.knowledge, content="CO2 传感器位于会议室", chunk_index=1
+        )
+        relation = {"node1": "CO2 传感器", "node2": "E17", "type": "causes"}
+        graph = {"node": [{"name": "E17", "chunks": [self.chunk.id]}, {"name": "CO2 传感器", "chunks": [other.id]}], "relation": [relation]}
+        Chunk.objects.filter(id=self.chunk.id).update(is_enabled=False)
+
+        results, relations = self.search(graph)
+
+        self.assertEqual([item["chunk_id"] for item in results], [other.id])
+        self.assertEqual(relations, [relation])
+
+    def test_same_entity_in_two_documents_keeps_the_chunks_of_both(self):
+        records = [
+            {"n": {"name": "E17", "chunks": ["c1"]}, "m": {"name": "CO2 传感器", "chunks": []}, "r": FakeRelationship("causes"), "forward": False},
+            {"n": {"name": "E17", "chunks": ["c2", "c1"]}, "m": {"name": "新风规则", "chunks": []}, "r": FakeRelationship("affects"), "forward": True},
+        ]
+
+        graph = Neo4jGraphRepository._search_node(FakeTx(records), "`kb`", ["E17"])
+
+        self.assertEqual(graph["node"][0], {"name": "E17", "chunks": ["c1", "c2"], "attributes": []})
+
     def test_graph_tool_shows_the_relation_chain_to_the_model(self):
         relation = {"node1": "CO2 传感器", "node2": "E17", "type": "causes"}
         hit = {"chunk_id": self.chunk.id, "knowledge_title": "故障复盘", "content": self.chunk.content, "match_type": "graph"}
