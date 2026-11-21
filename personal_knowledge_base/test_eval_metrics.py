@@ -33,6 +33,13 @@ class RankingMetricsTests(SimpleTestCase):
         miss = ranking_metrics([set(), set()], total_gold=2)
         self.assertEqual((miss["reciprocal_rank"], miss["hit_at_10"], miss["ndcg_at_10"]), (0.0, 0.0, 0.0))
 
+    def test_one_result_matching_several_gold_items_keeps_ndcg_at_most_one(self):
+        metrics = ranking_metrics([{"a", "b"}, set()], total_gold=2)
+
+        self.assertEqual(metrics["recall_at_1"], 1.0)
+        self.assertLessEqual(metrics["ndcg_at_1"], 1.0)
+        self.assertLessEqual(metrics["ndcg_at_10"], 1.0)
+
     def test_summarize_averages_over_questions(self):
         rows = [
             {**ranking_metrics([{"a"}], 1), "latency_ms": 10},

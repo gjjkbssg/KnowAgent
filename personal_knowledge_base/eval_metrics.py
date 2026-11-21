@@ -38,7 +38,8 @@ def ranking_metrics(hits_by_rank: list[set[str]], total_gold: int, ks=DEFAULT_KS
         for rank, hits in enumerate(hits_by_rank[:k], 1):
             new = hits - found
             if new:
-                dcg += len(new) / math.log2(rank + 1)
+                # 二值增益：一条结果同时命中几个标准答案也只记 1，否则 nDCG 会超过 1
+                dcg += 1.0 / math.log2(rank + 1)
                 found |= new
         ideal = sum(1.0 / math.log2(rank + 1) for rank in range(1, min(total_gold, k) + 1))
         metrics[f"hit_at_{k}"] = 1.0 if found else 0.0
