@@ -311,6 +311,78 @@ def session_stop(request, session_id):
     return ok({"session_id": session_id, "message_id": message_id, "stopped": True})
 
 
+# ── SSE 事件流 ───────────────────────────────────────────────────────────
+
+STREAM_REPLAY_IDLE_TIMEOUT = 120  # 重连后这么多秒没有新事件就放弃等待
+
+
+def sse_frame(payload: dict, event: str = "message", event_id: int | None = None) -> str:
+    prefix = f"id: {event_id}\n" if event_id is not None else ""
+    return f"{prefix}event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+def stream_message_events(message: Message, offset: int = 0, idle_timeout: float | None = None):
+    """
+    把 StreamManager 中一条消息的事件转成 SSE 帧，首次推送和断线重连共用。
+
+    每帧的 id 是事件在流里的偏移量。客户端重连时把最后收到的 id 放进 Last-Event-ID，
+    这里就从 offset = id + 1 继续，不重放已经送达的事件。
+    """
+    msg_id = message.id
+    if offset == 0:
+        yield sse_frame({"id": msg_id, "request_id": message.request_id}, "message_start")
+        yield sse_frame({"response_type": "agent_query", "assistant_message_id": msg_id, "session_id": message.session_id, "content": "", "done": False})
+
+    idle = 0.0
+    while idle_timeout is None or idle < idle_timeout:
+        events = stream_manager.get_events(msg_id, offset)
+        for event in events:
+            data = event.data
+            if event.event_type == "thinking":
+                payload = {"response_type": "answer", "content": data.get("content", ""), "done": False}
+            elif event.event_type == "tool_call":
+                payload = {"response_type": "tool_call", "name": data.get("name", ""), "arguments": data.get("arguments", {}), "iteration": data.get("iteration", 0)}
+            elif event.event_type == "tool_result":
+                payload = {"response_type": "tool_result", "name": data.get("name", ""), "output": data.get("output", "")[:300], "duration_ms": data.get("duration_ms", 0)}
+            elif event.event_type.startswith("actor_"):
+                payload = data
+            elif event.event_type == "complete":
+                stream = stream_manager.get_stream(msg_id)
+                payload = {
+                    "response_type": "answer",
+                    "content": data.get("content") or (stream.final_content if stream else ""),
+                    "done": True,
+                    "knowledge_references": stream.final_refs if stream else [],
+                }
+            elif event.event_type == "error":
+                payload = {"response_type": "error", "content": data.get("content", "生成失败"), "done": True}
+            else:
+                continue
+            yield sse_frame({**payload, "assistant_message_id": msg_id}, event_id=event.offset)
+            if event.event_type in ("complete", "error"):
+                if event.event_type == "complete":
+                    yield sse_frame({"response_type": "complete", "assistant_message_id": msg_id, "done": True}, event_id=event.offset)
+                yield sse_frame({"message_id": msg_id}, "done", event_id=event.offset)
+                return
+        offset += len(events)
+
+        if not events and stream_manager.is_complete(msg_id):
+            # 流已不在内存里（进程重启或 TTL 过期）：以数据库里的最终结果收尾
+            saved = Message.objects.filter(id=msg_id).first()
+            if saved and saved.is_completed:
+                yield sse_frame(message_dict(saved))
+                yield sse_frame({"response_type": "complete", "assistant_message_id": msg_id, "done": True})
+            yield sse_frame({"message_id": msg_id}, "done")
+            return
+
+        idle = 0.0 if events else idle + 0.1
+        time.sleep(0.1)
+
+    yield sse_frame({"response_type": "error", "assistant_message_id": msg_id, "content": "等待超时", "done": True})
+    yield sse_frame({"message_id": msg_id}, "done")
+
+
+
 # ── Continue stream (断线重连) ──────────────────────────────────────────
 
 @csrf_exempt
@@ -357,69 +429,13 @@ def continue_stream(request, session_id):
 
         return StreamingHttpResponse(done_events(), content_type="text/event-stream")
 
-    # 消息未完成：从 StreamManager 回放事件并继续推送
-    msg_id = message.id
-
-    def replay_events():
-        # 发送初始事件
-        yield f"event: message_start\ndata: {json.dumps({'id': msg_id, 'request_id': message.request_id}, ensure_ascii=False)}\n\n"
-        yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': msg_id, 'session_id': session_id, 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
-
+    # 消息未完成：客户端带上最后收到的事件 id（SSE 规范的 Last-Event-ID），只补发它之后的事件
+    try:
+        offset = int(request.headers.get("Last-Event-ID", "")) + 1
+    except ValueError:
         offset = 0
-        max_wait = 120  # 最多等待 2 分钟
-        waited = 0
-
-        while waited < max_wait:
-            events = stream_manager.get_events(msg_id, offset)
-            for event in events:
-                event_type = event.event_type
-                event_data = event.data
-                if event_type == "thinking":
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': msg_id, 'content': event_data.get('content', ''), 'done': False}, ensure_ascii=False)}\n\n"
-                elif event_type == "tool_call":
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'tool_call', 'assistant_message_id': msg_id, 'name': event_data.get('name', ''), 'arguments': event_data.get('arguments', {}), 'iteration': event_data.get('iteration', 0)}, ensure_ascii=False)}\n\n"
-                elif event_type == "tool_result":
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'tool_result', 'assistant_message_id': msg_id, 'name': event_data.get('name', ''), 'output': event_data.get('output', '')[:300], 'duration_ms': event_data.get('duration_ms', 0)}, ensure_ascii=False)}\n\n"
-                elif event_type.startswith("actor_"):
-                    event_data.setdefault("assistant_message_id", msg_id)
-                    yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
-                elif event_type == "complete":
-                    # 生成完成
-                    stream_obj = stream_manager.get_stream(msg_id)
-                    final_content = stream_obj.final_content if stream_obj else event_data.get("content", "")
-                    final_refs = stream_obj.final_refs if stream_obj else []
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': msg_id, 'content': final_content, 'done': True, 'knowledge_references': final_refs}, ensure_ascii=False)}\n\n"
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': msg_id, 'done': True}, ensure_ascii=False)}\n\n"
-                    yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
-                    return
-                elif event_type == "error":
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'error', 'assistant_message_id': msg_id, 'content': event_data.get('content', '生成失败'), 'done': True}, ensure_ascii=False)}\n\n"
-                    yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
-                    return
-
-            offset += len(events)
-
-            # 检查 StreamManager 中是否已完成
-            if stream_manager.is_complete(msg_id) and not events:
-                # 已完成但没有更多事件（可能 TTL 过期了）
-                # 从数据库读取最终结果
-                msg = Message.objects.filter(id=msg_id).first()
-                if msg and msg.is_completed:
-                    payload = message_dict(msg)
-                    yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': msg_id, 'done': True}, ensure_ascii=False)}\n\n"
-                yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
-                return
-
-            # 等待新事件
-            time.sleep(0.1)
-            waited += 0.1
-
-        # 超时：标记为完成
-        yield f"event: message\ndata: {json.dumps({'response_type': 'error', 'assistant_message_id': msg_id, 'content': '等待超时', 'done': True}, ensure_ascii=False)}\n\n"
-        yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
-
-    return StreamingHttpResponse(replay_events(), content_type="text/event-stream")
+    events = stream_message_events(message, offset=max(0, offset), idle_timeout=STREAM_REPLAY_IDLE_TIMEOUT)
+    return StreamingHttpResponse(events, content_type="text/event-stream")
 
 
 # ── Messages ─────────────────────────────────────────────────────────────
@@ -581,7 +597,7 @@ def _run_agent_generation(
     事件通过 StreamManager 持久化，不依赖 SSE 连接。
     即使客户端断开，生成也会继续完成。
     """
-    stream = stream_manager.create_stream(assistant_msg_id, session_id)
+    stream = stream_manager.get_stream(assistant_msg_id) or stream_manager.create_stream(assistant_msg_id, session_id)
 
     try:
         engine = AgentEngine(
@@ -887,46 +903,11 @@ def chat_endpoint(request, session_id, agent=False):
                     "enable_chat_history": not skip_expensive_prefetch,
                     "enable_snapshot": not skip_expensive_prefetch,
                 }
+            # 先建流再起线程：SSE 生成器开始读取时流一定已经存在
+            stream_manager.create_stream(assistant.id, str(session.id))
             run_database_background(lambda: _run_agent_generation(**generation_kwargs))
 
-            def agent_events():
-                yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
-                yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
-
-                offset = 0
-                while True:
-                    events = stream_manager.get_events(assistant.id, offset)
-                    for event in events:
-                        event_type = event.event_type
-                        event_data = event.data
-                        if event_type == "thinking":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': event_data.get('content', ''), 'done': False}, ensure_ascii=False)}\n\n"
-                        elif event_type == "tool_call":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'tool_call', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'arguments': event_data.get('arguments', {}), 'iteration': event_data.get('iteration', 0)}, ensure_ascii=False)}\n\n"
-                        elif event_type == "tool_result":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'tool_result', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'output': event_data.get('output', '')[:300], 'duration_ms': event_data.get('duration_ms', 0)}, ensure_ascii=False)}\n\n"
-                        elif event_type.startswith("actor_"):
-                            event_data.setdefault("assistant_message_id", assistant.id)
-                            yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
-                        elif event_type == "complete":
-                            stream_obj = stream_manager.get_stream(assistant.id)
-                            final_content = stream_obj.final_content if stream_obj else event_data.get("content", "")
-                            final_refs = stream_obj.final_refs if stream_obj else refs
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': final_content, 'done': True, 'knowledge_references': final_refs}, ensure_ascii=False)}\n\n"
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': assistant.id, 'done': True}, ensure_ascii=False)}\n\n"
-                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
-                            return
-                        elif event_type == "error":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'error', 'assistant_message_id': assistant.id, 'content': event_data.get('content', '生成失败'), 'done': True}, ensure_ascii=False)}\n\n"
-                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
-                            return
-
-                    offset += len(events)
-                    if stream_manager.is_complete(assistant.id) and not events:
-                        return
-                    time.sleep(0.1)
-
-            return StreamingHttpResponse(agent_events(), content_type="text/event-stream")
+            return StreamingHttpResponse(stream_message_events(assistant), content_type="text/event-stream")
 
         assistant = Message.objects.create(
             session=session,
@@ -1087,30 +1068,7 @@ def chat_endpoint(request, session_id, agent=False):
 
         run_database_background(_run_normal_generation)
 
-        # SSE 处理器：从 StreamManager 读取事件
-        def normal_stream_events():
-            yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
-            yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
-
-            offset = 0
-            while True:
-                events = stream_manager.get_events(assistant.id, offset)
-                for event in events:
-                    if event.event_type == "thinking":
-                        yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': event.data.get('content', ''), 'done': False}, ensure_ascii=False)}\n\n"
-                    elif event.event_type == "complete":
-                        final_content = event.data.get("content", "")
-                        yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': final_content, 'done': True, 'knowledge_references': refs}, ensure_ascii=False)}\n\n"
-                        yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': assistant.id, 'done': True}, ensure_ascii=False)}\n\n"
-                        yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
-                        return
-
-                offset += len(events)
-                if stream_manager.is_complete(assistant.id) and not events:
-                    return
-                time.sleep(0.1)
-
-        return StreamingHttpResponse(normal_stream_events(), content_type="text/event-stream")
+        return StreamingHttpResponse(stream_message_events(assistant), content_type="text/event-stream")
 
     # 非流式模式
     try:
