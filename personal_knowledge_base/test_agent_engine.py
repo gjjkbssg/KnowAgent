@@ -111,15 +111,24 @@ class ToolIsolationTests(TestCase):
     def test_web_fetch_parses_html(self):
         page = FakeResponse(text="<html><style>p{}</style><script>x()</script><p>Hello <b>KnowAgent</b></p></html>")
 
-        with patch("socket.getaddrinfo", return_value=PUBLIC_ADDRESS), patch("requests.get", return_value=page):
+        with patch("socket.getaddrinfo", return_value=PUBLIC_ADDRESS), patch("requests.Session.get", return_value=page):
             result = get_tool_registry().execute_tool("web_fetch", {"url": "https://example.com"}, {})
 
         self.assertEqual(result.error, "")
         self.assertEqual(result.output, "Hello KnowAgent")
 
+    def test_web_fetch_connects_to_the_address_it_validated(self):
+        # DNS rebinding: the hostname must not be resolved a second time when connecting.
+        with patch("socket.getaddrinfo", return_value=PUBLIC_ADDRESS), patch("requests.Session.get", return_value=FakeResponse(text="ok")) as get:
+            get_tool_registry().execute_tool("web_fetch", {"url": "https://example.com:8443/docs?q=1"}, {})
+
+        self.assertEqual(get.call_args.args[0], "https://93.184.216.34:8443/docs?q=1")
+        self.assertEqual(get.call_args.kwargs["headers"]["Host"], "example.com:8443")
+        self.assertFalse(get.call_args.kwargs["allow_redirects"])
+
     def test_web_fetch_refuses_internal_addresses(self):
         urls = ["http://127.0.0.1:8000/health", "http://169.254.169.254/latest/meta-data/", "http://10.0.0.5/", "file:///etc/passwd"]
-        with patch("requests.get") as get:
+        with patch("requests.Session.get") as get:
             for url in urls:
                 result = get_tool_registry().execute_tool("web_fetch", {"url": url}, {})
                 self.assertIn("not allowed", result.error, url)
@@ -130,7 +139,7 @@ class ToolIsolationTests(TestCase):
             return PUBLIC_ADDRESS if host == "example.com" else [(2, 1, 6, "", ("127.0.0.1", 80))]
 
         redirect = FakeResponse(location="http://localhost/admin")
-        with patch("socket.getaddrinfo", side_effect=resolve), patch("requests.get", return_value=redirect) as get:
+        with patch("socket.getaddrinfo", side_effect=resolve), patch("requests.Session.get", return_value=redirect) as get:
             result = get_tool_registry().execute_tool("web_fetch", {"url": "https://example.com"}, {})
 
         self.assertIn("not allowed", result.error)

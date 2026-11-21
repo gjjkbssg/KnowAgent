@@ -16,7 +16,10 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlunparse
+
+import requests
+from requests.adapters import HTTPAdapter
 
 from django.db.models import Q
 
@@ -390,16 +393,50 @@ class WebSearchTool(Tool):
 MAX_FETCH_REDIRECTS = 3
 
 
-def is_public_http_url(url: str) -> bool:
-    """只允许访问公网 http(s) 地址，拒绝回环、内网、链路本地（云元数据）等地址。"""
+def resolve_public_address(url: str) -> str | None:
+    """
+    解析 http(s) URL 的主机名，全部解析结果都是公网地址时返回其中一个 IP，否则返回 None。
+    回环、内网、链路本地（云元数据）等地址一律拒绝。
+    """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https") or not parsed.hostname:
-        return False
+        return None
     try:
         infos = socket.getaddrinfo(parsed.hostname, parsed.port or (443 if parsed.scheme == "https" else 80), type=socket.SOCK_STREAM)
-        return bool(infos) and all(ipaddress.ip_address(info[4][0].split("%")[0]).is_global for info in infos)
+        addresses = [info[4][0].split("%")[0] for info in infos]
+        if addresses and all(ipaddress.ip_address(address).is_global for address in addresses):
+            return addresses[0]
     except (OSError, ValueError):
-        return False
+        pass
+    return None
+
+
+class _PinnedHostAdapter(HTTPAdapter):
+    """连接到已校验的 IP，TLS 的 SNI 与证书校验仍使用原始主机名。"""
+
+    def __init__(self, hostname: str):
+        self._hostname = hostname
+        super().__init__()
+
+    def init_poolmanager(self, *args, **kwargs):
+        super().init_poolmanager(*args, server_hostname=self._hostname, assert_hostname=self._hostname, **kwargs)
+
+
+def fetch_public_url(url: str, timeout: int = 15) -> requests.Response | None:
+    """
+    请求公网 URL，不跟随重定向；地址不允许访问时返回 None。
+    连接直接发往校验过的 IP，避免校验之后主机名被重新解析到内网（DNS rebinding）。
+    """
+    address = resolve_public_address(url)
+    if not address:
+        return None
+    parsed = urlparse(url)
+    host = f"[{address}]" if ":" in address else address
+    pinned_url = urlunparse(parsed._replace(netloc=f"{host}:{parsed.port}" if parsed.port else host))
+    host_header = f"{parsed.hostname}:{parsed.port}" if parsed.port else parsed.hostname
+    with requests.Session() as session:
+        session.mount("https://", _PinnedHostAdapter(parsed.hostname))
+        return session.get(pinned_url, headers={"User-Agent": "Mozilla/5.0", "Host": host_header}, timeout=timeout, allow_redirects=False)
 
 
 class WebFetchTool(Tool):
@@ -428,12 +465,11 @@ class WebFetchTool(Tool):
             return ToolResult(output="", error="URL is required")
 
         try:
-            import requests as req
             # 手动跟随重定向，每一跳都重新校验目标地址
             for _ in range(MAX_FETCH_REDIRECTS + 1):
-                if not is_public_http_url(url):
+                resp = fetch_public_url(url)
+                if resp is None:
                     return ToolResult(output="", error="URL is not allowed: only public http(s) addresses can be fetched")
-                resp = req.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15, allow_redirects=False)
                 location = resp.headers.get("Location") if resp.is_redirect else None
                 if not location:
                     break
