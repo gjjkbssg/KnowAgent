@@ -1,0 +1,200 @@
+{
+  "add_non_owner_member": {
+    "body": {
+      "data": {
+        "joined_at": "str",
+        "role": "str",
+        "status": "str",
+        "tenant_id": "number",
+        "user_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "invitation_accept": {
+    "body": {
+      "data": {
+        "status": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "invitation_decline": {
+    "body": {
+      "data": {
+        "status": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "invitation_owner_me": {
+    "body": {
+      "data": {
+        "memberships": [
+          {
+            "joined_at": "str",
+            "role": "str",
+            "status": "str",
+            "tenant_id": "number",
+            "user_id": "str"
+          }
+        ],
+        "tenant": {
+          "api_key": "str",
+          "business": "str",
+          "created_at": "str",
+          "description": "str",
+          "id": "number",
+          "name": "str",
+          "status": "str",
+          "storage_quota": "number",
+          "storage_used": "number",
+          "updated_at": "str"
+        },
+        "user": {
+          "avatar": "str",
+          "can_access_all_tenants": "bool",
+          "created_at": "str",
+          "email": "str",
+          "id": "str",
+          "is_active": "bool",
+          "is_system_admin": "bool",
+          "preferences": {
+            "contract_fixture": "bool",
+            "theme": "str"
+          },
+          "tenant_id": "number",
+          "updated_at": "str",
+          "username": "str"
+        }
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "my_invitations_list": {
+    "body": {
+      "data": {
+        "data": [],
+        "items": [],
+        "page": "number",
+        "page_size": "number",
+        "total": "number"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "non_owner_leave": {
+    "body": {
+      "data": {
+        "status": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "register_member_for_leave": {
+    "body": {
+      "data": {
+        "refresh_token": "str",
+        "tenant": {
+          "api_key": "str",
+          "business": "str",
+          "created_at": "str",
+          "description": "str",
+          "id": "number",
+          "name": "str",
+          "status": "str",
+          "storage_quota": "number",
+          "storage_used": "number",
+          "updated_at": "str"
+        },
+        "token": "str",
+        "user": {
+          "avatar": "str",
+          "can_access_all_tenants": "bool",
+          "created_at": "str",
+          "email": "str",
+          "id": "str",
+          "is_active": "bool",
+          "is_system_admin": "bool",
+          "preferences": {},
+          "tenant_id": "number",
+          "updated_at": "str",
+          "username": "str"
+        }
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "tenant_invitation_create_accept": {
+    "body": {
+      "data": {
+        "created_at": "str",
+        "email": "str",
+        "id": "str",
+        "name": "str",
+        "role": "str",
+        "status": "str",
+        "tenant_id": "number",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "tenant_invitation_create_decline": {
+    "body": {
+      "data": {
+        "created_at": "str",
+        "email": "str",
+        "id": "str",
+        "name": "str",
+        "role": "str",
+        "status": "str",
+        "tenant_id": "number",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "tenant_invitations_list": {
+    "body": {
+      "data": {
+        "data": [],
+        "items": [],
+        "page": "number",
+        "page_size": "number",
+        "total": "number"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "tenant_invite_links": {
+    "body": {
+      "data": {
+        "status": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  }
+}

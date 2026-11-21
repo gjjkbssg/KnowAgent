@@ -1,0 +1,370 @@
+{
+  "create_agent_embed_channel": {
+    "body": {
+      "data": {
+        "agent_id": "str",
+        "allowed_origins": [
+          "str"
+        ],
+        "created_at": "str",
+        "enabled": "bool",
+        "id": "str",
+        "name": "str",
+        "status": "str",
+        "tenant_id": "number",
+        "token": "str",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_embed_agent": {
+    "body": {
+      "data": {
+        "agent_mode": "str",
+        "agent_type": "str",
+        "allowed_tools": [
+          "str"
+        ],
+        "avatar": "str",
+        "created_at": "str",
+        "description": "str",
+        "id": "str",
+        "kb_selection_mode": "str",
+        "knowledge_base_ids": [],
+        "knowledge_bases": [],
+        "max_rounds": "number",
+        "mcp_selection_mode": "str",
+        "mcp_services": [],
+        "memory_enabled": "bool",
+        "model_id": "str",
+        "name": "str",
+        "opening_statement": "str",
+        "rerank_enabled": "bool",
+        "rerank_model_id": "str",
+        "status": "str",
+        "suggested_prompts": [
+          "str"
+        ],
+        "suggested_questions": [
+          "str"
+        ],
+        "system_prompt": "str",
+        "temperature": "number",
+        "tenant_id": "number",
+        "tools": [
+          "str"
+        ],
+        "type": "str",
+        "updated_at": "str",
+        "web_search_enabled": "bool"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_embed_agent_session": {
+    "body": {
+      "data": {
+        "agent_config": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "agent_id": "str",
+        "created_at": "str",
+        "description": "str",
+        "id": "str",
+        "is_pinned": "bool",
+        "knowledge_base_id": "str",
+        "last_request_state": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "pinned_at": "null",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "user_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_embed_knowledge_session": {
+    "body": {
+      "data": {
+        "agent_config": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "agent_id": "str",
+        "created_at": "str",
+        "description": "str",
+        "id": "str",
+        "is_pinned": "bool",
+        "knowledge_base_id": "str",
+        "last_request_state": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "pinned_at": "null",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "user_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "embed_agent_chat": {
+    "content_type": "str",
+    "frames": [
+      {
+        "data": {
+          "id": "str",
+          "request_id": "str"
+        },
+        "event": "str",
+        "id": "null"
+      }
+    ],
+    "status": "number"
+  },
+  "embed_agent_events": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "embed_agent_messages_load": {
+    "body": {
+      "data": {
+        "has_more": "bool",
+        "items": [
+          {
+            "actor_traces": [],
+            "agent_duration_ms": "number",
+            "agent_id": "str",
+            "agent_steps": "null",
+            "attachments": [],
+            "channel": "str",
+            "content": "str",
+            "created_at": "str",
+            "id": "str",
+            "images": [],
+            "is_completed": "bool",
+            "is_fallback": "bool",
+            "knowledge_id": "str",
+            "knowledge_references": [],
+            "mentioned_items": [],
+            "rendered_content": "str",
+            "request_id": "str",
+            "role": "str",
+            "session_id": "str",
+            "updated_at": "str",
+            "visible_to_user": "bool"
+          }
+        ],
+        "messages": [
+          {
+            "actor_traces": [],
+            "agent_duration_ms": "number",
+            "agent_id": "str",
+            "agent_steps": "null",
+            "attachments": [],
+            "channel": "str",
+            "content": "str",
+            "created_at": "str",
+            "id": "str",
+            "images": [],
+            "is_completed": "bool",
+            "is_fallback": "bool",
+            "knowledge_id": "str",
+            "knowledge_references": [],
+            "mentioned_items": [],
+            "rendered_content": "str",
+            "request_id": "str",
+            "role": "str",
+            "session_id": "str",
+            "updated_at": "str",
+            "visible_to_user": "bool"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "embed_agent_stop": {
+    "body": {
+      "data": {
+        "stopped": "bool"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "embed_config": {
+    "body": {
+      "data": {
+        "agent_id": "str",
+        "allowed_origins": [
+          "str"
+        ],
+        "enabled": "bool",
+        "name": "str",
+        "token": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "embed_exchange": {
+    "body": {
+      "data": {
+        "session": {},
+        "token": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "embed_knowledge_chat": {
+    "content_type": "str",
+    "frames": [
+      {
+        "data": {
+          "id": "str",
+          "request_id": "str"
+        },
+        "event": "str",
+        "id": "null"
+      }
+    ],
+    "status": "number"
+  },
+  "embed_knowledge_events": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "embed_knowledge_messages_load": {
+    "body": {
+      "data": {
+        "has_more": "bool",
+        "items": [
+          {
+            "actor_traces": [],
+            "agent_duration_ms": "number",
+            "agent_id": "str",
+            "agent_steps": "null",
+            "attachments": [],
+            "channel": "str",
+            "content": "str",
+            "created_at": "str",
+            "id": "str",
+            "images": [],
+            "is_completed": "bool",
+            "is_fallback": "bool",
+            "knowledge_id": "str",
+            "knowledge_references": [],
+            "mentioned_items": [],
+            "rendered_content": "str",
+            "request_id": "str",
+            "role": "str",
+            "session_id": "str",
+            "updated_at": "str",
+            "visible_to_user": "bool"
+          }
+        ],
+        "messages": [
+          {
+            "actor_traces": [],
+            "agent_duration_ms": "number",
+            "agent_id": "str",
+            "agent_steps": "null",
+            "attachments": [],
+            "channel": "str",
+            "content": "str",
+            "created_at": "str",
+            "id": "str",
+            "images": [],
+            "is_completed": "bool",
+            "is_fallback": "bool",
+            "knowledge_id": "str",
+            "knowledge_references": [],
+            "mentioned_items": [],
+            "rendered_content": "str",
+            "request_id": "str",
+            "role": "str",
+            "session_id": "str",
+            "updated_at": "str",
+            "visible_to_user": "bool"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "embed_knowledge_stop": {
+    "body": {
+      "data": {
+        "stopped": "bool"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "embed_suggested_questions": {
+    "body": {
+      "data": {
+        "items": []
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  }
+}
