@@ -169,6 +169,17 @@ class EmbeddingOutageTests(TestCase):
         Knowledge.objects.filter(id=self.chunk.knowledge_id).update(tenant_id=registered["tenant"]["id"])
         return {"HTTP_AUTHORIZATION": f"Bearer {registered['token']}"}
 
+    def test_chunk_edit_response_matches_what_a_later_read_returns(self):
+        index_chunk(self.chunk)
+        client = Client()
+        headers = self.register_owner_of_chunk(client)
+        url = f"/api/v1/chunks/{self.chunk.knowledge_id}/{self.chunk.id}"
+
+        edited = client.put(url, data=json.dumps({"content": "edited"}), content_type="application/json", **headers)
+
+        self.assertEqual(edited.status_code, 200)
+        self.assertEqual(edited.json()["data"], client.get(url, **headers).json()["data"])
+
     def test_editing_a_chunk_deleted_meanwhile_does_not_bring_it_back(self):
         index_chunk(self.chunk)
         client = Client()

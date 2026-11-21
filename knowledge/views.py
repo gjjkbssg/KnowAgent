@@ -814,8 +814,9 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
             return fail(f"Embedding 服务不可用，切片未保存：{exc}", 503, code="embedding_unavailable")
         with transaction.atomic():
             # UPDATE 而不是 save()：切片若在算向量期间被删除，save() 会把它重新插回去
+            chunk.updated_at = timezone.now()
             saved = Chunk.objects.filter(id=chunk.id).update(
-                content=chunk.content, is_enabled=chunk.is_enabled, metadata=chunk.metadata, updated_at=timezone.now()
+                content=chunk.content, is_enabled=chunk.is_enabled, metadata=chunk.metadata, updated_at=chunk.updated_at
             )
             if not saved:
                 return fail("chunk not found", 404)
