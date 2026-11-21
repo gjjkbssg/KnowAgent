@@ -15,6 +15,7 @@ Agent ReAct 引擎
 import json
 import logging
 import re
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
@@ -60,6 +61,36 @@ class AgentStep:
         return d
 
 
+MAX_AGENT_REFERENCES = 10
+
+
+class ReferenceCollector:
+    """
+    收集一次 Agent 执行（含它派出的子 Agent）中工具检索到的 Chunk，作为答案的结构化引用。
+    子 Agent 在各自线程里运行，所以需要加锁。
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._refs: dict[str, dict] = {}
+
+    def add(self, data) -> None:
+        if not isinstance(data, list):
+            return
+        with self._lock:
+            for item in data:
+                if isinstance(item, dict) and item.get("chunk_id") and item.get("content"):
+                    self._refs.setdefault(item["chunk_id"], item)
+
+    def for_answer(self, answer: str, limit: int = MAX_AGENT_REFERENCES) -> list[dict]:
+        """按 Chunk 去重后的引用；答案里点名的文档排在前面，其余按检索先后。"""
+        with self._lock:
+            refs = list(self._refs.values())
+        cited = [ref for ref in refs if ref.get("knowledge_title") and ref["knowledge_title"] in (answer or "")]
+        cited_ids = {ref["chunk_id"] for ref in cited}
+        return (cited + [ref for ref in refs if ref["chunk_id"] not in cited_ids])[:limit]
+
+
 @dataclass
 class AgentResult:
     content: str
@@ -67,6 +98,7 @@ class AgentResult:
     total_iterations: int
     duration_ms: int
     stopped_reason: str = "completed"
+    references: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -215,6 +247,7 @@ class AgentEngine:
             # 本次执行内的已见内容去重；不能跨会话或跨子 Agent 共享
             "seen_chunks": set(),
             "seen_wiki_slugs": set(),
+            "references": self._references,
         }
 
     def _call_llm_with_tools(self, messages: list[dict], max_retries: int = 3) -> dict:
@@ -257,7 +290,11 @@ class AgentEngine:
                 output="",
                 error=f"Tool not allowed for this agent: {tool_name}. Available tools: {sorted(self._granted_tools)}",
             )
-        return self.registry.execute_tool(tool_name, args, context)
+        result = self.registry.execute_tool(tool_name, args, context)
+        collector = context.get("references")
+        if collector is not None:
+            collector.add(result.data)
+        return result
 
     def _execute_single_tool(self, tc: dict, context: dict) -> tuple[str, ToolCallRecord]:
         """执行单个工具调用。"""
@@ -311,6 +348,19 @@ class AgentEngine:
         history: list[dict] | None = None,
         context_str: str = "",
         on_event: callable = None,
+    ) -> AgentResult:
+        # 子 Agent 复用主 Agent 的收集器，检索证据才能回到最终答案的引用里
+        self._references = self.config.get("reference_collector") or ReferenceCollector()
+        result = self._execute(query, history, context_str, on_event)
+        result.references = self._references.for_answer(result.content)
+        return result
+
+    def _execute(
+        self,
+        query: str,
+        history: list[dict] | None,
+        context_str: str,
+        on_event: callable,
     ) -> AgentResult:
         from .observability import trace_agent_execution, trace_llm_call, trace_tool_execution
 

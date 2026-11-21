@@ -6,11 +6,15 @@ from django.test import TestCase
 from . import model_providers
 from .agent_engine import AgentEngine
 from .agent_tools import KnowledgeSearchTool, get_tool_registry
-from .models import Tenant
+from .models import Chunk, Knowledge, KnowledgeBase, Session, Tenant
 
 
 def tool_call(call_id, name, arguments):
     return {"id": call_id, "type": "function", "function": {"name": name, "arguments": json.dumps(arguments)}}
+
+
+def search_hit(chunk_id, title):
+    return {"chunk_id": chunk_id, "knowledge_title": title, "content": f"evidence from {title}", "score": 0.9}
 
 
 class ScriptedModel:
@@ -29,9 +33,9 @@ class AgentEngineTests(TestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(name="agent", api_key="agent-key")
 
-    def run_engine(self, responses, allowed_tools, final_answer="forced answer"):
+    def run_engine(self, responses, allowed_tools, final_answer="forced answer", session_id="session"):
         model = ScriptedModel(responses)
-        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": allowed_tools, "knowledge_base_ids": ["kb"]})
+        engine = AgentEngine(self.tenant, session_id, agent_config={"allowed_tools": allowed_tools, "knowledge_base_ids": ["kb"]})
         with patch.object(model_providers, "chat_completion_raw", model), patch.object(
             model_providers, "chat_completion", return_value=final_answer
         ) as final_call:
@@ -93,8 +97,76 @@ class AgentEngineTests(TestCase):
         poll = [tool_call("c1", "actor", {"action": "wait", "actor_id": "doc_retriever-1"})]
         self.assertIsNone(AgentEngine._tool_round_signature(poll))
 
+    def test_chunks_retrieved_by_tools_become_the_answer_references(self):
+        hits = [search_hit("c-1", "安装手册"), search_hit("c-2", "发布说明")]
+        search = [tool_call("c1", "knowledge_search", {"query": "怎么安装"})]
+        with patch("personal_knowledge_base.search.hybrid_search", return_value=hits):
+            result, _, _ = self.run_engine(
+                [
+                    {"content": "", "tool_calls": search},
+                    {"content": "", "tool_calls": [tool_call("c2", "knowledge_search", {"query": "安装步骤"})]},
+                    {"content": "根据《发布说明》，先执行迁移。", "tool_calls": None},
+                ],
+                allowed_tools=["knowledge_search"],
+            )
+
+        # Deduplicated across calls; the document named in the answer comes first.
+        self.assertEqual([ref["chunk_id"] for ref in result.references], ["c-2", "c-1"])
+        self.assertEqual(result.references[0]["content"], "evidence from 发布说明")
+
+    def test_answer_without_retrieval_has_no_references(self):
+        result, _, _ = self.run_engine([{"content": "你好", "tool_calls": None}], allowed_tools=["knowledge_search"])
+
+        self.assertEqual(result.references, [])
+
+    def test_evidence_found_by_a_subagent_reaches_the_main_answer(self):
+        session = Session.objects.create(tenant=self.tenant, title="s")
+        delegate = [tool_call("m1", "actor", {"action": "run", "subagent_type": "doc_retriever", "prompt": "查安装步骤"})]
+        with patch("personal_knowledge_base.search.hybrid_search", return_value=[search_hit("c-9", "安装手册")]):
+            result, _, _ = self.run_engine(
+                [
+                    {"content": "", "tool_calls": delegate},
+                    {"content": "", "tool_calls": [tool_call("s1", "knowledge_search", {"query": "安装步骤"})]},
+                    {"content": "子 Agent：见安装手册", "tool_calls": None},
+                    {"content": "最终答案", "tool_calls": None},
+                ],
+                allowed_tools=["actor"],
+                session_id=session.id,
+            )
+
+        self.assertEqual(result.content, "最终答案")
+        self.assertEqual([ref["chunk_id"] for ref in result.references], ["c-9"])
+
 
 PUBLIC_ADDRESS = [(2, 1, 6, "", ("93.184.216.34", 443))]
+
+
+class ToolTenantScopeTests(TestCase):
+    def setUp(self):
+        self.tenant = Tenant.objects.create(name="mine", api_key="mine-key")
+        self.kb = KnowledgeBase.objects.create(tenant=self.tenant, name="kb")
+        self.other_kb = KnowledgeBase.objects.create(tenant=self.tenant, name="not selected")
+        other_tenant = Tenant.objects.create(name="theirs", api_key="theirs-key")
+        self.own = self.add_document(self.tenant, self.kb, "mine")
+        self.unselected = self.add_document(self.tenant, self.other_kb, "unselected")
+        self.foreign = self.add_document(other_tenant, KnowledgeBase.objects.create(tenant=other_tenant, name="kb"), "confidential")
+        self.context = {"tenant_id": self.tenant.id, "kb_ids": [self.kb.id]}
+
+    def add_document(self, tenant, kb, title):
+        knowledge = Knowledge.objects.create(tenant=tenant, knowledge_base=kb, title=title, parse_status="completed")
+        Chunk.objects.create(tenant=tenant, knowledge_base=kb, knowledge=knowledge, content=f"{title} body", chunk_index=0)
+        return knowledge
+
+    def test_document_tools_only_read_documents_in_scope(self):
+        registry = get_tool_registry()
+        for tool in ("get_document_info", "wiki_read_source_doc"):
+            allowed = registry.execute_tool(tool, {"knowledge_id": self.own.id}, self.context)
+            self.assertEqual(allowed.error, "", tool)
+            self.assertIn("mine", allowed.output, tool)
+            for document in (self.foreign, self.unselected):
+                denied = registry.execute_tool(tool, {"knowledge_id": document.id}, self.context)
+                self.assertIn("Document not found", denied.error, tool)
+                self.assertEqual(denied.output, "", tool)
 
 
 class FakeResponse:

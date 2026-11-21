@@ -615,6 +615,8 @@ def _run_agent_generation(
         # 执行 Agent
         result = engine.execute(query, history=history_msgs, context_str=agent_context, on_event=on_event)
 
+        refs = result.references
+
         # 更新 assistant 消息（最终状态）
         Message.objects.filter(id=assistant_msg_id).update(
             content=result.content,
@@ -946,6 +948,7 @@ def chat_endpoint(request, session_id, agent=False):
         )
         result = engine.execute(query, history=history_msgs, context_str=agent_context)
         answer = result.content
+        refs = result.references
         agent_steps_data = [s.to_dict() for s in result.steps]
         agent_duration_ms = result.duration_ms
 
