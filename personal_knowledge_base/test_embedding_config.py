@@ -5,9 +5,9 @@ from unittest.mock import Mock, patch
 import requests
 from django.core.management import call_command
 from django.db import connection
-from django.test import Client, TestCase, override_settings
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 
-from personal_knowledge_base.model_providers import EmbeddingUnavailableError, embedding
+from personal_knowledge_base.model_providers import EmbeddingUnavailableError, embedding, rerank_url
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
 from personal_knowledge_base.search import _fts_search, chunk_vector, hybrid_search, index_chunk, stable_embedding
 
@@ -221,3 +221,15 @@ class EmbeddingOutageTests(TestCase):
         self.assertEqual(set(content_during_embedding), {"kiwi orchard notes"})
         self.chunk.refresh_from_db()
         self.assertEqual(self.chunk.content, "kiwi orchard notes")
+
+
+class RerankUrlTests(SimpleTestCase):
+    def test_dashscope_chat_base_url_is_mapped_to_the_rerank_api(self):
+        self.assertEqual(
+            rerank_url("https://dashscope.aliyuncs.com/compatible-mode/v1/"),
+            "https://dashscope.aliyuncs.com/compatible-api/v1/reranks",
+        )
+
+    def test_other_base_urls_are_left_alone(self):
+        self.assertEqual(rerank_url("https://rerank.example/v1"), "https://rerank.example/v1/reranks")
+        self.assertEqual(rerank_url("https://rerank.example/v1/rerank"), "https://rerank.example/v1/rerank")

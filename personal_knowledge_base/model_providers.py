@@ -696,12 +696,21 @@ def _fit_vectors(vectors: list[list[float]], dim: int) -> list[list[float]]:
     return fitted
 
 
+def rerank_url(base_url: str) -> str:
+    base_url = base_url.rstrip("/")
+    if base_url.endswith(("/rerank", "/reranks")):
+        return base_url
+    # 百炼的 Rerank 接口在 compatible-api 下，对话和 Embedding 用的 compatible-mode 下没有它
+    if base_url.endswith("/compatible-mode/v1"):
+        base_url = base_url[: -len("/compatible-mode/v1")] + "/compatible-api/v1"
+    return f"{base_url}/reranks"
+
+
 def rerank(query: str, results: list[dict], top_k: int | None = None, tenant: Tenant | None = None) -> list[dict]:
     cfg = _role_config("rerank")
     if not results or not cfg["enabled"] or not cfg["configured"]:
         return results[:top_k] if top_k else results
-    base_url = cfg["base_url"].rstrip("/")
-    url = base_url if base_url.endswith(("/rerank", "/reranks")) else f"{base_url}/reranks"
+    url = rerank_url(cfg["base_url"])
     payload = {"model": cfg["model"], "query": query, "documents": [r["content"] for r in results]}
     started = time.monotonic()
     try:

@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import re
 from dataclasses import dataclass
@@ -11,6 +12,8 @@ from django.conf import settings
 
 from .model_providers import role_completion
 from .models import Chunk, Knowledge, KnowledgeBase
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_EXTRACT_CONFIG = {
@@ -30,6 +33,8 @@ DEFAULT_EXTRACT_CONFIG = {
 DEFAULT_RELATION_BATCH_SIZE = 5
 DEFAULT_ENTITY_BATCH_SIZE = 5
 DEFAULT_GRAPH_WORKERS = 2
+# 抽取结果是 JSON，输出被截断就整段解析不了；上限要容得下一批 Chunk 的全部实体或关系
+GRAPH_EXTRACT_MAX_TOKENS = 4000
 DIRECT_RELATION_LIMIT = 8
 INDIRECT_RELATION_LIMIT = 8
 GRAPH_RELATION_LIMIT = 20
@@ -335,7 +340,7 @@ Entities:
 Text:
 {text[:8000]}
 """.strip()
-    graph = parse_graph_json(role_completion("extract", prompt, "", 6000, tenant=tenant, scenario="graph_relation_extract", max_tokens=1200, enable_thinking=False, total_timeout=90))
+    graph = parse_graph_json(role_completion("extract", prompt, "", 6000, tenant=tenant, scenario="graph_relation_extract", max_tokens=GRAPH_EXTRACT_MAX_TOKENS, enable_thinking=False, total_timeout=90))
     return rebuild_graph({"node": nodes, "relation": graph["relation"]})
 
 
@@ -346,15 +351,23 @@ def extract_entities_for_batch(chunks: list[Chunk], extract_config: dict, tenant
 {render_graph_prompt_description(extract_config)}
 Return strict JSON only as an array. Keep every result attached to its chunk_key:
 [{{"chunk_key":"c001","entities":[{{"name":"...","attributes":[]}}]}}]
+Output entities only, no relations. Use compact JSON without indentation.
 {payload}
 """.strip()
     parsed = None
     for _ in range(2):
-        raw = role_completion("extract", prompt, "", 12000, tenant=tenant, scenario="graph_entity_extract", max_tokens=1200, enable_thinking=False, total_timeout=90)
+        raw = role_completion("extract", prompt, "", 12000, tenant=tenant, scenario="graph_entity_extract", max_tokens=GRAPH_EXTRACT_MAX_TOKENS, enable_thinking=False, total_timeout=90)
         value = load_graph_json_payload(raw) if raw else None
         if isinstance(value, list):
             parsed = value
             break
+        if len(chunks) > 1:
+            break
+    if parsed is None and len(chunks) > 1:
+        # 整批结果解析不了（多半是输出被截断）：逐个 Chunk 重试，不让一批实体全部丢掉
+        return [extract_entities_for_batch([chunk], extract_config, tenant)[0] for chunk in chunks]
+    if parsed is None:
+        logger.warning("graph entity extraction returned no parseable JSON for chunk %s", chunks[0].id)
     graphs = {key: {"node": [], "relation": []} for key in aliases}
     for item in parsed or []:
         if not isinstance(item, dict) or item.get("chunk_key") not in aliases:
@@ -389,6 +402,7 @@ def build_graph_for_chunks(chunks: list[Chunk], extract_config: dict, tenant=Non
             try:
                 batch_graphs[index] = future.result()
             except Exception:
+                logger.warning("graph entity extraction failed for %d chunks", len(entity_batches[index]), exc_info=True)
                 batch_graphs[index] = [{"node": [], "relation": []} for _ in entity_batches[index]]
                 failed += 1
             if progress_callback:
@@ -434,6 +448,7 @@ def build_graph_for_chunks(chunks: list[Chunk], extract_config: dict, tenant=Non
           try:
               relation_results[index] = future.result()
           except Exception:
+              logger.warning("graph relation extraction failed", exc_info=True)
               relation_results[index] = {"node": [], "relation": []}
               failed += 1
           if progress_callback:
@@ -524,7 +539,7 @@ Extract the key entity names from the user query. Return strict JSON only:
 Query:
 {query}
 """.strip()
-    graph = parse_graph_json(role_completion("extract", prompt, "", 2000, scenario="graph_query_extract"))
+    graph = parse_graph_json(role_completion("extract", prompt, "", 2000, scenario="graph_query_extract", max_tokens=300, enable_thinking=False))
     return [node["name"] for node in graph["node"] if node.get("name")]
 
 

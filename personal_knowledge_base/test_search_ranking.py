@@ -1,10 +1,10 @@
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 
 from personal_knowledge_base import search
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
-from personal_knowledge_base.search import _fts_search, apply_mmr, hybrid_search, index_chunk, rrf_fuse, update_chunk_index_scope
+from personal_knowledge_base.search import _fts_search, apply_mmr, deduplicate_results, hybrid_search, index_chunk, rrf_fuse, update_chunk_index_scope
 
 
 class SearchRankingTests(TestCase):
@@ -111,3 +111,37 @@ class SearchRankingTests(TestCase):
             results = hybrid_search(self.tenant.id, [self.kb.id], "guava", 3)
 
         self.assertEqual(len(results), 3)
+
+
+class DeduplicateResultsTests(SimpleTestCase):
+    FULL = (
+        "智能会议室由中枢网关 XH-100 协调以下设备：环境传感器 ES-20，每 30 秒上报温度；"
+        "空气净化器 AP-50，支持静音、自动和强效三种模式；智能灯组 LG-8，支持亮度调节；"
+        "会议屏 DS-65，与 XH-100 处于同一局域网时才能使用无线投屏。"
+    )
+    LABELS = "ES-20\nXH-100\nAP-50\nLG-8\nDS-65"
+
+    def test_short_chunk_does_not_replace_the_chunk_that_contains_it(self):
+        results = deduplicate_results([
+            {"chunk_id": "labels", "content": self.LABELS, "score": 0.9},
+            {"chunk_id": "full", "content": self.FULL, "score": 0.5},
+        ])
+
+        self.assertEqual([item["chunk_id"] for item in results], ["full"])
+
+    def test_containing_chunk_wins_in_either_order(self):
+        results = deduplicate_results([
+            {"chunk_id": "full", "content": self.FULL, "score": 0.9},
+            {"chunk_id": "labels", "content": self.LABELS, "score": 0.5},
+        ])
+
+        self.assertEqual([item["chunk_id"] for item in results], ["full"])
+
+    def test_near_duplicates_of_similar_length_keep_the_higher_score(self):
+        results = deduplicate_results([
+            {"chunk_id": "low", "content": self.FULL, "score": 0.2},
+            {"chunk_id": "high", "content": self.FULL + " 详见拓扑图。", "score": 0.8},
+            {"chunk_id": "other", "content": "E17 表示环境传感器数据过期，应暂停依赖环境数据的自动化规则。", "score": 0.1},
+        ])
+
+        self.assertEqual([item["chunk_id"] for item in results], ["high", "other"])
