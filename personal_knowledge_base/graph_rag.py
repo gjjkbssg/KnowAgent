@@ -241,22 +241,25 @@ class Neo4jGraphRepository:
             nodes=nodes,
         )
         graph = {"node": [], "relation": []}
-        seen = set()
+        seen = {}
         for record in result:
             source = record["n"]
             target = record["m"]
             rel = record["r"]
             for item in [source, target]:
                 name = item.get("name")
-                if name and name not in seen:
-                    seen.add(name)
-                    graph["node"].append(
-                        {
-                            "name": name,
-                            "chunks": list(item.get("chunks") or []),
-                            "attributes": list(item.get("attributes") or []),
-                        }
-                    )
+                if not name:
+                    continue
+                if name in seen:
+                    # 同名实体在每篇文档里各有一个节点，Chunk 要合在一起
+                    seen[name]["chunks"] = list(dict.fromkeys([*seen[name]["chunks"], *(item.get("chunks") or [])]))
+                    continue
+                seen[name] = {
+                    "name": name,
+                    "chunks": list(item.get("chunks") or []),
+                    "attributes": list(item.get("attributes") or []),
+                }
+                graph["node"].append(seen[name])
             # 匹配是无向的，关系的真实方向可能是 m -> n
             head, tail = (source, target) if record["forward"] else (target, source)
             graph["relation"].append({"node1": head.get("name"), "node2": tail.get("name"), "type": rel.type})
@@ -764,6 +767,8 @@ def graph_search(tenant_id: int, kb_ids: list[str], query: str, seen_chunk_ids: 
     """
     从问题里的实体出发查图谱，返回 (实体所在的 Chunk, 命中的关系三元组)。
     三元组是 {"node1", "node2", "type"}，方向为 node1 -> node2，按 (node1, node2, type) 去重。
+    关系边上没有存 Chunk，它的依据是两端实体所在的 Chunk（和入库时 relation_chunk_ids 一致）；
+    这些 Chunk 全部被停用或删除的关系不返回。
     """
     seen_chunk_ids = seen_chunk_ids or set()
     kbs = KnowledgeBase.objects.filter(tenant_id=tenant_id, id__in=kb_ids, deleted_at__isnull=True)
@@ -776,9 +781,11 @@ def graph_search(tenant_id: int, kb_ids: list[str], query: str, seen_chunk_ids: 
     results = []
     chunk_ids = []
     relations: dict[tuple, dict] = {}
+    entity_chunks: dict[str, set[str]] = {}
     for kb in kbs:
         graph = graph_repository.search_node(GraphNamespace(knowledge_base_id=kb.id), entities)
         for node in graph.get("node", []):
+            entity_chunks.setdefault(node.get("name"), set()).update(node.get("chunks") or [])
             for chunk_id in node.get("chunks") or []:
                 if chunk_id not in seen_chunk_ids:
                     seen_chunk_ids.add(chunk_id)
@@ -786,7 +793,14 @@ def graph_search(tenant_id: int, kb_ids: list[str], query: str, seen_chunk_ids: 
         for relation in graph.get("relation", []):
             if relation.get("node1") and relation.get("node2"):
                 relations.setdefault((relation["node1"], relation["node2"], relation.get("type")), relation)
-    relations = list(relations.values())[:GRAPH_RELATION_LIMIT]
+    enabled_ids = set(
+        Chunk.objects.filter(id__in=set().union(*entity_chunks.values()), tenant_id=tenant_id, is_enabled=True).values_list("id", flat=True)
+    )
+    relations = [
+        relation
+        for relation in relations.values()
+        if (entity_chunks.get(relation["node1"], set()) | entity_chunks.get(relation["node2"], set())) & enabled_ids
+    ][:GRAPH_RELATION_LIMIT]
     if not chunk_ids:
         return [], relations
     chunks = Chunk.objects.filter(id__in=chunk_ids, tenant_id=tenant_id, is_enabled=True).select_related("knowledge", "knowledge_base")
