@@ -440,18 +440,15 @@ def fetch_public_url(url: str, timeout: int = 15) -> requests.Response | None:
     address = resolve_public_address(hostname, port or (443 if parsed.scheme == "https" else 80))
     if not address:
         return None
-    headers = {"User-Agent": "Mozilla/5.0"}
-    proxied = bool(select_proxy(url, get_environ_proxies(url)))
-    if parsed.scheme == "http" and proxied:
-        # 明文 HTTP 经正向代理时，代理按请求行里的地址解析并改写 Host，换成 IP 会丢掉虚拟主机名，只能交给代理解析
-        target = url
-    else:
-        host = f"[{address}]" if ":" in address else address
-        target = urlunparse(parsed._replace(netloc=f"{host}:{port}" if port else host))
-        headers["Host"] = f"{hostname}:{port}" if port else hostname
+    if parsed.scheme == "http" and select_proxy(url, get_environ_proxies(url)):
+        # 明文 HTTP 经正向代理时由代理自己解析主机名，无法钉住校验过的 IP，所以拒绝；HTTPS 走 CONNECT 到 IP，不受影响
+        return None
+    host = f"[{address}]" if ":" in address else address
+    pinned_url = urlunparse(parsed._replace(netloc=f"{host}:{port}" if port else host))
+    host_header = f"{hostname}:{port}" if port else hostname
     with requests.Session() as session:
         session.mount("https://", _PinnedHostAdapter(hostname))
-        return session.get(target, headers=headers, timeout=timeout, allow_redirects=False)
+        return session.get(pinned_url, headers={"User-Agent": "Mozilla/5.0", "Host": host_header}, timeout=timeout, allow_redirects=False)
 
 
 class WebFetchTool(Tool):

@@ -142,12 +142,13 @@ class ToolIsolationTests(TestCase):
             self.assertEqual(manager.connection_pool_kw["server_hostname"], "example.com")
             self.assertEqual(manager.connection_pool_kw["assert_hostname"], "example.com")
 
-    def test_web_fetch_lets_the_proxy_resolve_plain_http(self):
-        # A forward proxy overrides Host with the request-line address, so an IP there would lose the virtual host.
-        with patch.dict("os.environ", {"HTTP_PROXY": "http://proxy.internal:3128", "NO_PROXY": ""}), patch("socket.getaddrinfo", return_value=PUBLIC_ADDRESS), patch("requests.Session.get", return_value=FakeResponse(text="ok")) as get:
-            get_tool_registry().execute_tool("web_fetch", {"url": "http://example.com/docs"}, {})
+    def test_web_fetch_refuses_plain_http_through_a_proxy(self):
+        # A forward proxy resolves the hostname itself, so the address validated here could not be enforced.
+        with patch.dict("os.environ", {"HTTP_PROXY": "http://proxy.internal:3128", "NO_PROXY": ""}), patch("socket.getaddrinfo", return_value=PUBLIC_ADDRESS), patch("requests.Session.get") as get:
+            result = get_tool_registry().execute_tool("web_fetch", {"url": "http://example.com/docs"}, {})
 
-        self.assertEqual(get.call_args.args[0], "http://example.com/docs")
+        self.assertIn("not allowed", result.error)
+        get.assert_not_called()
 
     def test_web_fetch_refuses_internal_addresses(self):
         urls = ["http://127.0.0.1:8000/health", "http://169.254.169.254/latest/meta-data/", "http://10.0.0.5/", "file:///etc/passwd"]
