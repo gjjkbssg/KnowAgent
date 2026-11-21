@@ -584,12 +584,12 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
     values = list(texts)
     if not values:
         return []
-    if not model_id and settings.LLM_USE_ENV_EMBEDDING and settings.LLM_CHAT_API_KEY:
+    if not model_id and settings.LLM_USE_ENV_EMBEDDING and settings.LLM_EMBEDDING_API_KEY:
         started = time.monotonic()
         try:
             vectors = openai_compatible_embedding(
-                settings.LLM_CHAT_BASE_URL,
-                settings.LLM_CHAT_API_KEY,
+                settings.LLM_EMBEDDING_BASE_URL,
+                settings.LLM_EMBEDDING_API_KEY,
                 settings.LLM_EMBEDDING_MODEL,
                 values,
             )

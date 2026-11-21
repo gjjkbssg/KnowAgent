@@ -90,7 +90,7 @@ OCR 与 Caption 不作为附件备注，而是与正文一样参与召回和引�
 ### 6. 可恢复的后台任务与流式回答
 
 - Agent 生成线程与 SSE 连接解耦。
-- SSE 支持按消息偏移量回放，刷新页面后继续接收结果。
+- 每个 SSE 事件带偏移量 id；断线后前端用 `Last-Event-ID` 续传，只补发未收到的事件，不会重新提问；刷新页面后也能继续接收结果。
 - 文档任务使用状态、租约与启动恢复机制，处理未完成或超时任务。
 - 可选 Langfuse 记录模型、工具和 Agent 执行轨迹。
 
@@ -226,7 +226,11 @@ LLM_CHAT_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 LLM_CHAT_MODEL=qwen3.7-plus
 ```
 
-Embedding、Rerank 和 VLM 可以使用不同服务，完整字段见 [`.env.example`](.env.example)。不使用图谱与长期记忆时，将 `NEO4J_ENABLE=false`。
+Embedding、Rerank 和 VLM 可以使用不同服务，完整字段见 [`.env.example`](.env.example)。
+
+语义向量召回需要 `LLM_USE_ENV_EMBEDDING=true` 并配置 Embedding 的 API Key（未单独配置时使用 `LLM_API_KEY`）；否则向量通道使用本地哈希向量，只能提供字面相似度。切换后运行 `python manage.py rebuild_vector_index` 重建索引。
+
+不使用图谱与长期记忆时，将 `NEO4J_ENABLE=false`。
 
 ### 4. 初始化并启动
 
