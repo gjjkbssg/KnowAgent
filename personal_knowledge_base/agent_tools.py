@@ -20,6 +20,7 @@ from urllib.parse import urljoin, urlparse, urlunparse
 
 import requests
 from requests.adapters import HTTPAdapter
+from requests.utils import get_environ_proxies, select_proxy
 
 from django.db.models import Q
 
@@ -409,14 +410,17 @@ def resolve_public_address(hostname: str, port: int) -> str | None:
 
 
 class _PinnedHostAdapter(HTTPAdapter):
-    """连接到已校验的 IP，TLS 的 SNI 与证书校验仍使用原始主机名。"""
+    """连接到已校验的 IP，TLS 的 SNI 与证书校验仍使用原始主机名（直连和经代理都是）。"""
 
     def __init__(self, hostname: str):
-        self._hostname = hostname
+        self._tls_hostname = {"server_hostname": hostname, "assert_hostname": hostname}
         super().__init__()
 
     def init_poolmanager(self, *args, **kwargs):
-        super().init_poolmanager(*args, server_hostname=self._hostname, assert_hostname=self._hostname, **kwargs)
+        super().init_poolmanager(*args, **self._tls_hostname, **kwargs)
+
+    def proxy_manager_for(self, proxy, **kwargs):
+        return super().proxy_manager_for(proxy, **self._tls_hostname, **kwargs)
 
 
 def fetch_public_url(url: str, timeout: int = 15) -> requests.Response | None:
@@ -436,12 +440,18 @@ def fetch_public_url(url: str, timeout: int = 15) -> requests.Response | None:
     address = resolve_public_address(hostname, port or (443 if parsed.scheme == "https" else 80))
     if not address:
         return None
-    host = f"[{address}]" if ":" in address else address
-    pinned_url = urlunparse(parsed._replace(netloc=f"{host}:{port}" if port else host))
-    host_header = f"{hostname}:{port}" if port else hostname
+    headers = {"User-Agent": "Mozilla/5.0"}
+    proxied = bool(select_proxy(url, get_environ_proxies(url)))
+    if parsed.scheme == "http" and proxied:
+        # 明文 HTTP 经正向代理时，代理按请求行里的地址解析并改写 Host，换成 IP 会丢掉虚拟主机名，只能交给代理解析
+        target = url
+    else:
+        host = f"[{address}]" if ":" in address else address
+        target = urlunparse(parsed._replace(netloc=f"{host}:{port}" if port else host))
+        headers["Host"] = f"{hostname}:{port}" if port else hostname
     with requests.Session() as session:
         session.mount("https://", _PinnedHostAdapter(hostname))
-        return session.get(pinned_url, headers={"User-Agent": "Mozilla/5.0", "Host": host_header}, timeout=timeout, allow_redirects=False)
+        return session.get(target, headers=headers, timeout=timeout, allow_redirects=False)
 
 
 class WebFetchTool(Tool):

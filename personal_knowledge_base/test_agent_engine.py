@@ -134,6 +134,21 @@ class ToolIsolationTests(TestCase):
         self.assertEqual(resolve.call_args.args[0], "xn--fsqu00a.xn--fiqs8s")
         self.assertEqual(get.call_args.kwargs["headers"]["Host"], "xn--fsqu00a.xn--fiqs8s")
 
+    def test_web_fetch_keeps_tls_hostname_when_going_through_a_proxy(self):
+        from personal_knowledge_base.agent_tools import _PinnedHostAdapter
+
+        adapter = _PinnedHostAdapter("example.com")
+        for manager in (adapter.poolmanager, adapter.proxy_manager_for("http://proxy.internal:3128")):
+            self.assertEqual(manager.connection_pool_kw["server_hostname"], "example.com")
+            self.assertEqual(manager.connection_pool_kw["assert_hostname"], "example.com")
+
+    def test_web_fetch_lets_the_proxy_resolve_plain_http(self):
+        # A forward proxy overrides Host with the request-line address, so an IP there would lose the virtual host.
+        with patch.dict("os.environ", {"HTTP_PROXY": "http://proxy.internal:3128", "NO_PROXY": ""}), patch("socket.getaddrinfo", return_value=PUBLIC_ADDRESS), patch("requests.Session.get", return_value=FakeResponse(text="ok")) as get:
+            get_tool_registry().execute_tool("web_fetch", {"url": "http://example.com/docs"}, {})
+
+        self.assertEqual(get.call_args.args[0], "http://example.com/docs")
+
     def test_web_fetch_refuses_internal_addresses(self):
         urls = ["http://127.0.0.1:8000/health", "http://169.254.169.254/latest/meta-data/", "http://10.0.0.5/", "file:///etc/passwd"]
         with patch("requests.Session.get") as get:
