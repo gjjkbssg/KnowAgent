@@ -1,10 +1,12 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+import requests
+from django.db import connection
 from django.test import TestCase, override_settings
 
-from personal_knowledge_base.model_providers import embedding
-from personal_knowledge_base.models import Tenant
-from personal_knowledge_base.search import stable_embedding
+from personal_knowledge_base.model_providers import EmbeddingUnavailableError, embedding
+from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
+from personal_knowledge_base.search import hybrid_search, index_chunk, stable_embedding
 
 EMBEDDING_ENV = {
     "LLM_EMBEDDING_API_KEY": "embedding-key",
@@ -35,3 +37,69 @@ class EnvEmbeddingTests(TestCase):
 
         call.assert_not_called()
         self.assertEqual(vectors, [stable_embedding("hello")])
+
+    @override_settings(LLM_USE_ENV_EMBEDDING=True, **EMBEDDING_ENV)
+    def test_provider_outage_raises_instead_of_returning_hash_vectors(self):
+        outage = requests.ConnectionError("connection reset")
+        with patch("personal_knowledge_base.model_providers.openai_compatible_embedding", side_effect=outage) as call, patch(
+            "personal_knowledge_base.model_providers.time.sleep"
+        ):
+            with self.assertRaises(EmbeddingUnavailableError):
+                embedding(self.tenant, ["hello"])
+
+        self.assertEqual(call.call_count, 3)
+
+    @override_settings(LLM_USE_ENV_EMBEDDING=True, **EMBEDDING_ENV)
+    def test_transient_provider_error_is_retried(self):
+        responses = [requests.Timeout("timed out"), [[0.1, 0.2, 0.3, 0.4]]]
+        with patch("personal_knowledge_base.model_providers.openai_compatible_embedding", side_effect=responses), patch(
+            "personal_knowledge_base.model_providers.time.sleep"
+        ):
+            vectors = embedding(self.tenant, ["hello"])
+
+        self.assertEqual(vectors, [[0.1, 0.2, 0.3, 0.4]])
+
+    @override_settings(LLM_USE_ENV_EMBEDDING=True, **EMBEDDING_ENV)
+    def test_rejected_credentials_are_not_retried(self):
+        rejected = requests.HTTPError("401 Unauthorized", response=Mock(status_code=401))
+        with patch("personal_knowledge_base.model_providers.openai_compatible_embedding", side_effect=rejected) as call, patch(
+            "personal_knowledge_base.model_providers.time.sleep"
+        ):
+            with self.assertRaises(EmbeddingUnavailableError):
+                embedding(self.tenant, ["hello"])
+
+        self.assertEqual(call.call_count, 1)
+
+
+class EmbeddingOutageTests(TestCase):
+    def setUp(self):
+        self.tenant = Tenant.objects.create(name="outage")
+        self.kb = KnowledgeBase.objects.create(tenant=self.tenant, name="kb")
+        knowledge = Knowledge.objects.create(tenant=self.tenant, knowledge_base=self.kb, title="doc", parse_status="completed")
+        self.chunk = Chunk.objects.create(
+            tenant=self.tenant, knowledge_base=self.kb, knowledge=knowledge, content="kiwi orchard notes", chunk_index=0
+        )
+
+    def provider_down(self):
+        return patch("personal_knowledge_base.model_providers.openai_compatible_embedding", side_effect=requests.ConnectionError("down"))
+
+    def test_chunk_is_not_indexed_when_its_embedding_cannot_be_computed(self):
+        with override_settings(LLM_USE_ENV_EMBEDDING=True, LLM_EMBEDDING_API_KEY="key"), self.provider_down(), patch(
+            "personal_knowledge_base.model_providers.time.sleep"
+        ):
+            with self.assertRaises(EmbeddingUnavailableError):
+                index_chunk(self.chunk)
+
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM chunks_fts WHERE chunk_id = %s", [self.chunk.id])
+            self.assertEqual(cursor.fetchone()[0], 0)
+
+    def test_search_falls_back_to_full_text_when_the_query_cannot_be_embedded(self):
+        index_chunk(self.chunk)
+
+        with override_settings(LLM_USE_ENV_EMBEDDING=True, LLM_EMBEDDING_API_KEY="key"), self.provider_down(), patch(
+            "personal_knowledge_base.model_providers.time.sleep"
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "kiwi", 3)
+
+        self.assertEqual([item["chunk_id"] for item in results], [self.chunk.id])

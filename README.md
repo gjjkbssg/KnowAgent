@@ -232,7 +232,7 @@ LLM_CHAT_MODEL=qwen3.7-plus
 
 Embedding、Rerank 和 VLM 可以使用不同服务，完整字段见 [`.env.example`](.env.example)。
 
-语义向量召回需要 `LLM_USE_ENV_EMBEDDING=true` 并配置 Embedding 的 API Key（未单独配置时使用 `LLM_API_KEY`）；否则向量通道使用本地哈希向量，只能提供字面相似度。切换后运行 `python manage.py rebuild_vector_index` 重建索引。
+语义向量召回需要 `LLM_USE_ENV_EMBEDDING=true` 并配置 Embedding 的 API Key（未单独配置时使用 `LLM_API_KEY`）；否则向量通道使用本地哈希向量，只能提供字面相似度。切换后运行 `python manage.py rebuild_vector_index` 重建索引。配置了 Embedding 服务后如果调用失败，文档入库会报错（可重试），不会悄悄改用哈希向量；查询时向量通道返回空，检索退化为全文与图谱。
 
 不使用图谱与长期记忆时，将 `NEO4J_ENABLE=false`。
 

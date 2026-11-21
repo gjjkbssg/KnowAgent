@@ -15,6 +15,8 @@ from typing import Iterable
 
 THINK_TAG_RE = re.compile(r"(?s)<think>.*?</think>")
 MAX_HISTORY_TOOL_OUTPUT_CHARS = 1000
+REWRITE_HISTORY_ROUNDS = 3
+REWRITE_HISTORY_CHARS = 300
 
 
 def normalize_max_rounds(value, default: int = 5, minimum: int = 1, maximum: int = 20) -> int:
@@ -194,6 +196,23 @@ def build_rag_history_messages(history_messages: Iterable, max_rounds: int = 5) 
         if user_content and assistant_content:
             result.append({"role": "user", "content": user_content})
             result.append({"role": "assistant", "content": assistant_content})
+    return result
+
+
+def build_rewrite_history(history_messages: Iterable, max_rounds: int = REWRITE_HISTORY_ROUNDS) -> list[dict]:
+    """
+    查询改写用的精简历史：最近几轮的原始问题和回答，用来消解「它」「这个」之类的指代。
+    用 content 而不是 rendered_content，避免把上一轮的检索上下文也带进改写 prompt。
+    """
+    result: list[dict] = []
+    for turn in _complete_turns(history_messages, max_rounds):
+        questions = [m for m in turn if _message_value(m, "role") == "user"]
+        answers = [m for m in turn if _message_value(m, "role") == "assistant"]
+        question = str(_message_value(questions[0], "content", "") or "").strip()
+        answer = _strip_think_tags(_message_value(answers[-1], "content", "")).strip()
+        if question and answer:
+            result.append({"role": "user", "content": question[:REWRITE_HISTORY_CHARS]})
+            result.append({"role": "assistant", "content": answer[:REWRITE_HISTORY_CHARS]})
     return result
 
 

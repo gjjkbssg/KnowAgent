@@ -883,7 +883,7 @@ class QueryKnowledgeGraphTool(Tool):
         }
 
     def execute(self, args: dict, context: dict) -> ToolResult:
-        from .graph_rag import graph_search_results, expand_relation_context
+        from .graph_rag import graph_search, expand_relation_context
 
         query = args.get("query", "")
         tenant_id = context.get("tenant_id")
@@ -897,9 +897,9 @@ class QueryKnowledgeGraphTool(Tool):
 
         try:
             # 查询知识图谱
-            results = graph_search_results(tenant_id, kb_ids, query, top_k=10)
+            results, relations = graph_search(tenant_id, kb_ids, query, top_k=10)
 
-            if not results:
+            if not results and not relations:
                 return ToolResult(output="No graph results found. The knowledge graph may not be configured or no matching entities found.")
 
             # 扩展关系上下文
@@ -915,6 +915,10 @@ class QueryKnowledgeGraphTool(Tool):
                 lines.append(f"[{i}] {title} ({match_type})\n{content}")
 
             output = "\n\n".join(lines)
+            if relations:
+                # 把实体关系显式给模型，否则它只能从片段文本里猜关系链
+                triples = "\n".join(f"- {r['node1']} -[{r['type']}]-> {r['node2']}" for r in relations)
+                output = f"Relations:\n{triples}\n\nChunks:\n{output}"
             return ToolResult(output=output[:8000], data=results)
 
         except Exception as e:
