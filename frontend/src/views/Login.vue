@@ -6,7 +6,7 @@ import { useAuthStore } from '../stores/auth'
 const auth = useAuthStore()
 const router = useRouter()
 const email = ref('admin@knowledge.local')
-const password = ref('admin123456')
+const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
@@ -25,8 +25,15 @@ async function submit() {
 
 async function quickStart() {
   loading.value = true
-  await auth.autoSetup()
-  router.push('/platform/knowledge-bases')
+  error.value = ''
+  try {
+    await auth.autoSetup()
+    router.push('/platform/knowledge-bases')
+  } catch (e: any) {
+    error.value = e?.error?.code === 'auto_login_disabled' ? '免密进入已关闭，请使用密码登录' : e?.error?.message || e?.message || '自动初始化失败'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

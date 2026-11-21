@@ -24,7 +24,7 @@ from .context_manager import estimate_tokens, estimate_messages_tokens, manage_c
 
 logger = logging.getLogger(__name__)
 
-MAX_REPEATED_RESPONSES = 2
+MAX_REPEATED_TOOL_ROUNDS = 2  # 连续多少轮发出完全相同的工具调用即判定为卡死
 MAX_CONTEXT_TOKENS = 120000  # 约 120K tokens 上限
 MAX_TOOL_OUTPUT = 16 * 1024
 PARALLEL_TOOL_WORKERS = 4
@@ -173,6 +173,7 @@ class AgentEngine:
         self.allowed_tools = self.config.get("allowed_tools", DEFAULT_ALLOWED_TOOLS)
         if not self.config.get("allow_actor_tool", True):
             self.allowed_tools = [tool for tool in self.allowed_tools if tool != "actor"]
+        self._granted_tools = {tool["function"]["name"] for tool in self.registry.to_openai_tools(self.allowed_tools)}
         self.model_id = self.config.get("model_id", "")
         self.parallel_tools = self.config.get("parallel_tool_calls", True)
         self.actor_id = self.config.get("actor_id", "main")
@@ -211,6 +212,9 @@ class AgentEngine:
             "parent_message_id": self.parent_message_id,
             "allow_actor_tool": bool(self.config.get("allow_actor_tool", True)),
             "model_id": self.model_id,
+            # 本次执行内的已见内容去重；不能跨会话或跨子 Agent 共享
+            "seen_chunks": set(),
+            "seen_wiki_slugs": set(),
         }
 
     def _call_llm_with_tools(self, messages: list[dict], max_retries: int = 3) -> dict:
@@ -246,6 +250,15 @@ class AgentEngine:
         from .model_providers import chat_completion
         return chat_completion(self.tenant, messages, model_id=self.model_id)
 
+    def _run_tool(self, tool_name: str, args: dict, context: dict) -> ToolResult:
+        """执行工具前校验白名单：模型只能调用本 Agent 被授予的工具。"""
+        if tool_name not in self._granted_tools:
+            return ToolResult(
+                output="",
+                error=f"Tool not allowed for this agent: {tool_name}. Available tools: {sorted(self._granted_tools)}",
+            )
+        return self.registry.execute_tool(tool_name, args, context)
+
     def _execute_single_tool(self, tc: dict, context: dict) -> tuple[str, ToolCallRecord]:
         """执行单个工具调用。"""
         tc_id = tc.get("id", "")
@@ -258,9 +271,39 @@ class AgentEngine:
         except json.JSONDecodeError:
             args = {}
 
-        tool_result = self.registry.execute_tool(tool_name, args, context)
+        tool_result = self._run_tool(tool_name, args, context)
         record = ToolCallRecord(id=tc_id, name=tool_name, arguments=args, result=tool_result)
         return tc_id, record
+
+    @staticmethod
+    def _tool_round_signature(tool_calls: list[dict]) -> tuple | None:
+        """
+        一轮工具调用的规范化签名（工具名 + 参数），用于检测原地打转。
+        轮询后台子 Agent（actor status/wait）本来就需要重复调用，返回 None 表示不参与检测。
+        """
+        signature = []
+        for tc in tool_calls:
+            fn = tc.get("function", {})
+            raw_args = fn.get("arguments", "{}")
+            try:
+                args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+                normalized = json.dumps(args, sort_keys=True, ensure_ascii=False)
+            except (json.JSONDecodeError, TypeError):
+                args, normalized = {}, str(raw_args)
+            if fn.get("name") == "actor" and isinstance(args, dict) and args.get("action") in {"status", "wait"}:
+                return None
+            signature.append((fn.get("name", ""), normalized))
+        return tuple(sorted(signature))
+
+    def _answer_without_tools(self, messages: list[dict], steps: list) -> str:
+        """卡死时不再给工具，要求模型基于已有证据直接作答。"""
+        nudge = {"role": "user", "content": "你在重复调用相同的工具且没有新信息。请停止调用工具，基于已获得的信息直接给出最终回答；信息不足的部分请明确说明。"}
+        try:
+            content = self._call_llm_simple([*messages, nudge])
+        except Exception:
+            logger.exception("[Agent] Forced final answer failed")
+            content = ""
+        return content.strip() or _synthesize_from_tool_results(steps, "")
 
     def execute(
         self,
@@ -270,10 +313,6 @@ class AgentEngine:
         on_event: callable = None,
     ) -> AgentResult:
         from .observability import trace_agent_execution, trace_llm_call, trace_tool_execution
-        from .agent_tools import clear_seen_cache
-
-        # 清除已见内容缓存（每次 Agent 执行开始时）
-        clear_seen_cache()
 
         start_time = time.monotonic()
         steps: list[AgentStep] = []
@@ -290,8 +329,9 @@ class AgentEngine:
             messages.extend(history)
         messages.append({"role": "user", "content": user_content})
 
-        tools_available = bool(self.registry.to_openai_tools(self.allowed_tools))
-        last_contents: list[str] = []
+        tools_available = bool(self._granted_tools)
+        previous_round_signature = None
+        repeated_rounds = 1
         final_content = ""
 
         # 顶层 Agent 追踪
@@ -365,10 +405,17 @@ class AgentEngine:
 
                     final_content = content
                     steps.append(step)
-                    last_contents.append(content.strip())
-                    if len(last_contents) >= MAX_REPEATED_RESPONSES and len(set(last_contents[-MAX_REPEATED_RESPONSES:])) == 1:
-                        return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="stuck")
                     return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="completed")
+
+                # ── 卡死检测：连续多轮发出完全相同的工具调用 ────────────
+                round_signature = self._tool_round_signature(tool_calls)
+                is_repeat = round_signature is not None and round_signature == previous_round_signature
+                repeated_rounds = repeated_rounds + 1 if is_repeat else 1
+                previous_round_signature = round_signature
+                if repeated_rounds >= MAX_REPEATED_TOOL_ROUNDS:
+                    logger.warning(f"[Agent] Identical tool calls repeated {repeated_rounds} rounds at iteration {iteration}, forcing final answer")
+                    final_content = self._answer_without_tools(messages, steps)
+                    return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="stuck")
 
                 # ── 有工具调用 → 执行工具（支持并行）─────────────────
                 assistant_msg = {"role": "assistant", "content": content, "tool_calls": tool_calls}
@@ -416,7 +463,7 @@ class AgentEngine:
                         if on_event:
                             on_event("tool_call", {"iteration": iteration, "name": tool_name, "arguments": args, "tool_call_id": tc_id})
 
-                        tool_result = self.registry.execute_tool(tool_name, args, context)
+                        tool_result = self._run_tool(tool_name, args, context)
                         record = ToolCallRecord(id=tc_id, name=tool_name, arguments=args, result=tool_result)
                         step.tool_calls.append(record)
 

@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from personal_knowledge_base.authentication import require_auth
+from personal_knowledge_base.authentication import require_auth, tenant_scoped
 from personal_knowledge_base.models import KnowledgeBase, WikiFolder, WikiLogEntry, WikiPage, WikiPendingOp
 from personal_knowledge_base.responses import fail, ok
 from personal_knowledge_base.serializers import wiki_folder_dict, wiki_page_dict
@@ -105,6 +105,7 @@ def visible_wiki_pages_queryset(kb_or_id):
 
 
 @csrf_exempt
+@tenant_scoped
 def wiki_pages(request, kb_id, slug=None):
     _, tenant = auth_context(request)
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
@@ -153,6 +154,7 @@ def wiki_pages(request, kb_id, slug=None):
 
 
 @csrf_exempt
+@tenant_scoped
 def wiki_folders(request, kb_id, folder_id=None):
     _, tenant = auth_context(request)
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
@@ -189,6 +191,7 @@ def wiki_folders(request, kb_id, folder_id=None):
 # ── Wiki Index & Search ─────────────────────────────────────────────
 
 
+@tenant_scoped
 def wiki_index(request, kb_id):
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
     pages = visible_wiki_pages_queryset(kb).order_by("page_type", "sort_order", "title")
@@ -200,6 +203,7 @@ def wiki_index(request, kb_id):
     return ok({"groups": groups, "items": [wiki_page_dict(p) for p in pages]})
 
 
+@tenant_scoped
 def wiki_search(request, kb_id):
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
     q = request.GET.get("q") or request.GET.get("query") or ""
@@ -309,6 +313,7 @@ def wiki_graph_subgraph(kb_id, request):
     return {"nodes": nodes, "edges": edges, "meta": meta}, None
 
 
+@tenant_scoped
 def wiki_graph(request, kb_id):
     data, error = wiki_graph_subgraph(kb_id, request)
     if error:
@@ -319,6 +324,7 @@ def wiki_graph(request, kb_id):
 # ── Wiki Stats, Log, Lint, Issues ───────────────────────────────────
 
 
+@tenant_scoped
 def wiki_stats(request, kb_id):
     pages = visible_wiki_pages_queryset(kb_id)
     folders = WikiFolder.objects.filter(knowledge_base_id=kb_id)
@@ -342,6 +348,7 @@ def wiki_stats(request, kb_id):
     })
 
 
+@tenant_scoped
 def wiki_log(request, kb_id):
     items = [
         {
@@ -360,9 +367,11 @@ def wiki_log(request, kb_id):
     return ok({"items": items})
 
 
+@tenant_scoped
 def wiki_lint(request, kb_id):
     return ok({"issues": []})
 
 
+@tenant_scoped
 def wiki_issues(request, kb_id, issue_id=None):
     return ok({"items": []} if not issue_id else {"id": issue_id, "status": "resolved"})

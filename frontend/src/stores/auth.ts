@@ -8,6 +8,8 @@ export const useAuthStore = defineStore('auth', {
     user: JSON.parse(readStorage('personal_kb_user') || 'null'),
     tenant: JSON.parse(readStorage('personal_kb_tenant') || 'null'),
     token: readStorage('personal_kb_token') || '',
+    // 首次初始化生成的管理员临时密码，只在内存里保留到用户确认
+    tempPassword: '',
   }),
   actions: {
     persist(data: any) {
@@ -23,12 +25,14 @@ export const useAuthStore = defineStore('auth', {
     async autoSetup() {
       const res: any = await api.autoSetup()
       this.persist(res.data)
+      this.tempPassword = res.data.temp_password || ''
     },
     async login(email: string, password: string) {
       const res: any = await api.login({ email, password })
       this.persist(res.data)
     },
     logout() {
+      this.tempPassword = ''
       this.user = null
       this.tenant = null
       this.token = ''

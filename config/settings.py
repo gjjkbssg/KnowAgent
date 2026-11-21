@@ -44,6 +44,9 @@ if not SECRET_KEY:
 DEBUG = env_bool("DJANGO_DEBUG", True)
 
 # ALLOWED_HOSTS: 生产环境必须限制
+# 免密自动登录：只给本地开发用，默认跟随 DEBUG。关闭后 auto-setup 只负责首次初始化管理员。
+AUTO_LOGIN_ENABLED = env_bool("KNOWAGENT_AUTO_LOGIN", DEBUG)
+
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 
 APP_NAME = os.environ.get("APP_NAME", "个人轻量知识库")

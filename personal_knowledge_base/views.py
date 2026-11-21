@@ -23,7 +23,7 @@ from django.utils import timezone
 from django.utils.http import content_disposition_header
 from django.views.decorators.csrf import csrf_exempt
 
-from .authentication import hash_password, issue_tokens, require_auth, role_for, verify_password
+from .authentication import hash_password, issue_tokens, require_auth, role_for, tenant_scoped, verify_password
 from .agent_history import (
     build_agent_context_if_needed,
     build_agent_history_messages,
@@ -408,29 +408,6 @@ def auth_register(request):
     TenantMember.objects.create(user=user, tenant=tenant, role="owner")
     token, refresh = issue_tokens(user)
     return ok({"user": user_dict(user), "tenant": tenant_dict(tenant), "token": token, "refresh_token": refresh}, status=201)
-
-
-@csrf_exempt
-def auth_auto_setup(request):
-    user = User.objects.order_by("created_at").first()
-    if not user:
-        # 生成随机密码，首次登录后必须修改
-        random_password = secrets.token_urlsafe(12)
-        request._body = json.dumps({"username": "admin", "email": "admin@knowledge.local", "password": random_password}).encode()
-        response = auth_register(request)
-        # 在响应中添加临时密码提示
-        if hasattr(response, 'content'):
-            try:
-                data = json.loads(response.content)
-                if 'data' in data:
-                    data['data']['temp_password'] = random_password
-                    data['data']['require_password_change'] = True
-                    response.content = json.dumps(data).encode()
-            except Exception:
-                pass
-        return response
-    token, refresh = issue_tokens(user)
-    return ok({"user": user_dict(user), "tenant": tenant_dict(user.tenant), "token": token, "refresh_token": refresh})
 
 
 @csrf_exempt
@@ -2672,8 +2649,12 @@ def wiki_issues(request, kb_id, issue_id=None):
 
 
 @csrf_exempt
+@tenant_scoped
 def embed_public(request, channel_id, action=None, session_id=None, chunk_id=None):
-    channel = GenericResource.objects.filter(id=channel_id, resource_type="embed_channels").first()
+    tenant = request.auth_tenant
+    channel = GenericResource.objects.filter(id=channel_id, resource_type="embed_channels", tenant=tenant).first()
+    if session_id:
+        get_object_or_404(Session, id=session_id, tenant=tenant)
     if action == "exchange":
         return ok({"token": f"embed-{channel_id}-{secrets.token_urlsafe(12)}", "session": {}})
     if action == "config":
@@ -2681,10 +2662,9 @@ def embed_public(request, channel_id, action=None, session_id=None, chunk_id=Non
     if action == "suggested-questions":
         return ok({"items": []})
     if action == "chunks":
-        chunk = get_object_or_404(Chunk, id=chunk_id)
+        chunk = get_object_or_404(Chunk, id=chunk_id, tenant=tenant)
         return ok(chunk_dict(chunk))
     if action == "sessions":
-        tenant = Tenant.objects.first()
         session = Session.objects.create(tenant=tenant, title="Embed chat")
         return ok(session_dict(session), status=201)
     if action in {"knowledge-chat", "agent-chat"}:
@@ -2699,10 +2679,16 @@ def embed_public(request, channel_id, action=None, session_id=None, chunk_id=Non
 
 
 def serve_file(request):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
     file_path = request.GET.get("file_path") or request.GET.get("path") or ""
     file_path = file_path.removeprefix("local://").lstrip("/")
     if not file_path:
         return fail("file_path required", 400)
+    # Uploads and extracted images are stored under "tenant-<id>/".
+    if not file_path.startswith(f"tenant-{tenant.id}/") or not default_storage.exists(file_path):
+        return fail("not found", 404)
     return FileResponse(default_storage.open(file_path, "rb"), content_type=mimetypes.guess_type(file_path)[0] or "application/octet-stream")
 
 
