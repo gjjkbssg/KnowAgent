@@ -1,8 +1,10 @@
 import json
 import tempfile
+from io import StringIO
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.core.management import call_command
 from django.test import Client, TestCase, override_settings
 
 from .models import Chunk, Knowledge, KnowledgeBase, Message, Session, Tenant
@@ -144,3 +146,20 @@ class AutoSetupTests(TestCase):
         again = self.auto_setup()
         self.assertEqual(again.status_code, 200)
         self.assertTrue(again.json()["data"]["token"])
+
+    @override_settings(AUTO_LOGIN_ENABLED=False)
+    def test_reset_password_command_recovers_an_admin_whose_password_was_never_saved(self):
+        old_token = self.auto_setup().json()["data"]["token"]
+        output = StringIO()
+
+        call_command("reset_password", stdout=output)
+
+        password = output.getvalue().strip().rsplit(": ", 1)[1]
+        login = self.client.post(
+            "/api/v1/auth/login",
+            data=json.dumps({"email": "admin@knowledge.local", "password": password}),
+            content_type="application/json",
+        )
+        self.assertEqual(login.status_code, 200)
+        stale = self.client.get("/api/v1/knowledge-bases", HTTP_AUTHORIZATION=f"Bearer {old_token}")
+        self.assertEqual(stale.status_code, 401)

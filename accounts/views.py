@@ -107,7 +107,7 @@ def auth_auto_setup(request):
                 pass
         return response
     if not settings.AUTO_LOGIN_ENABLED:
-        return fail("passwordless login is disabled, sign in with your password", 403, "auto_login_disabled")
+        return fail("passwordless login is disabled; sign in with your password, or run `python manage.py reset_password` on the server if it is lost", 403, "auto_login_disabled")
     token, refresh = issue_tokens(user)
     return ok({"user": user_dict(user), "tenant": tenant_dict(user.tenant), "token": token, "refresh_token": refresh})
 
