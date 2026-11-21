@@ -72,6 +72,12 @@ class Command(BaseCommand):
         parser.add_argument("--questions", default="interview_materials/evaluation_questions.json")
         parser.add_argument("--output-dir", default="interview_materials/results")
         parser.add_argument("--kb-name", default=DEMO_KB_NAME)
+        parser.add_argument(
+            "--noise-kb-name",
+            action="append",
+            default=[],
+            help="Extra knowledge bases searched together with --kb-name, as distractors.",
+        )
         parser.add_argument("--output-name", default="retrieval_evaluation")
         parser.add_argument("--with-generation", action="store_true")
         parser.add_argument("--generation-limit", type=int, default=5)
@@ -85,20 +91,26 @@ class Command(BaseCommand):
         kb = KnowledgeBase.objects.filter(tenant=tenant, name=options["kb_name"]).first()
         if not kb:
             raise CommandError(f"Knowledge base does not exist: {options['kb_name']}")
+        kb_ids = [kb.id]
+        for name in options["noise_kb_name"]:
+            noise = KnowledgeBase.objects.filter(tenant=tenant, name=name).first()
+            if not noise:
+                raise CommandError(f"Knowledge base does not exist: {name}")
+            kb_ids.append(noise.id)
 
         variants = ["fts_only", "vector_only", "hybrid_raw", "hybrid_rerank", "full_pipeline"]
         details = []
         for question in questions:
             query = question["question"]
-            fts, fts_ms = _measure(lambda: _fts_search(tenant.id, {kb.id}, query, TOP_K))
-            vector, vector_ms = _measure(lambda: _vector_search(tenant.id, {kb.id}, query, TOP_K))
+            fts, fts_ms = _measure(lambda: _fts_search(tenant.id, set(kb_ids), query, TOP_K))
+            vector, vector_ms = _measure(lambda: _vector_search(tenant.id, set(kb_ids), query, TOP_K))
             combined = rrf_fuse([_ranked_ids(fts), _ranked_ids(vector)])
 
             fts_rows = _chunk_rows(_rank_scores(fts), fts)
             vector_rows = _chunk_rows(_rank_scores(vector), vector)
             raw_rows = _chunk_rows(_rank_scores(combined), combined)
             reranked_rows, rerank_ms = _measure(lambda: rerank(query, _chunk_rows(_rank_scores(combined, 20), combined), TOP_K, tenant))
-            full_rows, full_ms = _measure(lambda: hybrid_search(tenant.id, [kb.id], query, TOP_K))
+            full_rows, full_ms = _measure(lambda: hybrid_search(tenant.id, kb_ids, query, TOP_K))
 
             variant_rows = {
                 "fts_only": (fts_rows, fts_ms),
@@ -141,7 +153,8 @@ class Command(BaseCommand):
         report = {
             "knowledge_base": {"id": kb.id, "name": kb.name},
             "question_count": len(questions),
-            "chunk_count": Chunk.objects.filter(knowledge_base=kb).count(),
+            "chunk_count": Chunk.objects.filter(knowledge_base_id__in=kb_ids).count(),
+            "noise_knowledge_bases": options["noise_kb_name"],
             "metric_definition": {
                 "hit_at_k": "At least one gold item appears in the top k results.",
                 "recall_at_k": "Fraction of distinct gold items found in the top k results.",

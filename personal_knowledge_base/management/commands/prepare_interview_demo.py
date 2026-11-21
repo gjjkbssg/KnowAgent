@@ -24,6 +24,7 @@ class Command(BaseCommand):
             default="interview_materials/demo_corpus",
             help="Directory containing the synthetic demo corpus.",
         )
+        parser.add_argument("--kb-name", default=DEMO_KB_NAME)
 
     def handle(self, *args, **options):
         tenant = Tenant.objects.order_by("created_at").first()
@@ -34,7 +35,7 @@ class Command(BaseCommand):
         if not corpus_dir.is_dir():
             raise CommandError(f"Corpus directory does not exist: {corpus_dir}")
 
-        existing = KnowledgeBase.objects.filter(tenant=tenant, name=DEMO_KB_NAME).first()
+        existing = KnowledgeBase.objects.filter(tenant=tenant, name=options["kb_name"]).first()
         if existing and options["rebuild"]:
             for item in Knowledge.objects.filter(knowledge_base=existing):
                 delete_knowledge_content(item)
@@ -45,7 +46,7 @@ class Command(BaseCommand):
 
         kb = existing or KnowledgeBase.objects.create(
             tenant=tenant,
-            name=DEMO_KB_NAME,
+            name=options["kb_name"],
             description="小米训练营面试用合成智能会议室语料，展示混合检索、Rerank、Wiki、GraphRAG 和多模态解析。",
             type="document",
             chunking_config={"chunk_size": 420, "chunk_overlap": 80},

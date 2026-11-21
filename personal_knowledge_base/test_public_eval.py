@@ -10,6 +10,7 @@ from django.test import TestCase, override_settings
 
 from .management.commands.prepare_public_eval import PUBLIC_KB_NAME
 from .models import Chunk, Knowledge, KnowledgeBase, Tenant
+from .search import index_chunk
 
 SAMPLE = {
     "passages": {
@@ -59,6 +60,27 @@ class PreparePublicEvalTests(TestCase):
         self.assertEqual(len(report["by_category"]), 5)
         # 三个段落全部会进 Top-10，按段落 ID 标注的正例一定被找到
         self.assertEqual(next(row for row in report["summary"] if row["variant"] == "full_pipeline")["hit_at_10"], 1.0)
+
+    def test_noise_knowledge_bases_are_searched_together_with_the_target(self):
+        self.prepare()
+        noise = KnowledgeBase.objects.create(tenant=self.tenant, name="noise")
+        item = Knowledge.objects.create(tenant=self.tenant, knowledge_base=noise, title="noise", source="n1", parse_status="completed")
+        index_chunk(Chunk.objects.create(tenant=self.tenant, knowledge_base=noise, knowledge=item, content="法定节假日安排说明", chunk_index=0))
+
+        call_command(
+            "run_interview_eval",
+            kb_name=PUBLIC_KB_NAME,
+            noise_kb_name=["noise"],
+            questions=str(self.questions),
+            output_dir=str(self.out),
+            output_name="noisy",
+            stdout=io.StringIO(),
+        )
+
+        report = json.loads((self.out / "noisy.json").read_text(encoding="utf-8"))
+        self.assertEqual((report["chunk_count"], report["noise_knowledge_bases"]), (4, ["noise"]))
+        titles = {title for row in report["details"] for title in row["titles"]}
+        self.assertIn("noise", titles)
 
     def test_refuses_to_overwrite_without_rebuild(self):
         self.prepare()
