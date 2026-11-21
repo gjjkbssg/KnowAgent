@@ -619,6 +619,18 @@ def prefer_result(left: dict, right: dict) -> dict:
     return left
 
 
+def prefer_redundant(left: dict, right: dict) -> dict:
+    """
+    两条内容重复时留哪一条。篇幅相近算近似重复，留分数高的；
+    一条被另一条包含时留包含方，否则几个词的短片段会顶掉包含它的完整片段。
+    """
+    left_size = len(token_set(left.get("content", ""))) or len(normalize_content(left.get("content", "")))
+    right_size = len(token_set(right.get("content", ""))) or len(normalize_content(right.get("content", "")))
+    if min(left_size, right_size) >= PARTIAL_OVERLAP_THRESHOLD * max(left_size, right_size):
+        return prefer_result(left, right)
+    return left if left_size > right_size else right
+
+
 def deduplicate_results(results: list[dict]) -> list[dict]:
     by_chunk: dict[str, dict] = {}
     by_signature: dict[str, dict] = {}
@@ -645,13 +657,12 @@ def deduplicate_results(results: list[dict]) -> list[dict]:
     ordered = sorted(by_chunk.values(), key=lambda row: float(row.get("score") or 0), reverse=True)
     unique: list[dict] = []
     for item in ordered:
-        duplicate_index = next((idx for idx, kept in enumerate(unique) if is_content_redundant(item, kept)), None)
-        if duplicate_index is None:
-            unique.append(item)
+        redundant = [idx for idx, kept in enumerate(unique) if is_content_redundant(item, kept)]
+        if any(prefer_redundant(unique[idx], item) is not item for idx in redundant):
             continue
-        preferred = prefer_result(unique[duplicate_index], item)
-        if preferred is item:
-            unique[duplicate_index] = item
+        # 一条完整片段可能同时包含好几条已保留的短片段，全部换掉
+        unique = [kept for idx, kept in enumerate(unique) if idx not in redundant]
+        unique.append(item)
     return sorted(unique, key=lambda row: float(row.get("score") or 0), reverse=True)
 
 

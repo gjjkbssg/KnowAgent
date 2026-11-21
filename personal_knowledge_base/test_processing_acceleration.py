@@ -6,7 +6,12 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 
 from personal_knowledge_base.model_providers import openai_compatible_chat_raw
-from personal_knowledge_base.graph_rag import build_graph_for_chunks, DEFAULT_EXTRACT_CONFIG
+from personal_knowledge_base.graph_rag import (
+    DEFAULT_EXTRACT_CONFIG,
+    GRAPH_EXTRACT_MAX_TOKENS,
+    build_graph_for_chunks,
+    extract_entities_for_batch,
+)
 from personal_knowledge_base.wiki_ingest import generate_candidate_pages_batch
 
 
@@ -68,8 +73,25 @@ class StructuredRequestTests(SimpleTestCase):
         mapped = {chunk_id for node in graphs[0]["node"] for chunk_id in node["chunks"]}
         self.assertEqual(mapped, {chunk.id for chunk in chunks})
         self.assertEqual(peak, 2)
-        self.assertTrue(all(options["max_tokens"] == 1200 for _, options in calls))
+        self.assertTrue(all(options["max_tokens"] == GRAPH_EXTRACT_MAX_TOKENS for _, options in calls))
         self.assertTrue(all(options["enable_thinking"] is False for _, options in calls))
+
+    def test_truncated_batch_output_falls_back_to_one_chunk_per_request(self):
+        chunks = [Mock(id=f"chunk-{index}", content=f"content {index}") for index in range(3)]
+        batch_sizes = []
+
+        def complete(role, prompt, *args, **kwargs):
+            keys = [line.split()[1] for line in prompt.splitlines() if line.startswith("CHUNK ")]
+            batch_sizes.append(len(keys))
+            if len(keys) > 1:
+                return '[{"chunk_key": "c001", "entities": [{"name": "cut off he'
+            return json.dumps([{"chunk_key": keys[0], "entities": [{"name": "entity", "attributes": []}]}])
+
+        with patch("personal_knowledge_base.graph_rag.role_completion", side_effect=complete):
+            graphs = extract_entities_for_batch(chunks, DEFAULT_EXTRACT_CONFIG)
+
+        self.assertEqual(batch_sizes, [3, 1, 1, 1])
+        self.assertEqual([graph["node"][0]["chunks"] for graph in graphs], [["chunk-0"], ["chunk-1"], ["chunk-2"]])
 
     def test_wiki_generates_ten_pages_in_two_batches(self):
         knowledge = Mock()

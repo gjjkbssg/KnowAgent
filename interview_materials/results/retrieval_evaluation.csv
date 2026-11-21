@@ -1,6 +1,6 @@
 ﻿variant,questions,hit_at_5,recall_at_5,mrr,avg_latency_ms
-fts_only,10,0.8,0.7667,0.5083,0.83
-vector_only,10,1.0,1.0,0.9,256.89
-hybrid_raw,10,1.0,0.9667,0.825,257.72
-hybrid_rerank,10,1.0,1.0,0.95,524.28
-full_pipeline,10,1.0,1.0,0.55,11505.69
+fts_only,10,0.7,0.7,0.4833,0.36
+vector_only,10,1.0,1.0,0.9,930.32
+hybrid_raw,10,1.0,1.0,0.8,930.68
+hybrid_rerank,10,1.0,1.0,1.0,2217.37
+full_pipeline,10,1.0,1.0,1.0,3897.43
