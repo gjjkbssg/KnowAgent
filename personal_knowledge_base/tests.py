@@ -155,8 +155,12 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
             "/api/v1/models": "models_config.views",
             "/api/v1/knowledge-bases/demo-kb/wiki/graph": "wiki.views",
             "/api/v1/knowledge-bases/demo-kb/wiki/move-page": "agent.views",
-            "/api/v1/tenants/1/invitations": "personal_knowledge_base.views",
-            "/api/v1/me/invitations": "personal_knowledge_base.views",
+            "/api/v1/tenants/1/leave": "agent.views",
+            "/api/v1/tenants/1/invitations": "agent.views",
+            "/api/v1/tenants/1/invite-links": "agent.views",
+            "/api/v1/me/invitations": "agent.views",
+            "/api/v1/me/invitations/probe/accept": "agent.views",
+            "/api/v1/me/invitations/probe/decline": "agent.views",
             "/api/v1/system/info": "personal_knowledge_base.views",
         }
         for path, module in expected_modules.items():

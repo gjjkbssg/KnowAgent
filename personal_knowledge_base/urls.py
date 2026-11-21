@@ -1,5 +1,7 @@
 from django.urls import path
 
+from knowledge import views as knowledge_views
+
 from . import eval_views, views
 
 
@@ -9,7 +11,7 @@ urlpatterns = [
     path("knowledge/move/progress/<str:task_id>", views.task_progress),
 
     # ── Chunk questions ──────────────────────────────────────────────────────
-    path("chunks/by-id/<str:chunk_id>/questions", views.chunks_collection),
+    path("chunks/by-id/<str:chunk_id>/questions", knowledge_views.chunks_collection),
 
     # ── Initialization ───────────────────────────────────────────────────────
     path("initialization/config/<str:kb_id>", views.initialization_config),

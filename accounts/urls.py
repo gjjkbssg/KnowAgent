@@ -1,7 +1,7 @@
 from django.urls import path
 
+from agent.views import generic_action, generic_collection
 from personal_knowledge_base.responses import ok
-from personal_knowledge_base.views import generic_action, generic_collection
 
 from . import views
 
