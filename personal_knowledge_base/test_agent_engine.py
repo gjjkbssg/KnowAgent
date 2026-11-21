@@ -126,6 +126,14 @@ class ToolIsolationTests(TestCase):
         self.assertEqual(get.call_args.kwargs["headers"]["Host"], "example.com:8443")
         self.assertFalse(get.call_args.kwargs["allow_redirects"])
 
+    def test_web_fetch_sends_internationalized_hostnames_in_ascii_form(self):
+        with patch("socket.getaddrinfo", return_value=PUBLIC_ADDRESS) as resolve, patch("requests.Session.get", return_value=FakeResponse(text="ok")) as get:
+            result = get_tool_registry().execute_tool("web_fetch", {"url": "http://例子.中国/路径"}, {})
+
+        self.assertEqual(result.error, "")
+        self.assertEqual(resolve.call_args.args[0], "xn--fsqu00a.xn--fiqs8s")
+        self.assertEqual(get.call_args.kwargs["headers"]["Host"], "xn--fsqu00a.xn--fiqs8s")
+
     def test_web_fetch_refuses_internal_addresses(self):
         urls = ["http://127.0.0.1:8000/health", "http://169.254.169.254/latest/meta-data/", "http://10.0.0.5/", "file:///etc/passwd"]
         with patch("requests.Session.get") as get:
