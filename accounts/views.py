@@ -1,6 +1,7 @@
 import json
 import secrets
 
+from django.conf import settings
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -105,6 +106,8 @@ def auth_auto_setup(request):
             except Exception:
                 pass
         return response
+    if not settings.AUTO_LOGIN_ENABLED:
+        return fail("passwordless login is disabled, sign in with your password", 403, "auto_login_disabled")
     token, refresh = issue_tokens(user)
     return ok({"user": user_dict(user), "tenant": tenant_dict(user.tenant), "token": token, "refresh_token": refresh})
 
@@ -307,7 +310,10 @@ def tenant_kv(request, key):
 # ---------------------------------------------------------------------------
 
 def audit_logs(request, tenant_id=None):
-    qs = AuditLog.objects.all().order_by("-created_at")
-    if tenant_id:
-        qs = qs.filter(tenant_id=tenant_id)
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if tenant_id and int(tenant_id) != tenant.id:
+        return fail("forbidden", 403)
+    qs = AuditLog.objects.filter(tenant_id=tenant.id).order_by("-created_at")
     return ok({"items": [{"id": a.id, "action": a.action, "outcome": a.outcome, "created_at": a.created_at.isoformat(), "details": a.details} for a in qs[:100]]})

@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 from personal_knowledge_base.model_providers import rerank
 from personal_knowledge_base.models import Chunk, KnowledgeBase, Tenant
 from personal_knowledge_base.rag_eval import run_rag_evaluation
-from personal_knowledge_base.search import _fts_search, _vector_search, hybrid_search
+from personal_knowledge_base.search import _fts_search, _ranked_ids, _vector_search, hybrid_search, rrf_fuse
 
 from .prepare_interview_demo import DEMO_KB_NAME
 
@@ -88,9 +88,7 @@ class Command(BaseCommand):
             expected = question["expected_titles"]
             fts, fts_ms = _measure(lambda: _fts_search(tenant.id, {kb.id}, query, 5))
             vector, vector_ms = _measure(lambda: _vector_search(tenant.id, {kb.id}, query, 5))
-            combined = dict(fts)
-            for chunk_id, score in vector.items():
-                combined[chunk_id] = combined.get(chunk_id, 0.0) + score
+            combined = rrf_fuse([_ranked_ids(fts), _ranked_ids(vector)])
 
             fts_rows = _chunk_rows(_rank_scores(fts), fts)
             vector_rows = _chunk_rows(_rank_scores(vector), vector)

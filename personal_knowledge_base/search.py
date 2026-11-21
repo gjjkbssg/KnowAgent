@@ -19,6 +19,7 @@ CHINESE_QUERY_SPLIT_RE = re.compile(
     r"[的了在是但和与及后时会把被让吗呢？?，,。；;：:]"
 )
 PARTIAL_OVERLAP_THRESHOLD = 0.85
+RRF_K = 60
 
 # ── 中英文停用词（用于查询扩展）─────────────────────────────────────
 STOPWORDS = frozenset({
@@ -313,26 +314,56 @@ def expand_short_chunks(results: list[dict], min_chars: int = 350, max_chars: in
 
 
 # ── 搜索主流程 ───────────────────────────────────────────────────────
+def _fts_match(cursor, fts_query: str, tenant_id: int, kb_set: set, limit: int) -> list[tuple[str, float]]:
+    """
+    FTS5 MATCH，按 BM25 从最相关到最不相关返回 (chunk_id, 分数)。
+    FTS5 的 bm25() 越小（越负）越相关，所以必须 ORDER BY rank 后再 LIMIT，分数取相反数。
+    """
+    kb_filter = ""
+    params: list = [fts_query, tenant_id]
+    if kb_set:
+        kb_filter = f" AND knowledge_base_id IN ({', '.join(['%s'] * len(kb_set))})"
+        params.extend(sorted(kb_set))
+    params.append(limit)
+    cursor.execute(
+        f"""
+        SELECT chunk_id, bm25(chunks_fts) AS rank
+        FROM chunks_fts
+        WHERE chunks_fts MATCH %s AND tenant_id = %s{kb_filter}
+        ORDER BY rank
+        LIMIT %s
+        """,
+        params,
+    )
+    return [(chunk_id, -float(rank)) for chunk_id, rank in cursor.fetchall()]
+
+
+def rrf_fuse(rankings: list[list[str]], k: int = RRF_K) -> dict[str, float]:
+    """
+    Reciprocal Rank Fusion：score = Σ 1 / (k + rank)。
+    各通道分数量纲不同（BM25、向量距离），只用名次融合，不直接相加原始分数。
+    """
+    fused: dict[str, float] = {}
+    for ranking in rankings:
+        for rank, chunk_id in enumerate(ranking, 1):
+            fused[chunk_id] = fused.get(chunk_id, 0.0) + 1.0 / (k + rank)
+    return fused
+
+
+def _ranked_ids(scores: dict[str, float]) -> list[str]:
+    return [chunk_id for chunk_id, _ in sorted(scores.items(), key=lambda item: item[1], reverse=True)]
+
+
 def _fts_search(tenant_id: int, kb_set: set, query: str, top_k: int) -> dict[str, float]:
-    """FTS5 全文检索"""
+    """FTS5 全文检索，返回 chunk_id -> 分数（越大越相关）"""
     kb_set = {str(value) for value in kb_set}
     scores: dict[str, float] = {}
     with connection.cursor() as cursor:
         fts_query = " OR ".join(TOKEN_RE.findall(query)) or query
         if fts_query:
             try:
-                cursor.execute(
-                    """
-                    SELECT chunk_id, knowledge_base_id, bm25(chunks_fts) AS rank
-                    FROM chunks_fts
-                    WHERE chunks_fts MATCH %s AND tenant_id = %s
-                    LIMIT %s
-                    """,
-                    [fts_query, tenant_id, top_k * 4],
-                )
-                for chunk_id, kb_id, rank in cursor.fetchall():
-                    if not kb_set or kb_id in kb_set:
-                        scores[chunk_id] = scores.get(chunk_id, 0.0) + max(0.0, 10.0 - abs(float(rank)))
+                for chunk_id, score in _fts_match(cursor, fts_query, tenant_id, kb_set, top_k * 4):
+                    scores[chunk_id] = score
             except Exception:
                 cursor.execute(
                     """
@@ -447,36 +478,33 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
             fts_scores = fts_future.result()
             vec_scores = vec_future.result()
 
-    # 合并分数
-    scores: dict[str, float] = {}
-    for chunk_id, score in fts_scores.items():
-        scores[chunk_id] = scores.get(chunk_id, 0.0) + score
-    for chunk_id, score in vec_scores.items():
-        scores[chunk_id] = scores.get(chunk_id, 0.0) + score
+    # 每个召回通道是一份名次表，最后用 RRF 融合
+    rankings = [_ranked_ids(fts_scores), _ranked_ids(vec_scores)]
 
     # ── 查询扩展（召回不足时）────────────────────────────────────────
-    if len(scores) < max(1, top_k):
+    if len(set(fts_scores) | set(vec_scores)) < max(1, top_k):
         for variant in expand_query(query):
             with connection.cursor() as cursor:
                 exp_fts = " OR ".join(TOKEN_RE.findall(variant)) or variant
                 if exp_fts:
                     try:
-                        cursor.execute(
-                            """
-                            SELECT chunk_id, knowledge_base_id, bm25(chunks_fts) AS rank
-                            FROM chunks_fts WHERE chunks_fts MATCH %s AND tenant_id = %s LIMIT %s
-                            """,
-                            [exp_fts, tenant_id, top_k * 2],
-                        )
-                        for chunk_id, kb_id, rank in cursor.fetchall():
-                            if not kb_set or kb_id in kb_set:
-                                scores[chunk_id] = scores.get(chunk_id, 0.0) + max(0.0, 8.0 - abs(float(rank)))
+                        rankings.append([chunk_id for chunk_id, _ in _fts_match(cursor, exp_fts, tenant_id, kb_set, top_k * 2)])
                     except Exception:
                         pass
 
+    # ── Graph RAG：实体命中的 chunk 作为又一个召回通道，与其他候选一起重排 ──
+    from .graph_rag import expand_relation_context, graph_search_results
+
+    graph_ids = [item["chunk_id"] for item in graph_search_results(tenant_id, kb_ids, query, set(), top_k)]
+    if graph_ids:
+        rankings.append(graph_ids)
+    graph_only_ids = set(graph_ids) - set(fts_scores) - set(vec_scores)
+
+    scores = rrf_fuse(rankings)
+
     # ── 排序 + 去重 ─────────────────────────────────────────────────
-    ranked_ids = [cid for cid, _ in sorted(scores.items(), key=lambda item: item[1], reverse=True)[: top_k * 4]]
-    chunks = {c.id: c for c in Chunk.objects.filter(id__in=ranked_ids).select_related("knowledge", "knowledge_base")}
+    ranked_ids = _ranked_ids(scores)[: top_k * 4]
+    chunks = {c.id: c for c in Chunk.objects.filter(id__in=ranked_ids, tenant_id=tenant_id).select_related("knowledge", "knowledge_base")}
     results = []
     for cid in ranked_ids:
         chunk = chunks.get(cid)
@@ -496,34 +524,32 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
                 "chunk_type": chunk.chunk_type,
                 "parent_chunk_id": chunk.parent_chunk_id,
                 "image_info": chunk.image_info,
-                "match_type": "hybrid",
+                "match_type": "graph" if cid in graph_only_ids else "hybrid",
                 "metadata": chunk.metadata or {},
             }
         )
 
     from .model_providers import rerank
-    from .graph_rag import expand_relation_context, graph_search_results
     from .models import Tenant
+
+    # 关系扩展：头部候选的关联 chunk 也进入候选池，排在已有候选之后，由 Rerank 决定去留
+    if results:
+        floor_score = min(item["score"] for item in results) * 0.5
+        for extra in expand_relation_context(results[: max(1, top_k)], tenant_id, min(3, top_k)):
+            results.append({**extra, "score": floor_score})
 
     results = deduplicate_results(results)
     results = rerank(query, results, top_k * 2, tenant=Tenant.objects.filter(id=tenant_id).first())
     results = deduplicate_results(results)
 
-    # ── MMR 多样性过滤 ──────────────────────────────────────────────
-    results = apply_mmr(results, k=min(len(results), max(1, top_k * 2)), lambda_param=0.7)
-
     # ── 知识条目级多样性 ────────────────────────────────────────────
     results = diversify_by_knowledge(results, max_per_knowledge=2)
 
-    # ── Graph RAG ───────────────────────────────────────────────────
-    graph_results = graph_search_results(tenant_id, kb_ids, query, {item["chunk_id"] for item in results}, top_k)
-    relation_results = expand_relation_context([*results, *graph_results], tenant_id, min(3, top_k))
-    results = deduplicate_results([*results, *graph_results, *relation_results])
+    # ── MMR：从至多 2×top_k 个候选里选出 top_k 个 ───────────────────
+    results = apply_mmr(results, k=max(1, top_k), lambda_param=0.7)
 
     # ── 短 chunk 扩展 ──────────────────────────────────────────────
-    results = expand_short_chunks(results[:top_k], min_chars=350, max_chars=850)
-
-    return results[:top_k]
+    return expand_short_chunks(results, min_chars=350, max_chars=850)
 
 
 # ── 去重工具 ─────────────────────────────────────────────────────────

@@ -38,7 +38,7 @@ Observe：工具结果回填上下文
 继续检索，或输出最终答案
 ```
 
-系统设置工具白名单、最大轮数、重复响应检测、瞬态错误重试和失败降级，避免无限自主执行。
+系统设置工具白名单（执行前再次校验）、最大轮数、重复工具调用检测、瞬态错误重试和失败降级，避免无限自主执行。
 
 ### 2. 主 Agent + 专业子 Agent
 
@@ -58,9 +58,10 @@ Observe：工具结果回填上下文
 
 - **FTS5 稀疏召回**：错误码、设备型号、人名、项目名等精确词。
 - **Embedding 稠密召回**：处理“相同意思、不同说法”。
-- **Qwen Rerank**：对合并候选进行统一语义排序。
-- **MMR 与文档多样性**：减少重复 Chunk 挤占上下文。
-- **GraphRAG（可选）**：补充相似度检索难以发现的实体关系。
+- **RRF 融合**：各通道只按名次融合，避免 BM25 与向量分数量纲不同。
+- **GraphRAG（可选）**：实体命中的 Chunk 作为又一路召回，补充相似度检索难以发现的实体关系。
+- **Qwen Rerank**：对所有通道的候选进行统一语义排序。
+- **文档多样性与 MMR**：从 2×Top-K 候选中选出 Top-K，减少重复 Chunk 挤占上下文。
 
 ### 4. 图片成为一等检索证据
 
@@ -140,9 +141,11 @@ flowchart TB
         Q[用户问题] --> U[意图识别与查询改写]
         U --> R1[FTS5 稀疏召回]
         U --> R2[向量稠密召回]
-        R1 --> RR[候选合并与 Rerank]
+        U --> R3[GraphRAG 实体召回]
+        R1 --> RR[RRF 融合与 Rerank]
         R2 --> RR
-        RR --> M[MMR / GraphRAG]
+        R3 --> RR
+        RR --> M[文档多样性 / MMR]
         M --> AG[主 Agent]
         AG --> SA[专业子 Agent]
         SA --> T[文档 / Wiki / 图谱工具]
@@ -180,6 +183,8 @@ flowchart TB
 2. Rerank 将 MRR 从 0.90 提升到 0.95，主要贡献是把正确证据排得更靠前。
 3. 原始稀疏/稠密分数直接相加存在尺度问题，后续应使用 RRF 或分通道归一化。
 4. 完整流水线增加了覆盖范围，但当前延迟约 11.5 秒，需要按意图触发查询扩展和图谱检索。
+
+> 上表是检索排序修复之前测得的。之后 FTS 改为按 BM25 排序取候选、通道间改用 RRF 融合、GraphRAG 候选改为进入 Rerank；`Hybrid raw` 与 `Full pipeline` 两行需要用 `python manage.py run_interview_eval` 重新测量后更新。
 
 完整评估报告见 [`interview_materials/05_真实评估报告.md`](interview_materials/05_真实评估报告.md)。
 
@@ -238,6 +243,8 @@ npm run dev
 ```
 
 打开 <http://localhost:5173>。Vite 会把 `/api`、`/files` 和 `/health` 代理到 Django 的 `8000` 端口。
+
+首次打开会自动创建管理员 `admin@knowledge.local` 并弹出一次临时密码。`DJANGO_DEBUG=true` 时之后仍可免密进入；`DJANGO_DEBUG=false`（或 `KNOWAGENT_AUTO_LOGIN=false`）时必须用密码登录。
 
 ### 5. 可选：启动 Neo4j
 

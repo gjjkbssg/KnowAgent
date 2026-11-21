@@ -39,9 +39,9 @@ urlpatterns = [
     path("knowledge/<str:knowledge_id>/images/<str:image_id>", views.knowledge_image_content),
 
     # Chunks
+    path("chunks/by-id/<str:chunk_id>", views.chunks_collection),
     path("chunks/<str:knowledge_id>", views.chunks_collection),
     path("chunks/<str:knowledge_id>/<str:chunk_id>", views.chunks_collection),
-    path("chunks/by-id/<str:chunk_id>", views.chunks_collection),
 
     # Knowledge Search POST
     path("knowledge-search", views.knowledge_search_post),

@@ -7,12 +7,16 @@ Agent 工具系统
 - 内置工具：knowledge_search, grep_chunks, get_document_info, thinking
 """
 
+import ipaddress
 import json
 import logging
+import re
+import socket
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urljoin, urlparse
 
 from django.db.models import Q
 
@@ -120,17 +124,6 @@ class ToolRegistry:
             )
 
 
-# ── 已见内容跟踪（会话级去重，参考同类知识库系统的 seenChunks）────────────
-_seen_chunks: set[str] = set()
-_seen_wiki_slugs: set[str] = set()
-
-
-def clear_seen_cache():
-    """清除已见内容缓存（每次 Agent 执行开始时调用）。"""
-    _seen_chunks.clear()
-    _seen_wiki_slugs.clear()
-
-
 # ── 内置工具实现 ─────────────────────────────────────────────────────
 class KnowledgeSearchTool(Tool):
     """知识库检索工具（带会话级去重）。"""
@@ -167,6 +160,8 @@ class KnowledgeSearchTool(Tool):
             return ToolResult(output="No relevant documents found.", data=[])
 
         # 格式化输出（带去重标记，参考同类知识库系统的 seenChunks）
+        # 已见集合挂在本次 Agent 执行的 context 上，避免跨会话、跨子 Agent 串扰
+        seen_chunks = context.setdefault("seen_chunks", set())
         lines = []
         for i, r in enumerate(refs, 1):
             chunk_id = r.get("chunk_id", "")
@@ -174,10 +169,10 @@ class KnowledgeSearchTool(Tool):
             content = r.get("content", "")[:500]
             score = r.get("score", 0)
 
-            if chunk_id in _seen_chunks:
+            if chunk_id in seen_chunks:
                 lines.append(f"[{i}] {title} (score: {score:.2f})\n<note>(content omitted, already returned in a previous knowledge_search call this session)</note>")
             else:
-                _seen_chunks.add(chunk_id)
+                seen_chunks.add(chunk_id)
                 lines.append(f"[{i}] {title} (score: {score:.2f})\n{content}")
 
         output = "\n\n".join(lines)
@@ -376,7 +371,6 @@ class WebSearchTool(Tool):
                 headers={"User-Agent": "Mozilla/5.0"},
                 timeout=10,
             )
-            import re
             # 提取搜索结果
             results = re.findall(r'class="result__a"[^>]*href="([^"]*)"[^>]*>(.*?)</a>.*?class="result__snippet"[^>]*>(.*?)</span>', resp.text, re.DOTALL)
             if not results:
@@ -391,6 +385,21 @@ class WebSearchTool(Tool):
             return ToolResult(output="\n\n".join(lines))
         except Exception as e:
             return ToolResult(output="", error=f"Web search failed: {str(e)}")
+
+
+MAX_FETCH_REDIRECTS = 3
+
+
+def is_public_http_url(url: str) -> bool:
+    """只允许访问公网 http(s) 地址，拒绝回环、内网、链路本地（云元数据）等地址。"""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        return False
+    try:
+        infos = socket.getaddrinfo(parsed.hostname, parsed.port or (443 if parsed.scheme == "https" else 80), type=socket.SOCK_STREAM)
+        return bool(infos) and all(ipaddress.ip_address(info[4][0].split("%")[0]).is_global for info in infos)
+    except (OSError, ValueError):
+        return False
 
 
 class WebFetchTool(Tool):
@@ -420,7 +429,17 @@ class WebFetchTool(Tool):
 
         try:
             import requests as req
-            resp = req.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+            # 手动跟随重定向，每一跳都重新校验目标地址
+            for _ in range(MAX_FETCH_REDIRECTS + 1):
+                if not is_public_http_url(url):
+                    return ToolResult(output="", error="URL is not allowed: only public http(s) addresses can be fetched")
+                resp = req.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15, allow_redirects=False)
+                location = resp.headers.get("Location") if resp.is_redirect else None
+                if not location:
+                    break
+                url = urljoin(url, location)
+            else:
+                return ToolResult(output="", error="Too many redirects")
             resp.raise_for_status()
 
             # 简单 HTML → 文本
@@ -604,14 +623,15 @@ class WikiSearchTool(Tool):
         if not pages:
             return ToolResult(output=f"No wiki pages found for: {query}")
 
+        seen_wiki_slugs = context.setdefault("seen_wiki_slugs", set())
         lines = []
         for p in pages:
             slug = p.slug
             # 去重标记（参考同类知识库系统的 seenSlugs）
-            if slug in _seen_wiki_slugs:
+            if slug in seen_wiki_slugs:
                 lines.append(f"[{slug}] {p.title}\n  <note>(summary omitted, already seen in previous search)</note>")
             else:
-                _seen_wiki_slugs.add(slug)
+                seen_wiki_slugs.add(slug)
                 summary = (p.summary or p.content or "")[:300]
                 lines.append(f"[{slug}] {p.title}\n  {summary}")
 

@@ -1,10 +1,12 @@
 import secrets
 from datetime import timedelta
+from functools import wraps
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.utils import timezone
 
-from .models import AuthToken, Tenant, TenantMember, User
+from .models import AuthToken, Chunk, Knowledge, KnowledgeBase, Tenant, TenantMember, User
+from .responses import fail
 
 
 TOKEN_TTL = timedelta(hours=8)
@@ -56,6 +58,28 @@ def require_auth(request):
     if not user and not tenant:
         raise PermissionError("unauthorized")
     return user, tenant
+
+
+_TENANT_OWNED_URL_KWARGS = (("kb_id", KnowledgeBase), ("knowledge_id", Knowledge), ("chunk_id", Chunk))
+
+
+def tenant_scoped(view):
+    """Require authentication and reject URL ids that belong to another tenant."""
+
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        user, tenant = authenticate_request(request)
+        if not tenant:
+            return fail("unauthorized", 401)
+        for kwarg, model in _TENANT_OWNED_URL_KWARGS:
+            value = kwargs.get(kwarg)
+            if value and not model.objects.filter(id=value, tenant=tenant).exists():
+                return fail("not found", 404)
+        request.auth_user = user
+        request.auth_tenant = tenant
+        return view(request, *args, **kwargs)
+
+    return wrapper
 
 
 def role_for(user: User | None, tenant: Tenant | None) -> str:

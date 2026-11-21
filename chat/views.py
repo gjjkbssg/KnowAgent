@@ -123,6 +123,14 @@ def auth_context(request):
         return None, None
 
 
+def tenant_session(request, session_id):
+    """Return (session, None) for the caller's tenant, or (None, error response)."""
+    _, tenant = auth_context(request)
+    if not tenant:
+        return None, fail("unauthorized", 401)
+    return get_object_or_404(Session, id=session_id, tenant=tenant), None
+
+
 SESSION_CONFIG_FIELDS = {
     "agent_enabled",
     "agent_id",
@@ -253,7 +261,9 @@ def sessions_collection(request, session_id=None):
 
 @csrf_exempt
 def session_messages_clear(request, session_id):
-    session = get_object_or_404(Session, id=session_id)
+    session, error = tenant_session(request, session_id)
+    if error:
+        return error
     clear_context_snapshots(session)
     Message.objects.filter(session=session).delete()
     delete_session_memory(session.id)
@@ -262,7 +272,9 @@ def session_messages_clear(request, session_id):
 
 @csrf_exempt
 def session_pin(request, session_id):
-    session = get_object_or_404(Session, id=session_id)
+    session, error = tenant_session(request, session_id)
+    if error:
+        return error
     pinned = request.method == "POST"
     session.is_pinned = pinned
     session.pinned_at = timezone.now() if pinned else None
@@ -272,7 +284,9 @@ def session_pin(request, session_id):
 
 @csrf_exempt
 def session_title(request, session_id):
-    session = get_object_or_404(Session, id=session_id)
+    session, error = tenant_session(request, session_id)
+    if error:
+        return error
     data = parse_body(request)
     source = data.get("title") or data.get("query") or "新的对话"
     title = role_completion("title", f"请为下面这次知识库对话生成一个 20 字以内的中文标题，只输出标题。\n\n{source}", source, 40)
@@ -283,16 +297,17 @@ def session_title(request, session_id):
 
 @csrf_exempt
 def session_stop(request, session_id):
+    session, error = tenant_session(request, session_id)
+    if error:
+        return error
     data = parse_body(request)
     message_id = data.get("message_id") or data.get("id")
     if message_id:
         target_message = Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).first()
         Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).update(is_completed=True, updated_at=timezone.now())
-        session = Session.objects.filter(id=session_id).first()
-        if session:
-            parent_message_id = target_message.id if target_message else message_id
-            for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
-                ActorRegistry.cancel_actor(session, actor.actor_id)
+        parent_message_id = target_message.id if target_message else message_id
+        for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
+            ActorRegistry.cancel_actor(session, actor.actor_id)
     return ok({"session_id": session_id, "message_id": message_id, "stopped": True})
 
 
@@ -410,6 +425,9 @@ def continue_stream(request, session_id):
 # ── Messages ─────────────────────────────────────────────────────────────
 
 def messages_load(request, session_id):
+    _, error = tenant_session(request, session_id)
+    if error:
+        return error
     limit = bounded_int(request.GET.get("limit"), 50, 1, 200)
     qs = Message.objects.filter(session_id=session_id, visible_to_user=True)
     before_time = request.GET.get("before_time") or request.GET.get("before")
@@ -429,6 +447,8 @@ def messages_load(request, session_id):
 @csrf_exempt
 def messages_search(request):
     _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
     data = parse_body(request)
     q = data.get("query") or data.get("q") or ""
     qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True)
@@ -439,11 +459,16 @@ def messages_search(request):
 
 def chat_history_stats(request):
     _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
     return ok({"total_sessions": Session.objects.filter(tenant=tenant).count(), "total_messages": Message.objects.filter(session__tenant=tenant).count()})
 
 
 @csrf_exempt
 def message_delete(request, session_id, message_id):
+    _, error = tenant_session(request, session_id)
+    if error:
+        return error
     Message.objects.filter(id=message_id, session_id=session_id).delete()
     return ok({})
 
@@ -813,7 +838,7 @@ def chat_endpoint(request, session_id, agent=False):
 
     enable_memory = data.get("enable_memory")
     if enable_memory is None:
-        enable_memory = (user.preferences or {}).get("enable_memory", True)
+        enable_memory = ((user.preferences if user else None) or {}).get("enable_memory", True)
 
     is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
     if agent:

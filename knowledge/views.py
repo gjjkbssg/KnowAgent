@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.utils.http import content_disposition_header
 from django.views.decorators.csrf import csrf_exempt
 
-from personal_knowledge_base.authentication import require_auth
+from personal_knowledge_base.authentication import require_auth, tenant_scoped
 from personal_knowledge_base.document_processing import detect_file_type, is_unsupported_media_file, process_knowledge
 from personal_knowledge_base.document_processing import process_graph as rebuild_knowledge_graph
 from personal_knowledge_base.graph_rag import (
@@ -298,6 +298,7 @@ def default_chunk_config():
 # ── Knowledge Base Views ─────────────────────────────────────────────────────
 
 @csrf_exempt
+@tenant_scoped
 def knowledge_bases(request, kb_id=None):
     user, tenant = auth_context(request)
     if not tenant:
@@ -377,6 +378,7 @@ def knowledge_bases(request, kb_id=None):
 
 
 @csrf_exempt
+@tenant_scoped
 def kb_pin(request, kb_id):
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
     if request.method == "DELETE":
@@ -392,10 +394,11 @@ def kb_pin(request, kb_id):
 
 
 @csrf_exempt
+@tenant_scoped
 def kb_copy(request):
     user, tenant = auth_context(request)
     data = parse_body(request)
-    src = get_object_or_404(KnowledgeBase, id=data.get("source_id"))
+    src = get_object_or_404(KnowledgeBase, id=data.get("source_id"), tenant=tenant)
     clone = KnowledgeBase.objects.create(
         tenant=tenant,
         name=f"{src.name} copy",
@@ -416,6 +419,7 @@ def kb_copy(request):
     return ok({"knowledge_base": kb_dict(clone), "task_id": ""})
 
 
+@tenant_scoped
 def kb_move_targets(request, kb_id):
     _, tenant = auth_context(request)
     source = get_object_or_404(KnowledgeBase, id=kb_id)
@@ -426,6 +430,7 @@ def kb_move_targets(request, kb_id):
 # ── Knowledge Views ──────────────────────────────────────────────────────────
 
 @csrf_exempt
+@tenant_scoped
 def knowledge_collection(request, kb_id):
     user, tenant = auth_context(request)
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
@@ -445,6 +450,7 @@ def knowledge_collection(request, kb_id):
 
 
 @csrf_exempt
+@tenant_scoped
 def knowledge_file(request, kb_id):
     _, tenant = auth_context(request)
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
@@ -524,6 +530,7 @@ def knowledge_file(request, kb_id):
 
 
 @csrf_exempt
+@tenant_scoped
 def knowledge_detail(request, knowledge_id):
     item = get_object_or_404(Knowledge, id=knowledge_id)
     if request.method == "GET":
@@ -541,6 +548,7 @@ def knowledge_detail(request, knowledge_id):
 
 
 @csrf_exempt
+@tenant_scoped
 def knowledge_reparse(request, knowledge_id):
     item = get_object_or_404(Knowledge, id=knowledge_id)
     data = parse_body(request)
@@ -558,6 +566,7 @@ def knowledge_reparse(request, knowledge_id):
 
 
 @csrf_exempt
+@tenant_scoped
 def knowledge_cancel(request, knowledge_id):
     item = get_object_or_404(Knowledge, id=knowledge_id)
     item.parse_status = "cancelled"
@@ -574,12 +583,13 @@ def knowledge_cancel(request, knowledge_id):
 
 
 @csrf_exempt
+@tenant_scoped
 def knowledge_batch_delete(request, kb_id=None):
     data = parse_body(request)
     source_kb_id = kb_id or data.get("kb_id") or data.get("knowledge_base_id") or data.get("source_kb_id")
     ids = normalize_ids(data)
     count = 0
-    qs = Knowledge.objects.filter(id__in=ids, deleted_at__isnull=True)
+    qs = Knowledge.objects.filter(id__in=ids, tenant=request.auth_tenant, deleted_at__isnull=True)
     if source_kb_id:
         qs = qs.filter(knowledge_base_id=source_kb_id)
     for item in qs:
@@ -590,14 +600,15 @@ def knowledge_batch_delete(request, kb_id=None):
 
 
 @csrf_exempt
+@tenant_scoped
 def knowledge_move(request, kb_id=None):
     data = parse_body(request)
     ids = normalize_ids(data)
     source_kb_id = kb_id or data.get("source_kb_id") or data.get("kb_id")
     target_id = data.get("target_kb_id") or data.get("target_knowledge_base_id") or data.get("knowledge_base_id")
-    target = get_object_or_404(KnowledgeBase, id=target_id)
+    target = get_object_or_404(KnowledgeBase, id=target_id, tenant=request.auth_tenant)
     moved = 0
-    qs = Knowledge.objects.filter(id__in=ids, deleted_at__isnull=True)
+    qs = Knowledge.objects.filter(id__in=ids, tenant=request.auth_tenant, deleted_at__isnull=True)
     if source_kb_id:
         qs = qs.filter(knowledge_base_id=source_kb_id)
     for item in qs:
@@ -641,12 +652,14 @@ def knowledge_move(request, kb_id=None):
     return ok({"moved": moved, "knowledge_count": moved, "source_kb_id": source_kb_id, "target_kb_id": target.id, "target_knowledge_base_id": target.id, "task_id": "", "message": "Knowledge move task started"})
 
 
+@tenant_scoped
 def knowledge_batch(request):
     ids = request.GET.get("ids", "")
-    items = Knowledge.objects.filter(id__in=[x for x in ids.split(",") if x], deleted_at__isnull=True)
+    items = Knowledge.objects.filter(id__in=[x for x in ids.split(",") if x], tenant=request.auth_tenant, deleted_at__isnull=True)
     return ok({"items": [knowledge_dict(item) for item in items]})
 
 
+@tenant_scoped
 def knowledge_search(request):
     user, tenant = auth_context(request)
     if not tenant:
@@ -658,6 +671,7 @@ def knowledge_search(request):
 
 
 @csrf_exempt
+@tenant_scoped
 def knowledge_search_post(request):
     _, tenant = auth_context(request)
     data = parse_body(request)
@@ -668,6 +682,7 @@ def knowledge_search_post(request):
     return ok({"items": results, "results": results})
 
 
+@tenant_scoped
 def knowledge_stats(request, kb_id):
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
     qs = Knowledge.objects.filter(knowledge_base=kb, deleted_at__isnull=True)
@@ -697,6 +712,7 @@ def knowledge_stats(request, kb_id):
     )
 
 
+@tenant_scoped
 def knowledge_spans(request, knowledge_id):
     from personal_knowledge_base.span_tracker import SpanTracker
 
@@ -710,6 +726,7 @@ def knowledge_spans(request, knowledge_id):
     return ok({"items": spans})
 
 
+@tenant_scoped
 def knowledge_download(request, knowledge_id):
     item = get_object_or_404(Knowledge, id=knowledge_id)
     filename = item.file_name or f"{item.title or item.id}.txt"
@@ -720,6 +737,7 @@ def knowledge_download(request, knowledge_id):
     return FileResponse(default_storage.open(item.file_path, "rb"), as_attachment=True, filename=filename)
 
 
+@tenant_scoped
 def knowledge_preview(request, knowledge_id):
     item = get_object_or_404(Knowledge, id=knowledge_id)
     filename = item.file_name or f"{item.title or item.id}.txt"
@@ -744,6 +762,7 @@ def knowledge_preview(request, knowledge_id):
     return response
 
 
+@tenant_scoped
 def knowledge_image_content(request, knowledge_id, image_id):
     _, tenant = auth_context(request)
     if not tenant:
@@ -764,6 +783,7 @@ def knowledge_image_content(request, knowledge_id, image_id):
 # ── Chunk Views ──────────────────────────────────────────────────────────────
 
 @csrf_exempt
+@tenant_scoped
 def chunks_collection(request, knowledge_id=None, chunk_id=None):
     if knowledge_id == "by-id" and chunk_id:
         knowledge_id = None
@@ -811,6 +831,7 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
 # ── Tag Views ────────────────────────────────────────────────────────────────
 
 @csrf_exempt
+@tenant_scoped
 def knowledge_tags(request, kb_id, tag_id=None):
     _, tenant = auth_context(request)
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
@@ -842,6 +863,7 @@ def knowledge_tags(request, kb_id, tag_id=None):
 # ── Search Views ─────────────────────────────────────────────────────────────
 
 @csrf_exempt
+@tenant_scoped
 def kb_hybrid_search(request, kb_id):
     _, tenant = auth_context(request)
     data = parse_body(request) if request.method == "POST" else request.GET
