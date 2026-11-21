@@ -1,8 +1,11 @@
+import json
+from io import StringIO
 from unittest.mock import Mock, patch
 
 import requests
+from django.core.management import call_command
 from django.db import connection
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 
 from personal_knowledge_base.model_providers import EmbeddingUnavailableError, embedding
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
@@ -103,3 +106,55 @@ class EmbeddingOutageTests(TestCase):
             results = hybrid_search(self.tenant.id, [self.kb.id], "kiwi", 3)
 
         self.assertEqual([item["chunk_id"] for item in results], [self.chunk.id])
+
+    def test_failed_rebuild_keeps_the_existing_indexes(self):
+        index_chunk(self.chunk)
+
+        with override_settings(LLM_USE_ENV_EMBEDDING=True, LLM_EMBEDDING_API_KEY="key"), self.provider_down(), patch(
+            "personal_knowledge_base.model_providers.time.sleep"
+        ):
+            with self.assertRaises(EmbeddingUnavailableError):
+                call_command("rebuild_vector_index", stdout=StringIO())
+
+        results = hybrid_search(self.tenant.id, [self.kb.id], "kiwi", 3)
+        self.assertEqual([item["chunk_id"] for item in results], [self.chunk.id])
+
+    def test_rebuild_reindexes_every_enabled_chunk(self):
+        out = StringIO()
+
+        call_command("rebuild_vector_index", stdout=out)
+
+        self.assertIn("1 chunks", out.getvalue())
+        results = hybrid_search(self.tenant.id, [self.kb.id], "kiwi", 3)
+        self.assertEqual([item["chunk_id"] for item in results], [self.chunk.id])
+
+    def test_chunk_edit_embeds_before_writing_and_saves_nothing_while_the_provider_is_down(self):
+        index_chunk(self.chunk)
+        client = Client()
+        registered = client.post(
+            "/api/v1/auth/register",
+            data=json.dumps({"username": "editor", "email": "editor@example.com", "password": "pw-123456"}),
+            content_type="application/json",
+        ).json()["data"]
+        Chunk.objects.filter(id=self.chunk.id).update(tenant_id=registered["tenant"]["id"])
+        Knowledge.objects.filter(id=self.chunk.knowledge_id).update(tenant_id=registered["tenant"]["id"])
+        content_during_embedding = []
+
+        def provider_call(*args, **kwargs):
+            content_during_embedding.append(Chunk.objects.get(id=self.chunk.id).content)
+            raise requests.ConnectionError("down")
+
+        with override_settings(LLM_USE_ENV_EMBEDDING=True, LLM_EMBEDDING_API_KEY="key"), patch(
+            "personal_knowledge_base.model_providers.openai_compatible_embedding", side_effect=provider_call
+        ), patch("personal_knowledge_base.model_providers.time.sleep"):
+            response = client.put(
+                f"/api/v1/chunks/{self.chunk.knowledge_id}/{self.chunk.id}",
+                data=json.dumps({"content": "edited"}),
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {registered['token']}",
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(set(content_during_embedding), {"kiwi orchard notes"})
+        self.chunk.refresh_from_db()
+        self.assertEqual(self.chunk.content, "kiwi orchard notes")
