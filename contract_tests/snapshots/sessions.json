@@ -1,0 +1,373 @@
+{
+  "clear_session_messages": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_batch_session_one": {
+    "body": {
+      "data": {
+        "agent_config": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "agent_id": "str",
+        "created_at": "str",
+        "description": "str",
+        "id": "str",
+        "is_pinned": "bool",
+        "knowledge_base_id": "str",
+        "last_request_state": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "pinned_at": "null",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "user_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_batch_session_two": {
+    "body": {
+      "data": {
+        "agent_config": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "agent_id": "str",
+        "created_at": "str",
+        "description": "str",
+        "id": "str",
+        "is_pinned": "bool",
+        "knowledge_base_id": "str",
+        "last_request_state": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "pinned_at": "null",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "user_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_session": {
+    "body": {
+      "data": {
+        "agent_config": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "agent_id": "str",
+        "created_at": "str",
+        "description": "str",
+        "id": "str",
+        "is_pinned": "bool",
+        "knowledge_base_id": "str",
+        "last_request_state": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "pinned_at": "null",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "user_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_session_for_delete_all": {
+    "body": {
+      "data": {
+        "agent_config": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "agent_id": "str",
+        "created_at": "str",
+        "description": "str",
+        "id": "str",
+        "is_pinned": "bool",
+        "knowledge_base_id": "str",
+        "last_request_state": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "pinned_at": "null",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "user_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_all_sessions": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_session": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_sessions": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "get_session": {
+    "body": {
+      "data": {
+        "agent_config": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "agent_id": "str",
+        "created_at": "str",
+        "description": "str",
+        "id": "str",
+        "is_pinned": "bool",
+        "knowledge_base_id": "str",
+        "last_request_state": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "pinned_at": "null",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "user_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "list_sessions": {
+    "body": {
+      "data": {
+        "items": [
+          {
+            "agent_config": {
+              "agent_enabled": "bool",
+              "agent_id": "str",
+              "enable_memory": "bool",
+              "knowledge_base_ids": [],
+              "mcp_service_ids": [],
+              "model_id": "str",
+              "summary_model_id": "str",
+              "web_search_enabled": "bool"
+            },
+            "agent_id": "str",
+            "created_at": "str",
+            "description": "str",
+            "id": "str",
+            "is_pinned": "bool",
+            "knowledge_base_id": "str",
+            "last_request_state": {
+              "agent_enabled": "bool",
+              "agent_id": "str",
+              "enable_memory": "bool",
+              "knowledge_base_ids": [],
+              "mcp_service_ids": [],
+              "model_id": "str",
+              "summary_model_id": "str",
+              "web_search_enabled": "bool"
+            },
+            "pinned_at": "null",
+            "tenant_id": "number",
+            "title": "str",
+            "updated_at": "str",
+            "user_id": "str"
+          }
+        ],
+        "page": "number",
+        "page_size": "number",
+        "total": "number"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "pin_session": {
+    "body": {
+      "data": {
+        "agent_config": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "agent_id": "str",
+        "created_at": "str",
+        "description": "str",
+        "id": "str",
+        "is_pinned": "bool",
+        "knowledge_base_id": "str",
+        "last_request_state": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "pinned_at": "str",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "user_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "stop_session": {
+    "body": {
+      "data": {
+        "message_id": "null",
+        "session_id": "str",
+        "stopped": "bool"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "unpin_session": {
+    "body": {
+      "data": {
+        "agent_config": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "agent_id": "str",
+        "created_at": "str",
+        "description": "str",
+        "id": "str",
+        "is_pinned": "bool",
+        "knowledge_base_id": "str",
+        "last_request_state": {
+          "agent_enabled": "bool",
+          "agent_id": "str",
+          "enable_memory": "bool",
+          "knowledge_base_ids": [],
+          "mcp_service_ids": [],
+          "model_id": "str",
+          "summary_model_id": "str",
+          "web_search_enabled": "bool"
+        },
+        "pinned_at": "null",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "user_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  }
+}

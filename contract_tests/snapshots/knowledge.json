@@ -1,0 +1,1877 @@
+{
+  "batch_delete_knowledge": {
+    "body": {
+      "data": {
+        "deleted": "number",
+        "deleted_count": "number",
+        "ids": [
+          "str"
+        ],
+        "kb_id": "str",
+        "task_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "cancel_knowledge": {
+    "body": {
+      "data": {
+        "channel": "str",
+        "created_at": "str",
+        "description": "str",
+        "embedding_model_id": "str",
+        "enable_status": "str",
+        "error_message": "str",
+        "file_hash": "str",
+        "file_name": "str",
+        "file_path": "str",
+        "file_size": "number",
+        "file_type": "str",
+        "id": "str",
+        "knowledge_base_id": "str",
+        "knowledge_base_name": "str",
+        "metadata": {
+          "content_length": "number",
+          "extracted_metadata": {},
+          "generated_questions": [
+            "str"
+          ],
+          "graph": {
+            "enabled": "bool",
+            "node_count": "number",
+            "relation_count": "number"
+          },
+          "image_count": "number",
+          "process_config": {},
+          "process_overrides": {},
+          "summary": "str",
+          "wiki": {
+            "links": "number",
+            "pages": "number",
+            "skipped": "bool"
+          }
+        },
+        "parse_status": "str",
+        "pending_subtasks_count": "number",
+        "processed_at": "str",
+        "source": "str",
+        "storage_size": "number",
+        "summary_status": "str",
+        "tag_id": "str",
+        "tenant_id": "number",
+        "title": "str",
+        "type": "str",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "copy_kb": {
+    "body": {
+      "data": {
+        "knowledge_base": {
+          "asr_config": "null",
+          "capabilities": {
+            "graph": "bool",
+            "keyword": "bool",
+            "vector": "bool",
+            "wiki": "bool"
+          },
+          "chunk_count": "number",
+          "chunking_config": {
+            "chunk_overlap": "number",
+            "chunk_size": "number",
+            "keep_separator": "bool",
+            "split_markers": [
+              "str"
+            ]
+          },
+          "created_at": "str",
+          "creator_id": "str",
+          "creator_name": "str",
+          "description": "str",
+          "document_count": "number",
+          "embedding_model_id": "str",
+          "extract_config": "null",
+          "id": "str",
+          "image_processing_config": {
+            "enable_multimodal": "bool",
+            "model_id": "str"
+          },
+          "indexing_strategy": {
+            "graph_enabled": "bool",
+            "keyword_enabled": "bool",
+            "vector_enabled": "bool",
+            "wiki_enabled": "bool"
+          },
+          "is_pinned": "bool",
+          "is_processing": "bool",
+          "is_temporary": "bool",
+          "knowledge_count": "number",
+          "name": "str",
+          "pinned_at": "null",
+          "processing_count": "number",
+          "question_generation_config": "null",
+          "storage_provider_config": {
+            "provider": "str"
+          },
+          "summary_model_id": "str",
+          "tenant_id": "number",
+          "type": "str",
+          "updated_at": "str",
+          "vector_store_engine_type": "str",
+          "vector_store_id": "null",
+          "vector_store_name": "str",
+          "vector_store_source": "str",
+          "vector_store_status": "str",
+          "vlm_config": {},
+          "wiki_config": "null"
+        },
+        "task_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_destination_kb": {
+    "body": {
+      "data": {
+        "asr_config": "null",
+        "capabilities": {
+          "graph": "bool",
+          "keyword": "bool",
+          "vector": "bool",
+          "wiki": "bool"
+        },
+        "chunk_count": "number",
+        "chunking_config": {
+          "chunk_overlap": "number",
+          "chunk_size": "number",
+          "keep_separator": "bool",
+          "split_markers": [
+            "str"
+          ]
+        },
+        "created_at": "str",
+        "creator_id": "str",
+        "creator_name": "str",
+        "description": "str",
+        "document_count": "number",
+        "embedding_model_id": "str",
+        "extract_config": "null",
+        "id": "str",
+        "image_processing_config": {
+          "enable_multimodal": "bool",
+          "model_id": "str"
+        },
+        "indexing_strategy": {
+          "graph_enabled": "bool",
+          "keyword_enabled": "bool",
+          "vector_enabled": "bool",
+          "wiki_enabled": "bool"
+        },
+        "is_pinned": "bool",
+        "is_processing": "bool",
+        "is_temporary": "bool",
+        "knowledge_count": "number",
+        "name": "str",
+        "pinned_at": "null",
+        "processing_count": "number",
+        "question_generation_config": "null",
+        "storage_provider_config": {
+          "provider": "str"
+        },
+        "summary_model_id": "str",
+        "tenant_id": "number",
+        "type": "str",
+        "updated_at": "str",
+        "vector_store_engine_type": "str",
+        "vector_store_id": "null",
+        "vector_store_name": "str",
+        "vector_store_source": "str",
+        "vector_store_status": "str",
+        "vlm_config": {},
+        "wiki_config": "null"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_source_kb": {
+    "body": {
+      "data": {
+        "asr_config": "null",
+        "capabilities": {
+          "graph": "bool",
+          "keyword": "bool",
+          "vector": "bool",
+          "wiki": "bool"
+        },
+        "chunk_count": "number",
+        "chunking_config": {
+          "chunk_overlap": "number",
+          "chunk_size": "number",
+          "keep_separator": "bool",
+          "split_markers": [
+            "str"
+          ]
+        },
+        "created_at": "str",
+        "creator_id": "str",
+        "creator_name": "str",
+        "description": "str",
+        "document_count": "number",
+        "embedding_model_id": "str",
+        "extract_config": "null",
+        "id": "str",
+        "image_processing_config": {
+          "enable_multimodal": "bool",
+          "model_id": "str"
+        },
+        "indexing_strategy": {
+          "graph_enabled": "bool",
+          "keyword_enabled": "bool",
+          "vector_enabled": "bool",
+          "wiki_enabled": "bool"
+        },
+        "is_pinned": "bool",
+        "is_processing": "bool",
+        "is_temporary": "bool",
+        "knowledge_count": "number",
+        "name": "str",
+        "pinned_at": "null",
+        "processing_count": "number",
+        "question_generation_config": "null",
+        "storage_provider_config": {
+          "provider": "str"
+        },
+        "summary_model_id": "str",
+        "tenant_id": "number",
+        "type": "str",
+        "updated_at": "str",
+        "vector_store_engine_type": "str",
+        "vector_store_id": "null",
+        "vector_store_name": "str",
+        "vector_store_source": "str",
+        "vector_store_status": "str",
+        "vlm_config": {},
+        "wiki_config": "null"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_tag": {
+    "body": {
+      "data": {
+        "color": "str",
+        "created_at": "str",
+        "id": "str",
+        "knowledge_base_id": "str",
+        "name": "str",
+        "sort_order": "number",
+        "tenant_id": "number",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_wiki_page": {
+    "body": {
+      "data": {
+        "aliases": [],
+        "category_path": [
+          "str"
+        ],
+        "chunk_refs": [],
+        "content": "str",
+        "created_at": "str",
+        "depth": "number",
+        "folder_id": "str",
+        "id": "str",
+        "in_links": [],
+        "knowledge_base_id": "str",
+        "metadata": {},
+        "out_links": [],
+        "page_metadata": {},
+        "page_type": "str",
+        "parent_slug": "str",
+        "slug": "str",
+        "sort_order": "number",
+        "source_refs": [],
+        "status": "str",
+        "summary": "str",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "version": "number",
+        "wiki_path": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_chunk": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_copied_kb": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_destination_kb": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_knowledge": {
+    "body": {
+      "data": {
+        "id": "str",
+        "task_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_source_kb": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "get_source_kb": {
+    "body": {
+      "data": {
+        "asr_config": "null",
+        "capabilities": {
+          "graph": "bool",
+          "keyword": "bool",
+          "vector": "bool",
+          "wiki": "bool"
+        },
+        "chunk_count": "number",
+        "chunking_config": {
+          "chunk_overlap": "number",
+          "chunk_size": "number",
+          "keep_separator": "bool",
+          "split_markers": [
+            "str"
+          ]
+        },
+        "created_at": "str",
+        "creator_id": "str",
+        "creator_name": "str",
+        "description": "str",
+        "document_count": "number",
+        "embedding_model_id": "str",
+        "extract_config": "null",
+        "id": "str",
+        "image_processing_config": {
+          "enable_multimodal": "bool",
+          "model_id": "str"
+        },
+        "indexing_strategy": {
+          "graph_enabled": "bool",
+          "keyword_enabled": "bool",
+          "vector_enabled": "bool",
+          "wiki_enabled": "bool"
+        },
+        "is_pinned": "bool",
+        "is_processing": "bool",
+        "is_temporary": "bool",
+        "knowledge_count": "number",
+        "name": "str",
+        "pinned_at": "null",
+        "processing_count": "number",
+        "question_generation_config": "null",
+        "storage_provider_config": {
+          "provider": "str"
+        },
+        "summary_model_id": "str",
+        "tenant_id": "number",
+        "type": "str",
+        "updated_at": "str",
+        "vector_store_engine_type": "str",
+        "vector_store_id": "null",
+        "vector_store_name": "str",
+        "vector_store_source": "str",
+        "vector_store_status": "str",
+        "vlm_config": {},
+        "wiki_config": "null"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "get_wiki_page": {
+    "body": {
+      "data": {
+        "aliases": [],
+        "category_path": [
+          "str"
+        ],
+        "chunk_refs": [],
+        "content": "str",
+        "created_at": "str",
+        "depth": "number",
+        "folder_id": "str",
+        "id": "str",
+        "in_links": [],
+        "knowledge_base_id": "str",
+        "metadata": {},
+        "out_links": [],
+        "page_metadata": {},
+        "page_type": "str",
+        "parent_slug": "str",
+        "slug": "str",
+        "sort_order": "number",
+        "source_refs": [],
+        "status": "str",
+        "summary": "str",
+        "tenant_id": "number",
+        "title": "str",
+        "updated_at": "str",
+        "version": "number",
+        "wiki_path": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "knowledge_image_missing": {
+    "body": {
+      "content_type": "str",
+      "text": "str"
+    },
+    "status": "number"
+  },
+  "knowledge_stages": {
+    "body": {
+      "data": {
+        "items": [
+          {
+            "duration_ms": "number",
+            "error_code": "str",
+            "error_message": "str",
+            "finished_at": "str",
+            "id": "str",
+            "input": {},
+            "kind": "str",
+            "metadata": {},
+            "name": "str",
+            "output": {},
+            "parent_id": "str",
+            "started_at": "str",
+            "status": "str"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "list_chunks": {
+    "body": {
+      "data": {
+        "chunks": [
+          {
+            "chunk_index": "number",
+            "chunk_type": "str",
+            "content": "str",
+            "created_at": "str",
+            "end_at": "number",
+            "flags": "number",
+            "id": "str",
+            "image_info": "null",
+            "indirect_relation_chunks": "null",
+            "is_enabled": "bool",
+            "knowledge_base_id": "str",
+            "knowledge_id": "str",
+            "metadata": {
+              "block_index": "number",
+              "page_index": "null",
+              "source_block_end": "number",
+              "source_block_start": "number",
+              "title": "str"
+            },
+            "next_chunk_id": "str",
+            "parent_chunk_id": "str",
+            "pre_chunk_id": "str",
+            "relation_chunks": "null",
+            "seq_id": "number",
+            "start_at": "number",
+            "status": "number",
+            "tag_id": "str",
+            "tenant_id": "number",
+            "updated_at": "str"
+          }
+        ],
+        "data": [
+          {
+            "chunk_index": "number",
+            "chunk_type": "str",
+            "content": "str",
+            "created_at": "str",
+            "end_at": "number",
+            "flags": "number",
+            "id": "str",
+            "image_info": "null",
+            "indirect_relation_chunks": "null",
+            "is_enabled": "bool",
+            "knowledge_base_id": "str",
+            "knowledge_id": "str",
+            "metadata": {
+              "block_index": "number",
+              "page_index": "null",
+              "source_block_end": "number",
+              "source_block_start": "number",
+              "title": "str"
+            },
+            "next_chunk_id": "str",
+            "parent_chunk_id": "str",
+            "pre_chunk_id": "str",
+            "relation_chunks": "null",
+            "seq_id": "number",
+            "start_at": "number",
+            "status": "number",
+            "tag_id": "str",
+            "tenant_id": "number",
+            "updated_at": "str"
+          }
+        ],
+        "items": [
+          {
+            "chunk_index": "number",
+            "chunk_type": "str",
+            "content": "str",
+            "created_at": "str",
+            "end_at": "number",
+            "flags": "number",
+            "id": "str",
+            "image_info": "null",
+            "indirect_relation_chunks": "null",
+            "is_enabled": "bool",
+            "knowledge_base_id": "str",
+            "knowledge_id": "str",
+            "metadata": {
+              "block_index": "number",
+              "page_index": "null",
+              "source_block_end": "number",
+              "source_block_start": "number",
+              "title": "str"
+            },
+            "next_chunk_id": "str",
+            "parent_chunk_id": "str",
+            "pre_chunk_id": "str",
+            "relation_chunks": "null",
+            "seq_id": "number",
+            "start_at": "number",
+            "status": "number",
+            "tag_id": "str",
+            "tenant_id": "number",
+            "updated_at": "str"
+          }
+        ],
+        "page": "number",
+        "page_size": "number",
+        "total": "number"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "list_kbs": {
+    "body": {
+      "data": {
+        "data": [
+          {
+            "asr_config": "null",
+            "capabilities": {
+              "graph": "bool",
+              "keyword": "bool",
+              "vector": "bool",
+              "wiki": "bool"
+            },
+            "chunk_count": "number",
+            "chunking_config": {
+              "chunk_overlap": "number",
+              "chunk_size": "number",
+              "keep_separator": "bool",
+              "split_markers": [
+                "str"
+              ]
+            },
+            "created_at": "str",
+            "creator_id": "str",
+            "creator_name": "str",
+            "description": "str",
+            "document_count": "number",
+            "embedding_model_id": "str",
+            "extract_config": "null",
+            "id": "str",
+            "image_processing_config": {
+              "enable_multimodal": "bool",
+              "model_id": "str"
+            },
+            "indexing_strategy": {
+              "graph_enabled": "bool",
+              "keyword_enabled": "bool",
+              "vector_enabled": "bool",
+              "wiki_enabled": "bool"
+            },
+            "is_pinned": "bool",
+            "is_processing": "bool",
+            "is_temporary": "bool",
+            "knowledge_count": "number",
+            "name": "str",
+            "pinned_at": "null",
+            "processing_count": "number",
+            "question_generation_config": "null",
+            "storage_provider_config": {
+              "provider": "str"
+            },
+            "summary_model_id": "str",
+            "tenant_id": "number",
+            "type": "str",
+            "updated_at": "str",
+            "vector_store_engine_type": "str",
+            "vector_store_id": "null",
+            "vector_store_name": "str",
+            "vector_store_source": "str",
+            "vector_store_status": "str",
+            "vlm_config": {},
+            "wiki_config": "null"
+          }
+        ],
+        "items": [
+          {
+            "asr_config": "null",
+            "capabilities": {
+              "graph": "bool",
+              "keyword": "bool",
+              "vector": "bool",
+              "wiki": "bool"
+            },
+            "chunk_count": "number",
+            "chunking_config": {
+              "chunk_overlap": "number",
+              "chunk_size": "number",
+              "keep_separator": "bool",
+              "split_markers": [
+                "str"
+              ]
+            },
+            "created_at": "str",
+            "creator_id": "str",
+            "creator_name": "str",
+            "description": "str",
+            "document_count": "number",
+            "embedding_model_id": "str",
+            "extract_config": "null",
+            "id": "str",
+            "image_processing_config": {
+              "enable_multimodal": "bool",
+              "model_id": "str"
+            },
+            "indexing_strategy": {
+              "graph_enabled": "bool",
+              "keyword_enabled": "bool",
+              "vector_enabled": "bool",
+              "wiki_enabled": "bool"
+            },
+            "is_pinned": "bool",
+            "is_processing": "bool",
+            "is_temporary": "bool",
+            "knowledge_count": "number",
+            "name": "str",
+            "pinned_at": "null",
+            "processing_count": "number",
+            "question_generation_config": "null",
+            "storage_provider_config": {
+              "provider": "str"
+            },
+            "summary_model_id": "str",
+            "tenant_id": "number",
+            "type": "str",
+            "updated_at": "str",
+            "vector_store_engine_type": "str",
+            "vector_store_id": "null",
+            "vector_store_name": "str",
+            "vector_store_source": "str",
+            "vector_store_status": "str",
+            "vlm_config": {},
+            "wiki_config": "null"
+          }
+        ],
+        "knowledge_bases": [
+          {
+            "asr_config": "null",
+            "capabilities": {
+              "graph": "bool",
+              "keyword": "bool",
+              "vector": "bool",
+              "wiki": "bool"
+            },
+            "chunk_count": "number",
+            "chunking_config": {
+              "chunk_overlap": "number",
+              "chunk_size": "number",
+              "keep_separator": "bool",
+              "split_markers": [
+                "str"
+              ]
+            },
+            "created_at": "str",
+            "creator_id": "str",
+            "creator_name": "str",
+            "description": "str",
+            "document_count": "number",
+            "embedding_model_id": "str",
+            "extract_config": "null",
+            "id": "str",
+            "image_processing_config": {
+              "enable_multimodal": "bool",
+              "model_id": "str"
+            },
+            "indexing_strategy": {
+              "graph_enabled": "bool",
+              "keyword_enabled": "bool",
+              "vector_enabled": "bool",
+              "wiki_enabled": "bool"
+            },
+            "is_pinned": "bool",
+            "is_processing": "bool",
+            "is_temporary": "bool",
+            "knowledge_count": "number",
+            "name": "str",
+            "pinned_at": "null",
+            "processing_count": "number",
+            "question_generation_config": "null",
+            "storage_provider_config": {
+              "provider": "str"
+            },
+            "summary_model_id": "str",
+            "tenant_id": "number",
+            "type": "str",
+            "updated_at": "str",
+            "vector_store_engine_type": "str",
+            "vector_store_id": "null",
+            "vector_store_name": "str",
+            "vector_store_source": "str",
+            "vector_store_status": "str",
+            "vlm_config": {},
+            "wiki_config": "null"
+          }
+        ],
+        "page": "number",
+        "page_size": "number",
+        "total": "number"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "list_knowledge": {
+    "body": {
+      "data": {
+        "data": [
+          {
+            "channel": "str",
+            "created_at": "str",
+            "description": "str",
+            "embedding_model_id": "str",
+            "enable_status": "str",
+            "error_message": "str",
+            "file_hash": "str",
+            "file_name": "str",
+            "file_path": "str",
+            "file_size": "number",
+            "file_type": "str",
+            "id": "str",
+            "knowledge_base_id": "str",
+            "knowledge_base_name": "str",
+            "metadata": {
+              "content_length": "number",
+              "extracted_metadata": {},
+              "generated_questions": [
+                "str"
+              ],
+              "graph": {
+                "enabled": "bool",
+                "node_count": "number",
+                "relation_count": "number"
+              },
+              "image_count": "number",
+              "process_config": {},
+              "process_overrides": {},
+              "summary": "str",
+              "wiki": {
+                "links": "number",
+                "pages": "number",
+                "skipped": "bool"
+              }
+            },
+            "parse_status": "str",
+            "pending_subtasks_count": "number",
+            "processed_at": "str",
+            "source": "str",
+            "storage_size": "number",
+            "summary_status": "str",
+            "tag_id": "str",
+            "tenant_id": "number",
+            "title": "str",
+            "type": "str",
+            "updated_at": "str"
+          }
+        ],
+        "items": [
+          {
+            "channel": "str",
+            "created_at": "str",
+            "description": "str",
+            "embedding_model_id": "str",
+            "enable_status": "str",
+            "error_message": "str",
+            "file_hash": "str",
+            "file_name": "str",
+            "file_path": "str",
+            "file_size": "number",
+            "file_type": "str",
+            "id": "str",
+            "knowledge_base_id": "str",
+            "knowledge_base_name": "str",
+            "metadata": {
+              "content_length": "number",
+              "extracted_metadata": {},
+              "generated_questions": [
+                "str"
+              ],
+              "graph": {
+                "enabled": "bool",
+                "node_count": "number",
+                "relation_count": "number"
+              },
+              "image_count": "number",
+              "process_config": {},
+              "process_overrides": {},
+              "summary": "str",
+              "wiki": {
+                "links": "number",
+                "pages": "number",
+                "skipped": "bool"
+              }
+            },
+            "parse_status": "str",
+            "pending_subtasks_count": "number",
+            "processed_at": "str",
+            "source": "str",
+            "storage_size": "number",
+            "summary_status": "str",
+            "tag_id": "str",
+            "tenant_id": "number",
+            "title": "str",
+            "type": "str",
+            "updated_at": "str"
+          }
+        ],
+        "knowledge": [
+          {
+            "channel": "str",
+            "created_at": "str",
+            "description": "str",
+            "embedding_model_id": "str",
+            "enable_status": "str",
+            "error_message": "str",
+            "file_hash": "str",
+            "file_name": "str",
+            "file_path": "str",
+            "file_size": "number",
+            "file_type": "str",
+            "id": "str",
+            "knowledge_base_id": "str",
+            "knowledge_base_name": "str",
+            "metadata": {
+              "content_length": "number",
+              "extracted_metadata": {},
+              "generated_questions": [
+                "str"
+              ],
+              "graph": {
+                "enabled": "bool",
+                "node_count": "number",
+                "relation_count": "number"
+              },
+              "image_count": "number",
+              "process_config": {},
+              "process_overrides": {},
+              "summary": "str",
+              "wiki": {
+                "links": "number",
+                "pages": "number",
+                "skipped": "bool"
+              }
+            },
+            "parse_status": "str",
+            "pending_subtasks_count": "number",
+            "processed_at": "str",
+            "source": "str",
+            "storage_size": "number",
+            "summary_status": "str",
+            "tag_id": "str",
+            "tenant_id": "number",
+            "title": "str",
+            "type": "str",
+            "updated_at": "str"
+          }
+        ],
+        "page": "number",
+        "page_size": "number",
+        "total": "number"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "list_moved_chunks": {
+    "body": {
+      "data": {
+        "chunks": [
+          {
+            "chunk_index": "number",
+            "chunk_type": "str",
+            "content": "str",
+            "created_at": "str",
+            "end_at": "number",
+            "flags": "number",
+            "id": "str",
+            "image_info": "null",
+            "indirect_relation_chunks": "null",
+            "is_enabled": "bool",
+            "knowledge_base_id": "str",
+            "knowledge_id": "str",
+            "metadata": {
+              "block_index": "number",
+              "page_index": "null",
+              "source_block_end": "number",
+              "source_block_start": "number",
+              "title": "str"
+            },
+            "next_chunk_id": "str",
+            "parent_chunk_id": "str",
+            "pre_chunk_id": "str",
+            "relation_chunks": "null",
+            "seq_id": "number",
+            "start_at": "number",
+            "status": "number",
+            "tag_id": "str",
+            "tenant_id": "number",
+            "updated_at": "str"
+          }
+        ],
+        "data": [
+          {
+            "chunk_index": "number",
+            "chunk_type": "str",
+            "content": "str",
+            "created_at": "str",
+            "end_at": "number",
+            "flags": "number",
+            "id": "str",
+            "image_info": "null",
+            "indirect_relation_chunks": "null",
+            "is_enabled": "bool",
+            "knowledge_base_id": "str",
+            "knowledge_id": "str",
+            "metadata": {
+              "block_index": "number",
+              "page_index": "null",
+              "source_block_end": "number",
+              "source_block_start": "number",
+              "title": "str"
+            },
+            "next_chunk_id": "str",
+            "parent_chunk_id": "str",
+            "pre_chunk_id": "str",
+            "relation_chunks": "null",
+            "seq_id": "number",
+            "start_at": "number",
+            "status": "number",
+            "tag_id": "str",
+            "tenant_id": "number",
+            "updated_at": "str"
+          }
+        ],
+        "items": [
+          {
+            "chunk_index": "number",
+            "chunk_type": "str",
+            "content": "str",
+            "created_at": "str",
+            "end_at": "number",
+            "flags": "number",
+            "id": "str",
+            "image_info": "null",
+            "indirect_relation_chunks": "null",
+            "is_enabled": "bool",
+            "knowledge_base_id": "str",
+            "knowledge_id": "str",
+            "metadata": {
+              "block_index": "number",
+              "page_index": "null",
+              "source_block_end": "number",
+              "source_block_start": "number",
+              "title": "str"
+            },
+            "next_chunk_id": "str",
+            "parent_chunk_id": "str",
+            "pre_chunk_id": "str",
+            "relation_chunks": "null",
+            "seq_id": "number",
+            "start_at": "number",
+            "status": "number",
+            "tag_id": "str",
+            "tenant_id": "number",
+            "updated_at": "str"
+          }
+        ],
+        "page": "number",
+        "page_size": "number",
+        "total": "number"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "list_tags": {
+    "body": {
+      "data": {
+        "items": [
+          {
+            "color": "str",
+            "created_at": "str",
+            "id": "str",
+            "knowledge_base_id": "str",
+            "name": "str",
+            "sort_order": "number",
+            "tenant_id": "number",
+            "updated_at": "str"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "list_wiki_pages": {
+    "body": {
+      "data": {
+        "items": [
+          {
+            "aliases": [],
+            "category_path": [
+              "str"
+            ],
+            "chunk_refs": [],
+            "content": "str",
+            "created_at": "str",
+            "depth": "number",
+            "folder_id": "str",
+            "id": "str",
+            "in_links": [],
+            "knowledge_base_id": "str",
+            "metadata": {},
+            "out_links": [],
+            "page_metadata": {},
+            "page_type": "str",
+            "parent_slug": "str",
+            "slug": "str",
+            "sort_order": "number",
+            "source_refs": [],
+            "status": "str",
+            "summary": "str",
+            "tenant_id": "number",
+            "title": "str",
+            "updated_at": "str",
+            "version": "number",
+            "wiki_path": "str"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "move_knowledge": {
+    "body": {
+      "data": {
+        "knowledge_count": "number",
+        "message": "str",
+        "moved": "number",
+        "source_kb_id": "str",
+        "target_kb_id": "str",
+        "target_knowledge_base_id": "str",
+        "task_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "move_targets": {
+    "body": {
+      "data": {
+        "items": [
+          {
+            "asr_config": "null",
+            "capabilities": {
+              "graph": "bool",
+              "keyword": "bool",
+              "vector": "bool",
+              "wiki": "bool"
+            },
+            "chunk_count": "number",
+            "chunking_config": {
+              "chunk_overlap": "number",
+              "chunk_size": "number",
+              "keep_separator": "bool",
+              "split_markers": [
+                "str"
+              ]
+            },
+            "created_at": "str",
+            "creator_id": "str",
+            "creator_name": "str",
+            "description": "str",
+            "document_count": "number",
+            "embedding_model_id": "str",
+            "extract_config": "null",
+            "id": "str",
+            "image_processing_config": {
+              "enable_multimodal": "bool",
+              "model_id": "str"
+            },
+            "indexing_strategy": {
+              "graph_enabled": "bool",
+              "keyword_enabled": "bool",
+              "vector_enabled": "bool",
+              "wiki_enabled": "bool"
+            },
+            "is_pinned": "bool",
+            "is_processing": "bool",
+            "is_temporary": "bool",
+            "knowledge_count": "number",
+            "name": "str",
+            "pinned_at": "null",
+            "processing_count": "number",
+            "question_generation_config": "null",
+            "storage_provider_config": {
+              "provider": "str"
+            },
+            "summary_model_id": "str",
+            "tenant_id": "number",
+            "type": "str",
+            "updated_at": "str",
+            "vector_store_engine_type": "str",
+            "vector_store_id": "null",
+            "vector_store_name": "str",
+            "vector_store_source": "str",
+            "vector_store_status": "str",
+            "vlm_config": {},
+            "wiki_config": "null"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "pin_source_kb": {
+    "body": {
+      "data": {
+        "asr_config": "null",
+        "capabilities": {
+          "graph": "bool",
+          "keyword": "bool",
+          "vector": "bool",
+          "wiki": "bool"
+        },
+        "chunk_count": "number",
+        "chunking_config": {
+          "chunk_overlap": "number",
+          "chunk_size": "number",
+          "keep_separator": "bool",
+          "split_markers": [
+            "str"
+          ]
+        },
+        "created_at": "str",
+        "creator_id": "str",
+        "creator_name": "str",
+        "description": "str",
+        "document_count": "number",
+        "embedding_model_id": "str",
+        "extract_config": "null",
+        "id": "str",
+        "image_processing_config": {
+          "enable_multimodal": "bool",
+          "model_id": "str"
+        },
+        "indexing_strategy": {
+          "graph_enabled": "bool",
+          "keyword_enabled": "bool",
+          "vector_enabled": "bool",
+          "wiki_enabled": "bool"
+        },
+        "is_pinned": "bool",
+        "is_processing": "bool",
+        "is_temporary": "bool",
+        "knowledge_count": "number",
+        "name": "str",
+        "pinned_at": "str",
+        "processing_count": "number",
+        "question_generation_config": "null",
+        "storage_provider_config": {
+          "provider": "str"
+        },
+        "summary_model_id": "str",
+        "tenant_id": "number",
+        "type": "str",
+        "updated_at": "str",
+        "vector_store_engine_type": "str",
+        "vector_store_id": "null",
+        "vector_store_name": "str",
+        "vector_store_source": "str",
+        "vector_store_status": "str",
+        "vlm_config": {},
+        "wiki_config": "null"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "reparse_knowledge": {
+    "body": {
+      "data": {
+        "knowledge": {
+          "channel": "str",
+          "created_at": "str",
+          "description": "str",
+          "embedding_model_id": "str",
+          "enable_status": "str",
+          "error_message": "str",
+          "file_hash": "str",
+          "file_name": "str",
+          "file_path": "str",
+          "file_size": "number",
+          "file_type": "str",
+          "id": "str",
+          "knowledge_base_id": "str",
+          "knowledge_base_name": "str",
+          "metadata": {
+            "content_length": "number",
+            "extracted_metadata": {},
+            "generated_questions": [
+              "str"
+            ],
+            "graph": {
+              "enabled": "bool",
+              "node_count": "number",
+              "relation_count": "number"
+            },
+            "image_count": "number",
+            "process_config": {},
+            "process_overrides": {},
+            "summary": "str",
+            "wiki": {
+              "links": "number",
+              "pages": "number",
+              "skipped": "bool"
+            }
+          },
+          "parse_status": "str",
+          "pending_subtasks_count": "number",
+          "processed_at": "str",
+          "source": "str",
+          "storage_size": "number",
+          "summary_status": "str",
+          "tag_id": "str",
+          "tenant_id": "number",
+          "title": "str",
+          "type": "str",
+          "updated_at": "str"
+        },
+        "task_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "search_kbs": {
+    "body": {
+      "data": {
+        "data": [
+          {
+            "asr_config": "null",
+            "capabilities": {
+              "graph": "bool",
+              "keyword": "bool",
+              "vector": "bool",
+              "wiki": "bool"
+            },
+            "chunk_count": "number",
+            "chunking_config": {
+              "chunk_overlap": "number",
+              "chunk_size": "number",
+              "keep_separator": "bool",
+              "split_markers": [
+                "str"
+              ]
+            },
+            "created_at": "str",
+            "creator_id": "str",
+            "creator_name": "str",
+            "description": "str",
+            "document_count": "number",
+            "embedding_model_id": "str",
+            "extract_config": "null",
+            "id": "str",
+            "image_processing_config": {
+              "enable_multimodal": "bool",
+              "model_id": "str"
+            },
+            "indexing_strategy": {
+              "graph_enabled": "bool",
+              "keyword_enabled": "bool",
+              "vector_enabled": "bool",
+              "wiki_enabled": "bool"
+            },
+            "is_pinned": "bool",
+            "is_processing": "bool",
+            "is_temporary": "bool",
+            "knowledge_count": "number",
+            "name": "str",
+            "pinned_at": "null",
+            "processing_count": "number",
+            "question_generation_config": "null",
+            "storage_provider_config": {
+              "provider": "str"
+            },
+            "summary_model_id": "str",
+            "tenant_id": "number",
+            "type": "str",
+            "updated_at": "str",
+            "vector_store_engine_type": "str",
+            "vector_store_id": "null",
+            "vector_store_name": "str",
+            "vector_store_source": "str",
+            "vector_store_status": "str",
+            "vlm_config": {},
+            "wiki_config": "null"
+          }
+        ],
+        "items": [
+          {
+            "asr_config": "null",
+            "capabilities": {
+              "graph": "bool",
+              "keyword": "bool",
+              "vector": "bool",
+              "wiki": "bool"
+            },
+            "chunk_count": "number",
+            "chunking_config": {
+              "chunk_overlap": "number",
+              "chunk_size": "number",
+              "keep_separator": "bool",
+              "split_markers": [
+                "str"
+              ]
+            },
+            "created_at": "str",
+            "creator_id": "str",
+            "creator_name": "str",
+            "description": "str",
+            "document_count": "number",
+            "embedding_model_id": "str",
+            "extract_config": "null",
+            "id": "str",
+            "image_processing_config": {
+              "enable_multimodal": "bool",
+              "model_id": "str"
+            },
+            "indexing_strategy": {
+              "graph_enabled": "bool",
+              "keyword_enabled": "bool",
+              "vector_enabled": "bool",
+              "wiki_enabled": "bool"
+            },
+            "is_pinned": "bool",
+            "is_processing": "bool",
+            "is_temporary": "bool",
+            "knowledge_count": "number",
+            "name": "str",
+            "pinned_at": "null",
+            "processing_count": "number",
+            "question_generation_config": "null",
+            "storage_provider_config": {
+              "provider": "str"
+            },
+            "summary_model_id": "str",
+            "tenant_id": "number",
+            "type": "str",
+            "updated_at": "str",
+            "vector_store_engine_type": "str",
+            "vector_store_id": "null",
+            "vector_store_name": "str",
+            "vector_store_source": "str",
+            "vector_store_status": "str",
+            "vlm_config": {},
+            "wiki_config": "null"
+          }
+        ],
+        "knowledge_bases": [
+          {
+            "asr_config": "null",
+            "capabilities": {
+              "graph": "bool",
+              "keyword": "bool",
+              "vector": "bool",
+              "wiki": "bool"
+            },
+            "chunk_count": "number",
+            "chunking_config": {
+              "chunk_overlap": "number",
+              "chunk_size": "number",
+              "keep_separator": "bool",
+              "split_markers": [
+                "str"
+              ]
+            },
+            "created_at": "str",
+            "creator_id": "str",
+            "creator_name": "str",
+            "description": "str",
+            "document_count": "number",
+            "embedding_model_id": "str",
+            "extract_config": "null",
+            "id": "str",
+            "image_processing_config": {
+              "enable_multimodal": "bool",
+              "model_id": "str"
+            },
+            "indexing_strategy": {
+              "graph_enabled": "bool",
+              "keyword_enabled": "bool",
+              "vector_enabled": "bool",
+              "wiki_enabled": "bool"
+            },
+            "is_pinned": "bool",
+            "is_processing": "bool",
+            "is_temporary": "bool",
+            "knowledge_count": "number",
+            "name": "str",
+            "pinned_at": "null",
+            "processing_count": "number",
+            "question_generation_config": "null",
+            "storage_provider_config": {
+              "provider": "str"
+            },
+            "summary_model_id": "str",
+            "tenant_id": "number",
+            "type": "str",
+            "updated_at": "str",
+            "vector_store_engine_type": "str",
+            "vector_store_id": "null",
+            "vector_store_name": "str",
+            "vector_store_source": "str",
+            "vector_store_status": "str",
+            "vlm_config": {},
+            "wiki_config": "null"
+          }
+        ],
+        "page": "number",
+        "page_size": "number",
+        "total": "number"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "search_wiki": {
+    "body": {
+      "data": {
+        "items": [
+          {
+            "aliases": [],
+            "category_path": [
+              "str"
+            ],
+            "chunk_refs": [],
+            "content": "str",
+            "created_at": "str",
+            "depth": "number",
+            "folder_id": "str",
+            "id": "str",
+            "in_links": [],
+            "knowledge_base_id": "str",
+            "metadata": {},
+            "out_links": [],
+            "page_metadata": {},
+            "page_type": "str",
+            "parent_slug": "str",
+            "slug": "str",
+            "sort_order": "number",
+            "source_refs": [],
+            "status": "str",
+            "summary": "str",
+            "tenant_id": "number",
+            "title": "str",
+            "updated_at": "str",
+            "version": "number",
+            "wiki_path": "str"
+          }
+        ],
+        "pages": [
+          {
+            "aliases": [],
+            "category_path": [
+              "str"
+            ],
+            "chunk_refs": [],
+            "content": "str",
+            "created_at": "str",
+            "depth": "number",
+            "folder_id": "str",
+            "id": "str",
+            "in_links": [],
+            "knowledge_base_id": "str",
+            "metadata": {},
+            "out_links": [],
+            "page_metadata": {},
+            "page_type": "str",
+            "parent_slug": "str",
+            "slug": "str",
+            "sort_order": "number",
+            "source_refs": [],
+            "status": "str",
+            "summary": "str",
+            "tenant_id": "number",
+            "title": "str",
+            "updated_at": "str",
+            "version": "number",
+            "wiki_path": "str"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "set_knowledge_tag": {
+    "body": {
+      "data": {
+        "channel": "str",
+        "created_at": "str",
+        "description": "str",
+        "embedding_model_id": "str",
+        "enable_status": "str",
+        "error_message": "str",
+        "file_hash": "str",
+        "file_name": "str",
+        "file_path": "str",
+        "file_size": "number",
+        "file_type": "str",
+        "id": "str",
+        "knowledge_base_id": "str",
+        "knowledge_base_name": "str",
+        "metadata": {
+          "content_length": "number",
+          "extracted_metadata": {},
+          "generated_questions": [
+            "str"
+          ],
+          "graph": {
+            "enabled": "bool",
+            "node_count": "number",
+            "relation_count": "number"
+          },
+          "image_count": "number",
+          "process_config": {},
+          "process_overrides": {},
+          "summary": "str",
+          "wiki": {
+            "links": "number",
+            "pages": "number",
+            "skipped": "bool"
+          }
+        },
+        "parse_status": "str",
+        "pending_subtasks_count": "number",
+        "processed_at": "str",
+        "source": "str",
+        "storage_size": "number",
+        "summary_status": "str",
+        "tag_id": "str",
+        "tenant_id": "number",
+        "title": "str",
+        "type": "str",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "update_chunk": {
+    "body": {
+      "data": {
+        "chunk_index": "number",
+        "chunk_type": "str",
+        "content": "str",
+        "created_at": "str",
+        "end_at": "number",
+        "flags": "number",
+        "id": "str",
+        "image_info": "null",
+        "indirect_relation_chunks": "null",
+        "is_enabled": "bool",
+        "knowledge_base_id": "str",
+        "knowledge_id": "str",
+        "metadata": {
+          "block_index": "number",
+          "page_index": "null",
+          "source_block_end": "number",
+          "source_block_start": "number",
+          "title": "str"
+        },
+        "next_chunk_id": "str",
+        "parent_chunk_id": "str",
+        "pre_chunk_id": "str",
+        "relation_chunks": "null",
+        "seq_id": "number",
+        "start_at": "number",
+        "status": "number",
+        "tag_id": "str",
+        "tenant_id": "number",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "update_source_kb": {
+    "body": {
+      "data": {
+        "asr_config": "null",
+        "capabilities": {
+          "graph": "bool",
+          "keyword": "bool",
+          "vector": "bool",
+          "wiki": "bool"
+        },
+        "chunk_count": "number",
+        "chunking_config": {
+          "chunk_overlap": "number",
+          "chunk_size": "number",
+          "keep_separator": "bool",
+          "split_markers": [
+            "str"
+          ]
+        },
+        "created_at": "str",
+        "creator_id": "str",
+        "creator_name": "str",
+        "description": "str",
+        "document_count": "number",
+        "embedding_model_id": "str",
+        "extract_config": "null",
+        "id": "str",
+        "image_processing_config": {
+          "enable_multimodal": "bool",
+          "model_id": "str"
+        },
+        "indexing_strategy": {
+          "graph_enabled": "bool",
+          "keyword_enabled": "bool",
+          "vector_enabled": "bool",
+          "wiki_enabled": "bool"
+        },
+        "is_pinned": "bool",
+        "is_processing": "bool",
+        "is_temporary": "bool",
+        "knowledge_count": "number",
+        "name": "str",
+        "pinned_at": "null",
+        "processing_count": "number",
+        "question_generation_config": "null",
+        "storage_provider_config": {
+          "provider": "str"
+        },
+        "summary_model_id": "str",
+        "tenant_id": "number",
+        "type": "str",
+        "updated_at": "str",
+        "vector_store_engine_type": "str",
+        "vector_store_id": "null",
+        "vector_store_name": "str",
+        "vector_store_source": "str",
+        "vector_store_status": "str",
+        "vlm_config": {},
+        "wiki_config": "null"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "upload_for_batch_delete": {
+    "body": {
+      "data": {
+        "knowledge": {
+          "channel": "str",
+          "created_at": "str",
+          "description": "str",
+          "embedding_model_id": "str",
+          "enable_status": "str",
+          "error_message": "str",
+          "file_hash": "str",
+          "file_name": "str",
+          "file_path": "str",
+          "file_size": "number",
+          "file_type": "str",
+          "id": "str",
+          "knowledge_base_id": "str",
+          "knowledge_base_name": "str",
+          "metadata": {
+            "process_config": {},
+            "process_overrides": {}
+          },
+          "parse_status": "str",
+          "pending_subtasks_count": "number",
+          "processed_at": "null",
+          "source": "str",
+          "storage_size": "number",
+          "summary_status": "str",
+          "tag_id": "str",
+          "tenant_id": "number",
+          "title": "str",
+          "type": "str",
+          "updated_at": "str"
+        },
+        "task_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "upload_markdown": {
+    "body": {
+      "data": {
+        "knowledge": {
+          "channel": "str",
+          "created_at": "str",
+          "description": "str",
+          "embedding_model_id": "str",
+          "enable_status": "str",
+          "error_message": "str",
+          "file_hash": "str",
+          "file_name": "str",
+          "file_path": "str",
+          "file_size": "number",
+          "file_type": "str",
+          "id": "str",
+          "knowledge_base_id": "str",
+          "knowledge_base_name": "str",
+          "metadata": {
+            "process_config": {},
+            "process_overrides": {}
+          },
+          "parse_status": "str",
+          "pending_subtasks_count": "number",
+          "processed_at": "null",
+          "source": "str",
+          "storage_size": "number",
+          "summary_status": "str",
+          "tag_id": "str",
+          "tenant_id": "number",
+          "title": "str",
+          "type": "str",
+          "updated_at": "str"
+        },
+        "task_id": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "wiki_graph": {
+    "body": {
+      "data": {
+        "edges": [],
+        "meta": {
+          "center": "str",
+          "depth": "number",
+          "mode": "str",
+          "returned": "number",
+          "total": "number",
+          "truncated": "bool"
+        },
+        "nodes": [
+          {
+            "id": "str",
+            "label": "str",
+            "link_count": "number",
+            "page_type": "str",
+            "slug": "str",
+            "title": "str"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  }
+}

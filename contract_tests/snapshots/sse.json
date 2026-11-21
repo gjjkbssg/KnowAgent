@@ -1,0 +1,247 @@
+{
+  "agent_chat": {
+    "content_type": "str",
+    "distinct_response_types": [
+      "str"
+    ],
+    "frames": [
+      {
+        "data": {
+          "id": "str",
+          "request_id": "str"
+        },
+        "event": "str",
+        "id": "null"
+      }
+    ],
+    "status": "number"
+  },
+  "agent_continue_stream": {
+    "content_type": "str",
+    "frames": [
+      {
+        "data": {
+          "actor_traces": [],
+          "agent_duration_ms": "number",
+          "agent_id": "str",
+          "agent_steps": [
+            {
+              "iteration": "number",
+              "thought": "str",
+              "timestamp": "number"
+            }
+          ],
+          "attachments": [],
+          "channel": "str",
+          "content": "str",
+          "created_at": "str",
+          "id": "str",
+          "images": [],
+          "is_completed": "bool",
+          "is_fallback": "bool",
+          "knowledge_id": "str",
+          "knowledge_references": [],
+          "mentioned_items": [],
+          "rendered_content": "str",
+          "request_id": "str",
+          "role": "str",
+          "session_id": "str",
+          "updated_at": "str",
+          "visible_to_user": "bool"
+        },
+        "event": "str",
+        "id": "null"
+      }
+    ],
+    "status": "number"
+  },
+  "agent_event_ids": {
+    "chat": [
+      "number"
+    ],
+    "continue_stream": []
+  },
+  "agent_messages_load": {
+    "body": {
+      "data": {
+        "has_more": "bool",
+        "items": [
+          {
+            "actor_traces": [],
+            "agent_duration_ms": "number",
+            "agent_id": "str",
+            "agent_steps": "null",
+            "attachments": [],
+            "channel": "str",
+            "content": "str",
+            "created_at": "str",
+            "id": "str",
+            "images": [],
+            "is_completed": "bool",
+            "is_fallback": "bool",
+            "knowledge_id": "str",
+            "knowledge_references": [],
+            "mentioned_items": [],
+            "rendered_content": "str",
+            "request_id": "str",
+            "role": "str",
+            "session_id": "str",
+            "updated_at": "str",
+            "visible_to_user": "bool"
+          }
+        ],
+        "messages": [
+          {
+            "actor_traces": [],
+            "agent_duration_ms": "number",
+            "agent_id": "str",
+            "agent_steps": "null",
+            "attachments": [],
+            "channel": "str",
+            "content": "str",
+            "created_at": "str",
+            "id": "str",
+            "images": [],
+            "is_completed": "bool",
+            "is_fallback": "bool",
+            "knowledge_id": "str",
+            "knowledge_references": [],
+            "mentioned_items": [],
+            "rendered_content": "str",
+            "request_id": "str",
+            "role": "str",
+            "session_id": "str",
+            "updated_at": "str",
+            "visible_to_user": "bool"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "knowledge_chat": {
+    "content_type": "str",
+    "distinct_response_types": [
+      "str"
+    ],
+    "frames": [
+      {
+        "data": {
+          "id": "str",
+          "request_id": "str"
+        },
+        "event": "str",
+        "id": "null"
+      }
+    ],
+    "status": "number"
+  },
+  "knowledge_continue_stream": {
+    "content_type": "str",
+    "frames": [
+      {
+        "data": {
+          "actor_traces": [],
+          "agent_duration_ms": "number",
+          "agent_id": "str",
+          "agent_steps": [
+            {
+              "count": "number",
+              "intent": "str",
+              "query": "str",
+              "type": "str"
+            }
+          ],
+          "attachments": [],
+          "channel": "str",
+          "content": "str",
+          "created_at": "str",
+          "id": "str",
+          "images": [],
+          "is_completed": "bool",
+          "is_fallback": "bool",
+          "knowledge_id": "str",
+          "knowledge_references": [],
+          "mentioned_items": [],
+          "rendered_content": "str",
+          "request_id": "str",
+          "role": "str",
+          "session_id": "str",
+          "updated_at": "str",
+          "visible_to_user": "bool"
+        },
+        "event": "str",
+        "id": "null"
+      }
+    ],
+    "status": "number"
+  },
+  "knowledge_event_ids": {
+    "chat": [
+      "number"
+    ],
+    "continue_stream": []
+  },
+  "knowledge_messages_load": {
+    "body": {
+      "data": {
+        "has_more": "bool",
+        "items": [
+          {
+            "actor_traces": [],
+            "agent_duration_ms": "number",
+            "agent_id": "str",
+            "agent_steps": "null",
+            "attachments": [],
+            "channel": "str",
+            "content": "str",
+            "created_at": "str",
+            "id": "str",
+            "images": [],
+            "is_completed": "bool",
+            "is_fallback": "bool",
+            "knowledge_id": "str",
+            "knowledge_references": [],
+            "mentioned_items": [],
+            "rendered_content": "str",
+            "request_id": "str",
+            "role": "str",
+            "session_id": "str",
+            "updated_at": "str",
+            "visible_to_user": "bool"
+          }
+        ],
+        "messages": [
+          {
+            "actor_traces": [],
+            "agent_duration_ms": "number",
+            "agent_id": "str",
+            "agent_steps": "null",
+            "attachments": [],
+            "channel": "str",
+            "content": "str",
+            "created_at": "str",
+            "id": "str",
+            "images": [],
+            "is_completed": "bool",
+            "is_fallback": "bool",
+            "knowledge_id": "str",
+            "knowledge_references": [],
+            "mentioned_items": [],
+            "rendered_content": "str",
+            "request_id": "str",
+            "role": "str",
+            "session_id": "str",
+            "updated_at": "str",
+            "visible_to_user": "bool"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  }
+}

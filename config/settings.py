@@ -98,7 +98,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": os.environ.get("APP_DB_PATH") or BASE_DIR / "db.sqlite3",
         "OPTIONS": {
             "timeout": 30,  # 等待锁的超时时间（秒）
             "init_command": "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=30000; PRAGMA synchronous=NORMAL;",
@@ -116,7 +116,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "frontend" / "dist" / "assets"] if (BASE_DIR / "frontend" / "dist" / "assets").exists() else []
 
 MEDIA_URL = "/files/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = Path(os.environ.get("APP_MEDIA_ROOT") or BASE_DIR / "media")
 DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

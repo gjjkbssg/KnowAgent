@@ -1,0 +1,199 @@
+{
+  "cross_tenant_fixture_kb": {
+    "body": {
+      "data": {
+        "asr_config": "null",
+        "capabilities": {
+          "graph": "bool",
+          "keyword": "bool",
+          "vector": "bool",
+          "wiki": "bool"
+        },
+        "chunk_count": "number",
+        "chunking_config": {
+          "chunk_overlap": "number",
+          "chunk_size": "number",
+          "keep_separator": "bool",
+          "split_markers": [
+            "str"
+          ]
+        },
+        "created_at": "str",
+        "creator_id": "str",
+        "creator_name": "str",
+        "description": "str",
+        "document_count": "number",
+        "embedding_model_id": "str",
+        "extract_config": "null",
+        "id": "str",
+        "image_processing_config": {
+          "enable_multimodal": "bool",
+          "model_id": "str"
+        },
+        "indexing_strategy": {
+          "graph_enabled": "bool",
+          "keyword_enabled": "bool",
+          "vector_enabled": "bool",
+          "wiki_enabled": "bool"
+        },
+        "is_pinned": "bool",
+        "is_processing": "bool",
+        "is_temporary": "bool",
+        "knowledge_count": "number",
+        "name": "str",
+        "pinned_at": "null",
+        "processing_count": "number",
+        "question_generation_config": "null",
+        "storage_provider_config": {
+          "provider": "str"
+        },
+        "summary_model_id": "str",
+        "tenant_id": "number",
+        "type": "str",
+        "updated_at": "str",
+        "vector_store_engine_type": "str",
+        "vector_store_id": "null",
+        "vector_store_name": "str",
+        "vector_store_source": "str",
+        "vector_store_status": "str",
+        "vlm_config": {},
+        "wiki_config": "null"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "cross_tenant_kb_detail": {
+    "body": {
+      "error": {
+        "code": "str",
+        "details": {},
+        "message": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "register_second_tenant": {
+    "body": {
+      "data": {
+        "refresh_token": "str",
+        "tenant": {
+          "api_key": "str",
+          "business": "str",
+          "created_at": "str",
+          "description": "str",
+          "id": "number",
+          "name": "str",
+          "status": "str",
+          "storage_quota": "number",
+          "storage_used": "number",
+          "updated_at": "str"
+        },
+        "token": "str",
+        "user": {
+          "avatar": "str",
+          "can_access_all_tenants": "bool",
+          "created_at": "str",
+          "email": "str",
+          "id": "str",
+          "is_active": "bool",
+          "is_system_admin": "bool",
+          "preferences": {},
+          "tenant_id": "number",
+          "updated_at": "str",
+          "username": "str"
+        }
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "unauthorized_accounts": {
+    "body": {
+      "error": {
+        "code": "str",
+        "details": {},
+        "message": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "unauthorized_agent": {
+    "body": {
+      "error": {
+        "code": "str",
+        "details": {},
+        "message": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "unauthorized_chat": {
+    "body": {
+      "error": {
+        "code": "str",
+        "details": {},
+        "message": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "unauthorized_knowledge": {
+    "body": {
+      "error": {
+        "code": "str",
+        "details": {},
+        "message": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "unauthorized_models_config": {
+    "body": {
+      "error": {
+        "code": "str",
+        "details": {},
+        "message": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "unauthorized_personal_knowledge_base": {
+    "body": {
+      "error": {
+        "code": "str",
+        "details": {},
+        "message": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "unauthorized_wiki": {
+    "body": {
+      "error": {
+        "code": "str",
+        "details": {},
+        "message": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  }
+}
