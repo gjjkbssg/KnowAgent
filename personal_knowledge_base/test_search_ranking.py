@@ -4,7 +4,7 @@ from django.test import TestCase
 
 from personal_knowledge_base import search
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
-from personal_knowledge_base.search import _fts_search, apply_mmr, hybrid_search, index_chunk, rrf_fuse
+from personal_knowledge_base.search import _fts_search, apply_mmr, hybrid_search, index_chunk, rrf_fuse, update_chunk_index_scope
 
 
 class SearchRankingTests(TestCase):
@@ -36,6 +36,19 @@ class SearchRankingTests(TestCase):
         self.assertIn(best.id, scores)
         self.assertEqual(max(scores, key=scores.get), best.id)
         self.assertTrue(all(score > 0 for score in scores.values()))
+
+    def test_moved_chunk_is_found_only_in_its_new_knowledge_base_without_re_embedding(self):
+        chunk = self.add_chunk("kiwi orchard notes")
+        chunk.knowledge_base = self.other_kb
+        chunk.save(update_fields=["knowledge_base", "updated_at"])
+
+        with patch("personal_knowledge_base.model_providers.embedding") as embed:
+            update_chunk_index_scope(chunk)
+
+        embed.assert_not_called()
+        self.assertEqual(_fts_search(self.tenant.id, {self.kb.id}, "kiwi", 5), {})
+        self.assertEqual(list(_fts_search(self.tenant.id, {self.other_kb.id}, "kiwi", 5)), [chunk.id])
+        self.assertEqual([item["chunk_id"] for item in hybrid_search(self.tenant.id, [self.other_kb.id], "kiwi", 3)], [chunk.id])
 
     def test_fts_applies_knowledge_base_filter_before_limit(self):
         for i in range(20):

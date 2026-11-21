@@ -16,6 +16,7 @@ RAG 管道模块
 """
 
 import logging
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -80,11 +81,15 @@ def run_rag_pipeline(
 
     # ── Stage 1: 查询理解 + 记忆检索（并行）────────────────────────
     # 参考同类知识库系统：两个 LLM 调用互不依赖，可并行执行
+    history = _recent_dialogue(session)
     fast_intent = _quick_intent_detect(query)
+    if history and fast_intent == "kb_search" and REFERENCE_RE.search(query):
+        # 「它的排查顺序呢？」这类短追问离开上文无法检索，必须交给模型结合历史改写
+        fast_intent = None
     is_chitchat = fast_intent == "chitchat"
 
     if connection.vendor == "sqlite":
-        understanding = _safe_understand_query(tenant, query) if fast_intent is None else None
+        understanding = _safe_understand_query(tenant, query, history) if fast_intent is None else None
         if understanding:
             ctx.intent = understanding.get("intent", INTENT_KB_SEARCH)
             ctx.search_query = understanding.get("rewrite_query") or query
@@ -102,7 +107,7 @@ def run_rag_pipeline(
             # 查询理解
             future_understanding = None
             if fast_intent is None:
-                future_understanding = pool.submit(_safe_understand_query, tenant, query)
+                future_understanding = pool.submit(_safe_understand_query, tenant, query, history)
 
             # 记忆检索
             future_memory = None
@@ -194,6 +199,13 @@ SYSTEM_PROMPT_DEFAULT = """你是一个知识库问答助手。请根据提供�
 - 如果上下文中没有相关信息，如实说明"""
 
 
+REFERENCE_RE = re.compile(
+    r"它|他们|她们|这个|那个|这些|那些|这种|那种|上述|上面|刚才|其中|呢[？?]?$"
+    r"|\b(?:it|its|they|them|this|that|these|those)\b",
+    re.IGNORECASE,
+)
+
+
 def _quick_intent_detect(query: str) -> str | None:
     """快速意图检测：对简单查询用正则规则判断，跳过 LLM 调用。"""
     q = query.strip()
@@ -206,11 +218,26 @@ def _quick_intent_detect(query: str) -> str | None:
     return None
 
 
-def _safe_understand_query(tenant, query: str) -> dict | None:
+def _recent_dialogue(session) -> list[dict]:
+    """本会话最近几轮已完成的问答。当前这条用户消息还没有回答，不会被算作一轮。"""
+    if session is None:
+        return []
+    try:
+        from .agent_history import REWRITE_HISTORY_ROUNDS, build_rewrite_history
+        from .models import Message
+
+        recent = Message.objects.filter(session=session, is_completed=True, visible_to_user=True).order_by("-created_at", "-id")
+        return build_rewrite_history(reversed(list(recent[: REWRITE_HISTORY_ROUNDS * 4])))
+    except Exception:
+        logger.warning("failed to load dialogue history for query rewrite", exc_info=True)
+        return []
+
+
+def _safe_understand_query(tenant, query: str, history: list[dict] | None = None) -> dict | None:
     """线程安全的查询理解包装"""
     try:
         from .query_understand import understand_query
-        return understand_query(tenant, query)
+        return understand_query(tenant, query, history)
     except Exception:
         logger.exception("Query understanding failed")
         return None

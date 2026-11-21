@@ -1,4 +1,5 @@
 import client from './client'
+import { streamWithResume } from './sse.mjs'
 
 function authHeaders(extra: Record<string, string> = {}) {
   const token = localStorage.getItem('personal_kb_token')
@@ -13,110 +14,44 @@ function authHeaders(extra: Record<string, string> = {}) {
   }
 }
 
-export async function streamChat(
-  sessionId: string,
-  data: any,
-  agent = false,
-  onEvent: (event: string, payload: any) => void,
-  signal?: AbortSignal,
-) {
-  const url = `${agent ? '/api/v1/agent-chat' : '/api/v1/knowledge-chat'}/${sessionId}`
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ ...data, stream: true, channel: 'web' }),
-    signal,
-  })
+async function openStream(url: string, init: RequestInit) {
+  const response = await fetch(url, init)
   if (!response.ok || !response.body) {
     throw new Error(`stream request failed: ${response.status}`)
   }
+  return response
+}
 
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
+type StreamHandler = (event: string, payload: any) => void
 
-  try {
-    while (true) {
-      const { value, done } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const frames = buffer.split('\n\n')
-      buffer = frames.pop() || ''
-      for (const frame of frames) {
-        let event = 'message'
-        let dataLine = ''
-        for (const line of frame.split('\n')) {
-          if (line.startsWith('event:')) event = line.slice(6).trim()
-          // SSE 规范：多行 data 字段用换行符连接
-          if (line.startsWith('data:')) dataLine += (dataLine ? '\n' : '') + line.slice(5).trim()
-        }
-        if (!dataLine) continue
-        try {
-          const parsed = JSON.parse(dataLine)
-          onEvent(event, parsed)
-        } catch {
-          onEvent(event, dataLine)
-        }
-      }
-    }
-  } finally {
-    reader.cancel()
-  }
+// 续传：带上最后收到的事件 id，服务端只补发它之后的事件
+function resumeStream(sessionId: string, signal?: AbortSignal) {
+  return (state: { messageId: string; lastEventId: string }) =>
+    openStream(`/api/v1/sessions/continue-stream/${sessionId}?message_id=${encodeURIComponent(state.messageId)}`, {
+      method: 'GET',
+      headers: authHeaders(state.lastEventId ? { 'Last-Event-ID': state.lastEventId } : {}),
+      signal,
+    })
+}
+
+export async function streamChat(sessionId: string, data: any, agent = false, onEvent: StreamHandler, signal?: AbortSignal) {
+  const url = `${agent ? '/api/v1/agent-chat' : '/api/v1/knowledge-chat'}/${sessionId}`
+  const open = () =>
+    openStream(url, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ ...data, stream: true, channel: 'web' }),
+      signal,
+    })
+  await streamWithResume(open, resumeStream(sessionId, signal), onEvent)
 }
 
 /**
- * Continue-stream: 断线重连。
- * 当页面刷新或重新打开有未完成消息的会话时，调用此函数恢复流式输出。
- * 参考同类知识库系统的 continue-stream 实现。
+ * 页面刷新或重新打开有未完成消息的会话时，从头回放这条消息的事件并继续接收。
  */
-export async function continueStream(
-  sessionId: string,
-  messageId: string,
-  onEvent: (event: string, payload: any) => void,
-  signal?: AbortSignal,
-) {
-  const url = `/api/v1/sessions/continue-stream/${sessionId}?message_id=${encodeURIComponent(messageId)}`
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: authHeaders(),
-    signal,
-  })
-  if (!response.ok || !response.body) {
-    throw new Error(`continue-stream failed: ${response.status}`)
-  }
-
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-
-  try {
-    while (true) {
-      const { value, done } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const frames = buffer.split('\n\n')
-      buffer = frames.pop() || ''
-      for (const frame of frames) {
-        let event = 'message'
-        let dataLine = ''
-        for (const line of frame.split('\n')) {
-          if (line.startsWith('event:')) event = line.slice(6).trim()
-          if (line.startsWith('data:')) dataLine += (dataLine ? '\n' : '') + line.slice(5).trim()
-        }
-        if (!dataLine) continue
-        try {
-          const parsed = JSON.parse(dataLine)
-          onEvent(event, parsed)
-        } catch {
-          onEvent(event, dataLine)
-        }
-      }
-    }
-  } finally {
-    reader.cancel()
-  }
+export async function continueStream(sessionId: string, messageId: string, onEvent: StreamHandler, signal?: AbortSignal) {
+  const resume = resumeStream(sessionId, signal)
+  await streamWithResume(() => resume({ messageId, lastEventId: '' }), resume, onEvent)
 }
 
 export const api = {

@@ -578,49 +578,82 @@ def openai_compatible_chat_stream(
                     continue
 
 
-def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[list[float]]:
-    from .search import stable_embedding
+EMBEDDING_ATTEMPTS = 3
 
-    values = list(texts)
-    if not values:
-        return []
-    if not model_id and settings.LLM_USE_ENV_EMBEDDING and settings.LLM_CHAT_API_KEY:
-        started = time.monotonic()
+
+class EmbeddingUnavailableError(ModelConfigurationError):
+    """已配置的 Embedding 服务调用失败。"""
+
+
+def _is_retryable_embedding_error(exc: Exception) -> bool:
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    return status is None or status == 429 or status >= 500
+
+
+def _provider_embedding(tenant: Tenant, base_url: str, api_key: str, model_name: str, values: list[str], usage: dict) -> list[list[float]]:
+    """
+    调用真实的 Embedding 服务。失败时抛错而不是回退到本地哈希向量：
+    两者不在同一个向量空间，混进同一个索引后距离没有意义，而且事后无法分辨。
+    """
+    started = time.monotonic()
+    error = ""
+    for attempt in range(EMBEDDING_ATTEMPTS):
         try:
-            vectors = openai_compatible_embedding(
-                settings.LLM_CHAT_BASE_URL,
-                settings.LLM_CHAT_API_KEY,
-                settings.LLM_EMBEDDING_MODEL,
-                values,
-            )
+            vectors = openai_compatible_embedding(base_url, api_key, model_name, values)
+        except Exception as exc:
+            error = str(exc)
+            if not _is_retryable_embedding_error(exc):
+                break
+        else:
             if len(vectors) == len(values):
                 record_model_usage(
                     tenant,
-                    model_id="env-aliyun-bailian-embedding",
-                    model_name=settings.LLM_EMBEDDING_MODEL,
-                    model_type="embedding",
-                    provider="aliyun-bailian",
+                    **usage,
                     scenario="embedding",
                     prompt_tokens=estimate_tokens(values),
                     total_tokens=estimate_tokens(values),
                     duration_ms=int((time.monotonic() - started) * 1000),
                 )
                 return _fit_vectors(vectors, settings.APP_EMBEDDING_DIM)
-        except Exception as exc:
-            record_model_usage(
-                tenant,
-                model_id="env-aliyun-bailian-embedding",
-                model_name=settings.LLM_EMBEDDING_MODEL,
-                model_type="embedding",
-                provider="aliyun-bailian",
-                scenario="embedding",
-                success=False,
-                prompt_tokens=estimate_tokens(values),
-                duration_ms=int((time.monotonic() - started) * 1000),
-                error_message=str(exc),
-            )
-            pass
-        return [stable_embedding(text) for text in values]
+            error = f"expected {len(values)} vectors, got {len(vectors)}"
+        if attempt < EMBEDDING_ATTEMPTS - 1:
+            time.sleep(attempt + 1)
+    record_model_usage(
+        tenant,
+        **usage,
+        scenario="embedding",
+        success=False,
+        prompt_tokens=estimate_tokens(values),
+        duration_ms=int((time.monotonic() - started) * 1000),
+        error_message=error,
+    )
+    raise EmbeddingUnavailableError(_safe_model_error_text(error, "embedding provider failed", 300))
+
+
+def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[list[float]]:
+    """
+    没有配置 Embedding 服务时返回本地哈希向量（stable_embedding）；
+    配置了但调用失败时抛 EmbeddingUnavailableError。
+    """
+    from .search import stable_embedding
+
+    values = list(texts)
+    if not values:
+        return []
+    if not model_id and settings.LLM_USE_ENV_EMBEDDING and settings.LLM_EMBEDDING_API_KEY:
+        return _provider_embedding(
+            tenant,
+            settings.LLM_EMBEDDING_BASE_URL,
+            settings.LLM_EMBEDDING_API_KEY,
+            settings.LLM_EMBEDDING_MODEL,
+            values,
+            {
+                "model_id": "env-aliyun-bailian-embedding",
+                "model_name": settings.LLM_EMBEDDING_MODEL,
+                "model_type": "embedding",
+                "provider": "aliyun-bailian",
+            },
+        )
     model = ModelConfig.objects.filter(id=model_id, tenant=tenant).first() if model_id else default_model(tenant, "embedding")
     if not model or model.source == "local":
         return [stable_embedding(text) for text in values]
@@ -630,37 +663,14 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
     model_name = params.get("model") or model.name
     if not base_url:
         return [stable_embedding(text) for text in values]
-    started = time.monotonic()
-    try:
-        vectors = openai_compatible_embedding(base_url, api_key, model_name, values)
-        if len(vectors) == len(values):
-            record_model_usage(
-                tenant,
-                model_id=model.id,
-                model_name=model_name,
-                model_type=model.type,
-                provider=model.source,
-                scenario="embedding",
-                prompt_tokens=estimate_tokens(values),
-                total_tokens=estimate_tokens(values),
-                duration_ms=int((time.monotonic() - started) * 1000),
-            )
-            return _fit_vectors(vectors, settings.APP_EMBEDDING_DIM)
-        return [stable_embedding(text) for text in values]
-    except Exception as exc:
-        record_model_usage(
-            tenant,
-            model_id=model.id,
-            model_name=model_name,
-            model_type=model.type,
-            provider=model.source,
-            scenario="embedding",
-            success=False,
-            prompt_tokens=estimate_tokens(values),
-            duration_ms=int((time.monotonic() - started) * 1000),
-            error_message=str(exc),
-        )
-        return [stable_embedding(text) for text in values]
+    return _provider_embedding(
+        tenant,
+        base_url,
+        api_key,
+        model_name,
+        values,
+        {"model_id": model.id, "model_name": model_name, "model_type": model.type, "provider": model.source},
+    )
 
 
 def openai_compatible_embedding(base_url: str, api_key: str, model_name: str, texts: list[str]) -> list[list[float]]:

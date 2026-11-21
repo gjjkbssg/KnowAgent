@@ -347,6 +347,7 @@ class ActorRunner:
                     "actor_id": actor.actor_id,
                     "parent_message_id": actor.parent_message_id,
                     "allow_actor_tool": False,
+                    "reference_collector": context.get("references"),
                     "cancel_check": lambda: ActorRegistry.is_cancel_requested(actor),
                 },
             )

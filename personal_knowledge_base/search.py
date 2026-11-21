@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import math
 import re
 import threading
@@ -9,6 +10,8 @@ from django.conf import settings
 from django.db import connection
 
 from .models import Chunk
+
+logger = logging.getLogger(__name__)
 
 
 TOKEN_RE = re.compile(r"[\w一-鿿]+", re.UNICODE)
@@ -82,12 +85,19 @@ def ensure_search_tables():
         )
 
 
-def index_chunk(chunk: Chunk):
-    ensure_search_tables()
-    knowledge = chunk.knowledge
+def chunk_vector(chunk: Chunk) -> bytes:
+    """Chunk 内容的向量（已序列化）。会请求 Embedding 服务，不要在数据库事务里调用。"""
     from .model_providers import embedding
 
-    vec = pack_embedding(embedding(chunk.tenant, [chunk.content], chunk.knowledge.embedding_model_id)[0])
+    return pack_embedding(embedding(chunk.tenant, [chunk.content], chunk.knowledge.embedding_model_id)[0])
+
+
+def index_chunk(chunk: Chunk, vec: bytes | None = None):
+    """写入全文和向量索引。调用方持有写事务时应先用 chunk_vector() 算好向量再传进来。"""
+    ensure_search_tables()
+    knowledge = chunk.knowledge
+    if vec is None:
+        vec = chunk_vector(chunk)
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM chunks_fts WHERE chunk_id = %s", [chunk.id])
         cursor.execute("DELETE FROM chunk_embeddings_vec WHERE rowid = %s", [chunk.seq_id if chunk.seq_id is not None else _rowid(chunk.id)])
@@ -105,6 +115,16 @@ def index_chunk(chunk: Chunk):
         )
     if chunk.seq_id is None:
         Chunk.objects.filter(id=chunk.id).update(seq_id=rowid)
+
+
+def update_chunk_index_scope(chunk: Chunk):
+    """Chunk 换了知识库或租户但内容没变：只改全文索引里的归属列，向量不需要重算。"""
+    ensure_search_tables()
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "UPDATE chunks_fts SET tenant_id = %s, knowledge_base_id = %s WHERE chunk_id = %s",
+            [chunk.tenant_id, chunk.knowledge_base_id, chunk.id],
+        )
 
 
 def delete_chunk_index(chunk_id: str, seq_id: int | None = None):
@@ -450,7 +470,8 @@ def _vector_search(tenant_id: int, kb_set: set, query: str, top_k: int) -> dict[
                 for chunk in chunks:
                     scores[chunk.id] = scores.get(chunk.id, 0.0) + row_scores.get(chunk.seq_id or 0, 0.0)
     except Exception:
-        pass
+        # Embedding 服务不可用等情况：向量通道返回空，检索退化为全文 + 图谱
+        logger.warning("vector search failed, falling back to lexical channels", exc_info=True)
     return scores
 
 

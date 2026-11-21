@@ -129,6 +129,16 @@ class ToolRegistry:
 
 
 # ── 内置工具实现 ─────────────────────────────────────────────────────
+def accessible_knowledge(knowledge_id: str, context: dict):
+    """模型传入的文档 ID 不可信：只返回本租户、且在本次对话所选知识库范围内的文档。"""
+    from .models import Knowledge
+
+    qs = Knowledge.objects.filter(id=knowledge_id, tenant_id=context.get("tenant_id"), deleted_at__isnull=True)
+    if context.get("kb_ids"):
+        qs = qs.filter(knowledge_base_id__in=context["kb_ids"])
+    return qs.first()
+
+
 class KnowledgeSearchTool(Tool):
     """知识库检索工具（带会话级去重）。"""
 
@@ -254,15 +264,12 @@ class GetDocumentInfoTool(Tool):
         }
 
     def execute(self, args: dict, context: dict) -> ToolResult:
-        from .models import Knowledge
-
         knowledge_id = args.get("knowledge_id", "")
         if not knowledge_id:
             return ToolResult(output="", error="knowledge_id is required")
 
-        try:
-            k = Knowledge.objects.get(id=knowledge_id)
-        except Knowledge.DoesNotExist:
+        k = accessible_knowledge(knowledge_id, context)
+        if not k:
             return ToolResult(output="", error=f"Document not found: {knowledge_id}")
 
         chunk_count = k.chunks.filter(is_enabled=True).count() if hasattr(k, 'chunks') else 0
@@ -809,7 +816,7 @@ class WikiReadSourceDocTool(Tool):
         }
 
     def execute(self, args: dict, context: dict) -> ToolResult:
-        from .models import Chunk, Knowledge
+        from .models import Chunk
 
         knowledge_id = args.get("knowledge_id", "")
         limit = args.get("limit", 10)
@@ -817,9 +824,8 @@ class WikiReadSourceDocTool(Tool):
         if not knowledge_id:
             return ToolResult(output="", error="knowledge_id is required")
 
-        try:
-            knowledge = Knowledge.objects.get(id=knowledge_id)
-        except Knowledge.DoesNotExist:
+        knowledge = accessible_knowledge(knowledge_id, context)
+        if not knowledge:
             return ToolResult(output="", error=f"Document not found: {knowledge_id}")
 
         chunks = Chunk.objects.filter(
@@ -877,7 +883,7 @@ class QueryKnowledgeGraphTool(Tool):
         }
 
     def execute(self, args: dict, context: dict) -> ToolResult:
-        from .graph_rag import graph_search_results, expand_relation_context
+        from .graph_rag import graph_search, expand_relation_context
 
         query = args.get("query", "")
         tenant_id = context.get("tenant_id")
@@ -891,9 +897,9 @@ class QueryKnowledgeGraphTool(Tool):
 
         try:
             # 查询知识图谱
-            results = graph_search_results(tenant_id, kb_ids, query, top_k=10)
+            results, relations = graph_search(tenant_id, kb_ids, query, top_k=10)
 
-            if not results:
+            if not results and not relations:
                 return ToolResult(output="No graph results found. The knowledge graph may not be configured or no matching entities found.")
 
             # 扩展关系上下文
@@ -909,6 +915,10 @@ class QueryKnowledgeGraphTool(Tool):
                 lines.append(f"[{i}] {title} ({match_type})\n{content}")
 
             output = "\n\n".join(lines)
+            if relations:
+                # 把实体关系显式给模型，否则它只能从片段文本里猜关系链
+                triples = "\n".join(f"- {r['node1']} -[{r['type']}]-> {r['node2']}" for r in relations)
+                output = f"Relations:\n{triples}\n\nChunks:\n{output}"
             return ToolResult(output=output[:8000], data=results)
 
         except Exception as e:

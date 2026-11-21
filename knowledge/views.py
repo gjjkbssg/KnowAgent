@@ -26,7 +26,7 @@ from personal_knowledge_base.graph_rag import (
     delete_knowledge_graph,
     validate_extract_config,
 )
-from personal_knowledge_base.model_providers import safe_json
+from personal_knowledge_base.model_providers import EmbeddingUnavailableError, safe_json
 from personal_knowledge_base.multimodal import cleanup_knowledge_images
 from personal_knowledge_base.models import (
     Chunk,
@@ -37,7 +37,7 @@ from personal_knowledge_base.models import (
     TaskRecord,
 )
 from personal_knowledge_base.responses import fail, ok
-from personal_knowledge_base.search import delete_chunk_index, hybrid_search, index_chunk
+from personal_knowledge_base.search import chunk_vector, delete_chunk_index, hybrid_search, index_chunk, update_chunk_index_scope
 from personal_knowledge_base.serializers import (
     DEFAULT_INDEXING_STRATEGY,
     chunk_dict,
@@ -621,14 +621,12 @@ def knowledge_move(request, kb_id=None):
         KnowledgeImage.objects.filter(knowledge=item).update(knowledge_base=target, tenant=target.tenant)
         chunks = []
         for chunk in Chunk.objects.filter(knowledge=item):
-            delete_chunk_index(chunk.id, chunk.seq_id)
             chunk.knowledge_base = target
             chunk.tenant = target.tenant
             chunk.relation_chunks = None
             chunk.indirect_relation_chunks = None
             chunk.save(update_fields=["knowledge_base", "tenant", "updated_at"])
-            if chunk.is_enabled and chunk.chunk_type != "image_container":
-                index_chunk(chunk)
+            update_chunk_index_scope(chunk)
             chunks.append(chunk)
         try:
             rebuild_knowledge_graph(item, chunks)
@@ -809,8 +807,20 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
         chunk.content = data.get("content", chunk.content)
         chunk.is_enabled = data.get("is_enabled", chunk.is_enabled)
         chunk.metadata = data.get("metadata", chunk.metadata)
-        chunk.save()
-        index_chunk(chunk)
+        try:
+            # 先算向量再开事务：Embedding 请求可能很慢，不能在它期间占着 SQLite 的写锁
+            vector = chunk_vector(chunk)
+        except EmbeddingUnavailableError as exc:
+            return fail(f"Embedding 服务不可用，切片未保存：{exc}", 503, code="embedding_unavailable")
+        with transaction.atomic():
+            # UPDATE 而不是 save()：切片若在算向量期间被删除，save() 会把它重新插回去
+            chunk.updated_at = timezone.now()
+            saved = Chunk.objects.filter(id=chunk.id).update(
+                content=chunk.content, is_enabled=chunk.is_enabled, metadata=chunk.metadata, updated_at=chunk.updated_at
+            )
+            if not saved:
+                return fail("chunk not found", 404)
+            index_chunk(chunk, vector)
         return ok(chunk_dict(chunk))
     if knowledge_id and request.method == "GET":
         chunks = Chunk.objects.filter(knowledge_id=knowledge_id).order_by("chunk_index")

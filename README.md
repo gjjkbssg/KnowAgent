@@ -52,7 +52,11 @@ Observe：工具结果回填上下文
 | 图谱推理 Agent | 实体关系与多跳路径 | Neo4j、Wiki、文档补证 |
 | 答案整理 Agent | 汇总多路结果 | 仅结构化思考 |
 
-项目共注册 **16 个工具**，其中 **15 个进入默认白名单**；运行时再按 Agent 角色收窄权限。
+项目共注册 **16 个工具**。对话入口中主 Agent 只持有 `actor` 与 `thinking`，四个子 Agent 各自持有上表的最小工具集，实际可达的是 **11 个**；`web_search`、`web_fetch`、`database_query`、`todo_write`、`read_skill` 已注册但未分配给任何对话角色。
+
+- **执行期校验**：白名单在工具执行前再次校验，模型请求未授权的工具会被拒绝，而不只是不出现在工具列表里。
+- **范围校验**：模型传入的文档 ID 不可信，文档类工具只返回当前租户、当前所选知识库内的文档。
+- **结构化引用**：主 Agent 与子 Agent 检索到的 Chunk 汇总到同一个收集器，按 Chunk 去重后随最终答案返回并落库，答案中点名的文档排在前面。
 
 ### 3. 可评测的混合检索链
 
@@ -90,7 +94,7 @@ OCR 与 Caption 不作为附件备注，而是与正文一样参与召回和引�
 ### 6. 可恢复的后台任务与流式回答
 
 - Agent 生成线程与 SSE 连接解耦。
-- SSE 支持按消息偏移量回放，刷新页面后继续接收结果。
+- 每个 SSE 事件带偏移量 id；断线后前端用 `Last-Event-ID` 续传，只补发未收到的事件，不会重新提问；刷新页面后也能继续接收结果。
 - 文档任务使用状态、租约与启动恢复机制，处理未完成或超时任务。
 - 可选 Langfuse 记录模型、工具和 Agent 执行轨迹。
 
@@ -181,7 +185,7 @@ flowchart TB
 
 1. 向量通道主要改善语义召回。
 2. Rerank 将 MRR 从 0.90 提升到 0.95，主要贡献是把正确证据排得更靠前。
-3. 原始稀疏/稠密分数直接相加存在尺度问题，后续应使用 RRF 或分通道归一化。
+3. 原始稀疏/稠密分数直接相加存在尺度问题（`Hybrid raw` 的 MRR 低于纯向量），现已改为 RRF 融合。
 4. 完整流水线增加了覆盖范围，但当前延迟约 11.5 秒，需要按意图触发查询扩展和图谱检索。
 
 > 上表是检索排序修复之前测得的。之后 FTS 改为按 BM25 排序取候选、通道间改用 RRF 融合、GraphRAG 候选改为进入 Rerank；`Hybrid raw` 与 `Full pipeline` 两行需要用 `python manage.py run_interview_eval` 重新测量后更新。
@@ -226,7 +230,11 @@ LLM_CHAT_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 LLM_CHAT_MODEL=qwen3.7-plus
 ```
 
-Embedding、Rerank 和 VLM 可以使用不同服务，完整字段见 [`.env.example`](.env.example)。不使用图谱与长期记忆时，将 `NEO4J_ENABLE=false`。
+Embedding、Rerank 和 VLM 可以使用不同服务，完整字段见 [`.env.example`](.env.example)。
+
+语义向量召回需要 `LLM_USE_ENV_EMBEDDING=true` 并配置 Embedding 的 API Key（未单独配置时使用 `LLM_API_KEY`）；否则向量通道使用本地哈希向量，只能提供字面相似度。切换后运行 `python manage.py rebuild_vector_index` 重建索引。配置了 Embedding 服务后如果调用失败，文档入库会报错（可重试），不会悄悄改用哈希向量；查询时向量通道返回空，检索退化为全文与图谱。
+
+不使用图谱与长期记忆时，将 `NEO4J_ENABLE=false`。
 
 ### 4. 初始化并启动
 

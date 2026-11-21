@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { MessagePlugin } from 'tdesign-vue-next'
 import { api, streamChat, continueStream } from '../api'
 import { useChatStore } from '../stores/chat'
 import ChatInput from './chat/components/ChatInput.vue'
@@ -360,6 +361,11 @@ async function doStream(id: string, payload: any) {
   } catch (err: any) {
     // AbortError 是用户主动取消，不需要 fallback
     if (err?.name === 'AbortError') return
+    if (currentAssistantId.value) {
+      // 续传也失败了，但回答已在服务端生成：重新提问会重复提交问题，改为提示刷新后继续接收
+      MessagePlugin.warning('连接中断，回答仍在后台生成，刷新页面可继续查看')
+      return
+    }
     try {
       const res: any = payload.agent_enabled ? await api.agentChat(id, payload) : await api.chat(id, payload)
       upsertAssistant(res.data.message, true)

@@ -32,6 +32,7 @@ DEFAULT_ENTITY_BATCH_SIZE = 5
 DEFAULT_GRAPH_WORKERS = 2
 DIRECT_RELATION_LIMIT = 8
 INDIRECT_RELATION_LIMIT = 8
+GRAPH_RELATION_LIMIT = 20
 
 
 @dataclass(frozen=True)
@@ -234,7 +235,7 @@ class Neo4jGraphRepository:
             f"""
             MATCH (n:{label_expr})-[r]-(m:{label_expr})
             WHERE ANY(nodeText IN $nodes WHERE toLower(n.name) CONTAINS toLower(nodeText))
-            RETURN n, r, m
+            RETURN n, r, m, startNode(r) = n AS forward
             LIMIT 200
             """,
             nodes=nodes,
@@ -256,7 +257,9 @@ class Neo4jGraphRepository:
                             "attributes": list(item.get("attributes") or []),
                         }
                     )
-            graph["relation"].append({"node1": source.get("name"), "node2": target.get("name"), "type": rel.type})
+            # 匹配是无向的，关系的真实方向可能是 m -> n
+            head, tail = (source, target) if record["forward"] else (target, source)
+            graph["relation"].append({"node1": head.get("name"), "node2": tail.get("name"), "type": rel.type})
         return graph
 
 
@@ -754,16 +757,25 @@ def sorted_indirect_chunks(chunk_id: str, chunk_graph: dict[str, dict[str, dict]
 
 
 def graph_search_results(tenant_id: int, kb_ids: list[str], query: str, seen_chunk_ids: set[str] | None = None, top_k: int = 10) -> list[dict]:
+    return graph_search(tenant_id, kb_ids, query, seen_chunk_ids, top_k)[0]
+
+
+def graph_search(tenant_id: int, kb_ids: list[str], query: str, seen_chunk_ids: set[str] | None = None, top_k: int = 10) -> tuple[list[dict], list[dict]]:
+    """
+    从问题里的实体出发查图谱，返回 (实体所在的 Chunk, 命中的关系三元组)。
+    三元组是 {"node1", "node2", "type"}，方向为 node1 -> node2，按 (node1, node2, type) 去重。
+    """
     seen_chunk_ids = seen_chunk_ids or set()
     kbs = KnowledgeBase.objects.filter(tenant_id=tenant_id, id__in=kb_ids, deleted_at__isnull=True)
     kbs = [kb for kb in kbs if graph_enabled(kb)]
     if not kbs or not graph_repository.available:
-        return []
+        return [], []
     entities = extract_query_entities(query)
     if not entities:
-        return []
+        return [], []
     results = []
     chunk_ids = []
+    relations: dict[tuple, dict] = {}
     for kb in kbs:
         graph = graph_repository.search_node(GraphNamespace(knowledge_base_id=kb.id), entities)
         for node in graph.get("node", []):
@@ -771,8 +783,12 @@ def graph_search_results(tenant_id: int, kb_ids: list[str], query: str, seen_chu
                 if chunk_id not in seen_chunk_ids:
                     seen_chunk_ids.add(chunk_id)
                     chunk_ids.append(chunk_id)
+        for relation in graph.get("relation", []):
+            if relation.get("node1") and relation.get("node2"):
+                relations.setdefault((relation["node1"], relation["node2"], relation.get("type")), relation)
+    relations = list(relations.values())[:GRAPH_RELATION_LIMIT]
     if not chunk_ids:
-        return []
+        return [], relations
     chunks = Chunk.objects.filter(id__in=chunk_ids, tenant_id=tenant_id, is_enabled=True).select_related("knowledge", "knowledge_base")
     chunk_map = {chunk.id: chunk for chunk in chunks}
     for chunk_id in chunk_ids:
@@ -782,7 +798,7 @@ def graph_search_results(tenant_id: int, kb_ids: list[str], query: str, seen_chu
         results.append(chunk_to_graph_result(chunk))
         if len(results) >= top_k:
             break
-    return results
+    return results, relations
 
 
 def chunk_to_graph_result(chunk: Chunk) -> dict:
