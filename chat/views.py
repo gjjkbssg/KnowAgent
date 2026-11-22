@@ -6,7 +6,7 @@ import uuid
 from datetime import timedelta
 from concurrent.futures import ThreadPoolExecutor
 
-from django.db import OperationalError, close_old_connections, connection
+from django.db import OperationalError, close_old_connections, connection, transaction
 from django.db.models import Q
 from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
@@ -38,12 +38,18 @@ from personal_knowledge_base.context_snapshot import (
 from personal_knowledge_base.agent_engine import AgentEngine
 from personal_knowledge_base.memory import add_episode as memory_add_episode, delete_session_memory, is_memory_available, retrieve_memory
 from personal_knowledge_base.model_providers import ModelConfigurationError, chat_completion, chat_completion_stream, role_completion
-from personal_knowledge_base.models import AgentToolApproval, KnowledgeBase, Message, Session, User
+from personal_knowledge_base.models import AgentToolApproval, KnowledgeBase, Message, Session, TaskRecord, User
 from personal_knowledge_base.query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
 from personal_knowledge_base.responses import fail, ok
 from personal_knowledge_base.search import hybrid_search
 from personal_knowledge_base.serializers import message_dict, session_dict
-from personal_knowledge_base.stream_manager import stream_manager
+from personal_knowledge_base.stream_manager import StreamEvent, stream_manager
+from personal_knowledge_base.tasks import (
+    RESUME_APPROVAL_TASK,
+    RESUME_FINISHED,
+    RESUME_STARTED,
+    submit_approval_resume,
+)
 from personal_knowledge_base.http_helpers import (
     auth_context,
     bool_from_value,
@@ -362,23 +368,41 @@ def _saved_message_frames(message_id: str, message: Message | None) -> list[tupl
     ]
 
 
+def _approval_frames(approval: AgentToolApproval) -> list[tuple[str, dict]]:
+    return [
+        ("message", {
+            "response_type": "tool_approval_required",
+            "approval": {
+                "id": approval.id,
+                "status": approval.status,
+                "tool_calls": approval.tool_calls,
+                "expires_at": approval.expires_at.isoformat(),
+            },
+            "assistant_message_id": approval.message_id,
+        }),
+        ("done", {"message_id": approval.message_id}),
+    ]
+
+
 def _numbered_frames(frames, first_id: int):
     for offset, (event, payload) in enumerate(frames):
         yield sse_frame(payload, event, event_id=first_id + offset)
 
 
-def stream_terminal_event(message_id: str) -> str | None:
-    """内存流里第一个终止事件的类型（回放在它之后就结束）；流不存在或还没结束时返回 None。"""
+def stream_terminal_event(message_id: str) -> StreamEvent | None:
+    """内存流里第一个终止事件；流不存在或还没结束时返回 None。"""
     stream = stream_manager.get_stream(message_id)
-    if not stream:
+    if not stream or stream.first_event_frame_id is None:
         return None
     for event in stream.get_events():
         if event.event_type in TERMINAL_STREAM_EVENTS:
-            return event.event_type
+            return event
     return None
 
 
-def stream_message_events(message: Message, last_event_id: int = -1, idle_timeout: float | None = None):
+def stream_message_events(
+    message: Message, last_event_id: int = -1, idle_timeout: float | None = None, *, wait_for_resume: bool = False,
+):
     """
     把 StreamManager 中一条消息的事件转成 SSE 帧，首次推送、断线重连和已完成消息的回放共用。
 
@@ -387,6 +411,7 @@ def stream_message_events(message: Message, last_event_id: int = -1, idle_timeou
     Last-Event-ID，这里只发 id 更大的帧，不重复也不遗漏。
     """
     msg_id = message.id
+    stream = stream_manager.get_stream(msg_id)
     next_id = 0
 
     def emit(frames):
@@ -403,15 +428,48 @@ def stream_message_events(message: Message, last_event_id: int = -1, idle_timeou
 
     offset = 0
     idle = 0.0
+    next_db_check = 0.0
     while idle_timeout is None or idle < idle_timeout:
-        events = stream_manager.get_events(msg_id, offset)
+        current_stream = stream_manager.get_stream(msg_id)
+        if wait_for_resume and current_stream is not stream:
+            offset = 0
+            next_id = max(next_id, last_event_id + 1)
+        stream = current_stream
+        if stream and stream.first_event_frame_id is None:
+            # After a restart the earlier frame positions are unknown. Use saved state.
+            wait_for_resume = True
+            events = []
+        elif stream:
+            next_id = max(next_id, stream.first_event_frame_id)
+            events = stream.get_events(offset)
+        else:
+            events = []
         for event in events:
-            yield from emit(_stream_event_frames(msg_id, event))
+            frames = _stream_event_frames(msg_id, event)
+            if wait_for_resume and event.event_type == "approval_required" and not AgentToolApproval.objects.filter(
+                id=event.data.get("approval", {}).get("id"), status="pending", expires_at__gt=timezone.now(),
+            ).exists():
+                # Preserve the positions of approval frames sent before the decision.
+                next_id += len(frames)
+                continue
+            yield from emit(frames)
             if event.event_type in TERMINAL_STREAM_EVENTS:
                 return
         offset += len(events)
 
-        if not events and stream_manager.is_complete(msg_id):
+        if not events and wait_for_resume and time.monotonic() >= next_db_check:
+            # A worker in another process may only be visible through saved state.
+            next_db_check = time.monotonic() + 1
+            saved = Message.objects.filter(id=msg_id).first()
+            first_id = max(next_id, last_event_id + 1)
+            if not saved or saved.is_completed:
+                yield from _numbered_frames(_saved_message_frames(msg_id, saved), first_id)
+                return
+            pending = saved.tool_approvals.filter(status="pending", expires_at__gt=timezone.now()).first()
+            if pending:
+                yield from _numbered_frames(_approval_frames(pending), first_id)
+                return
+        elif not events and not wait_for_resume and stream_manager.is_complete(msg_id):
             saved = Message.objects.filter(id=msg_id).first()
             yield from _numbered_frames(_saved_message_frames(msg_id, saved), max(next_id, last_event_id + 1))
             return
@@ -489,38 +547,33 @@ def continue_stream(request, session_id):
         expires_at__gt=timezone.now(),
     ).first()
     terminal_event = stream_terminal_event(message.id)
-    if approval:
-        replayable = terminal_event == "approval_required"
-    else:
-        replayable = message.is_completed and terminal_event in ("complete", "error")
+    replayable = False
+    if terminal_event:
+        if approval:
+            replayable = (
+                terminal_event.event_type == "approval_required"
+                and terminal_event.data.get("approval", {}).get("id") == approval.id
+            )
+        else:
+            replayable = message.is_completed and terminal_event.event_type in ("complete", "error")
     if replayable:
         # 事件流还在内存里：按实时推送时完全相同的帧和 id 回放
         events = stream_message_events(message, last_event_id=last_event_id)
         return StreamingHttpResponse(events, content_type="text/event-stream")
 
     if approval:
-        frames = [
-            (
-                "message",
-                {
-                    "response_type": "tool_approval_required",
-                    "approval": {
-                        "id": approval.id,
-                        "status": approval.status,
-                        "tool_calls": approval.tool_calls,
-                        "expires_at": approval.expires_at.isoformat(),
-                    },
-                    "assistant_message_id": message.id,
-                },
-            ),
-            ("done", {"message_id": message.id}),
-        ]
-        return StreamingHttpResponse(_numbered_frames(frames, last_event_id + 1), content_type="text/event-stream")
+        return StreamingHttpResponse(_numbered_frames(_approval_frames(approval), last_event_id + 1), content_type="text/event-stream")
 
     if message.is_completed:
         return StreamingHttpResponse(_numbered_frames(_saved_message_frames(message.id, message), last_event_id + 1), content_type="text/event-stream")
 
-    events = stream_message_events(message, last_event_id=last_event_id, idle_timeout=STREAM_REPLAY_IDLE_TIMEOUT)
+    wait_for_resume = TaskRecord.objects.filter(
+        task_type=RESUME_APPROVAL_TASK,
+        id__in=message.tool_approvals.values("id"),
+    ).exists()
+    events = stream_message_events(
+        message, last_event_id=last_event_id, idle_timeout=STREAM_REPLAY_IDLE_TIMEOUT, wait_for_resume=wait_for_resume,
+    )
     return StreamingHttpResponse(events, content_type="text/event-stream")
 
 
@@ -671,10 +724,11 @@ APPROVAL_CONFIG_FIELDS = {
 
 def _persist_agent_result(result, *, assistant_msg_id, stream, tenant, user_id, user,
                           user_msg_id, session_id, query, agent_config, mcp_service_ids,
-                          enable_memory, enable_chat_history, enable_snapshot):
+                          enable_memory, enable_chat_history, enable_snapshot, resume_task=None):
     steps = [step.to_dict() for step in result.steps]
     refs = result.references
-    if getattr(result, "stopped_reason", "completed") == "awaiting_approval":
+    awaiting_approval = getattr(result, "stopped_reason", "completed") == "awaiting_approval"
+    if awaiting_approval:
         from django.conf import settings
 
         checkpoint = dict(getattr(result, "checkpoint", None) or {})
@@ -690,23 +744,33 @@ def _persist_agent_result(result, *, assistant_msg_id, stream, tenant, user_id, 
             "session_id": session_id,
         }
         expires_at = timezone.now() + timedelta(seconds=settings.AGENT_APPROVAL_TTL_SECONDS)
-        approval = AgentToolApproval.objects.create(
-            tenant=tenant,
-            session_id=session_id,
-            message_id=assistant_msg_id,
-            tool_calls=getattr(result, "pending_approval", []),
-            checkpoint=checkpoint,
-            expires_at=expires_at,
-        )
-        Message.objects.filter(id=assistant_msg_id).update(
+    with transaction.atomic():
+        messages = Message.objects.filter(id=assistant_msg_id)
+        if resume_task is not None:
+            if not resume_task.filter(result=RESUME_STARTED).update(result=RESUME_FINISHED, updated_at=timezone.now()):
+                return
+            messages = messages.filter(is_completed=False)
+        if not messages.update(
             content=result.content,
             rendered_content=result.content,
             knowledge_references=refs,
             agent_steps=steps,
             agent_duration_ms=result.duration_ms,
-            is_completed=False,
+            is_completed=not awaiting_approval,
             updated_at=timezone.now(),
-        )
+        ):
+            return
+        if awaiting_approval:
+            approval = AgentToolApproval.objects.create(
+                tenant=tenant,
+                session_id=session_id,
+                message_id=assistant_msg_id,
+                tool_calls=getattr(result, "pending_approval", []),
+                checkpoint=checkpoint,
+                expires_at=expires_at,
+            )
+
+    if awaiting_approval:
         if stream:
             stream.set_final_result(result.content, refs, steps, result.duration_ms)
             stream.append_event("approval_required", {
@@ -719,15 +783,6 @@ def _persist_agent_result(result, *, assistant_msg_id, stream, tenant, user_id, 
             })
         return approval
 
-    Message.objects.filter(id=assistant_msg_id).update(
-        content=result.content,
-        rendered_content=result.content,
-        knowledge_references=refs,
-        agent_steps=steps,
-        agent_duration_ms=result.duration_ms,
-        is_completed=True,
-        updated_at=timezone.now(),
-    )
     if stream:
         stream.set_final_result(result.content, refs, steps, result.duration_ms)
         stream.append_event("complete", {"done": True, "content": result.content})
@@ -857,16 +912,40 @@ def _run_agent_generation(
             pass
 
 
-def _resume_agent_generation(approval_id: str):
-    toolset = None
-    approval = AgentToolApproval.objects.select_related("tenant", "session", "message").filter(id=approval_id).first()
-    if not approval or approval.status not in {"approved", "rejected"}:
+RESUME_INTERRUPTED = "审批后的生成已中断，无法确认工具是否已执行。为避免重复执行，本次操作不会重试。"
+
+
+def _persist_resume_error(approval_id: str, content: str, resume_task=None):
+    with transaction.atomic():
+        if resume_task is not None and not resume_task.exclude(result=RESUME_FINISHED).update(
+            result=RESUME_FINISHED, updated_at=timezone.now(),
+        ):
+            return False
+        return bool(Message.objects.filter(
+            tool_approvals__id=approval_id,
+            tool_approvals__status__in=("approved", "rejected"),
+            is_completed=False,
+        ).update(content=content, rendered_content=content, is_completed=True, updated_at=timezone.now()))
+
+
+def _resume_agent_generation(approval_id: str, resume_task):
+    # The worker may retry a database write. Never repeat the Agent invocation
+    # once it could have reached a remote tool.
+    if resume_task.filter(result=RESUME_STARTED).exists():
+        _persist_resume_error(approval_id, RESUME_INTERRUPTED, resume_task)
         return
+    eligible = AgentToolApproval.objects.filter(
+        id=approval_id, status__in=("approved", "rejected"), message__is_completed=False,
+    )
+    approval = eligible.select_related("tenant").first()
+    if not approval or not resume_task.filter(result__isnull=True).exists():
+        return
+    toolset = None
+    stream = None
     checkpoint = approval.checkpoint or {}
     chat_state = checkpoint.get("chat", {})
     session_id = str(approval.session_id)
     message_id = str(approval.message_id)
-    stream = stream_manager.get_stream(message_id) or stream_manager.create_stream(message_id, session_id)
     try:
         from personal_knowledge_base.mcp_client import load_mcp_toolset
 
@@ -879,7 +958,18 @@ def _resume_agent_generation(approval_id: str):
             user_id=chat_state.get("user_id", ""),
             agent_config=agent_config,
         )
-        result = engine.resume(checkpoint, "approved" if approval.status == "approved" else "rejected", on_event=lambda kind, data: stream.append_event(kind, data))
+        if not resume_task.filter(result__isnull=True, id__in=eligible.values("id")).update(
+            result=RESUME_STARTED, updated_at=timezone.now(),
+        ):
+            return
+        previous_stream = stream_manager.get_stream(message_id)
+        first_frame_id = None
+        if previous_stream and previous_stream.first_event_frame_id is not None:
+            first_frame_id = previous_stream.first_event_frame_id + sum(
+                len(_stream_event_frames(message_id, event)) for event in previous_stream.get_events()
+            )
+        stream = stream_manager.create_stream(message_id, session_id, first_event_frame_id=first_frame_id)
+        result = engine.resume(checkpoint, approval.status, on_event=stream.append_event)
         user = User.objects.filter(id=chat_state.get("user_id", "")).first()
         _persist_agent_result(
             result,
@@ -896,21 +986,17 @@ def _resume_agent_generation(approval_id: str):
             enable_memory=chat_state.get("enable_memory", False),
             enable_chat_history=chat_state.get("enable_chat_history", True),
             enable_snapshot=chat_state.get("enable_snapshot", True),
+            resume_task=resume_task,
         )
+    except OperationalError:
+        raise
     except Exception as exc:
         logger.exception("[Agent] Resume failed for approval %s", approval_id)
-        stream.append_event("error", {"content": str(exc)})
-        Message.objects.filter(id=message_id).update(
-            content=f"生成失败: {exc}",
-            rendered_content=f"生成失败: {exc}",
-            is_completed=True,
-            updated_at=timezone.now(),
-        )
+        if _persist_resume_error(approval_id, f"生成失败: {exc}", resume_task) and stream:
+            stream.append_event("error", {"content": str(exc)})
     finally:
         if toolset:
             toolset.close()
-        from django.db import connection
-        connection.close()
 
 
 @csrf_exempt
@@ -931,7 +1017,6 @@ def tool_approval_decision(request, session_id, approval_id):
     if decision not in {"approve", "reject"}:
         return fail("decision must be approve or reject", 400)
 
-    from django.db import transaction
     expired_now = False
     with transaction.atomic():
         now = timezone.now()
@@ -967,13 +1052,13 @@ def tool_approval_decision(request, session_id, approval_id):
             approval.status = "approved" if decision == "approve" else "rejected"
             approval.decided_by = str(user.id) if user else ""
             approval.decided_at = now
+            TaskRecord.objects.create(id=approval.id, task_type=RESUME_APPROVAL_TASK)
+            transaction.on_commit(lambda: submit_approval_resume(approval.id), robust=True)
     if expired_now:
         stream_manager.append_event(approval.message_id, "complete", {"done": True, "content": "等待确认超时，未执行该操作。"})
         return fail("审批已过期，操作未执行。", 410)
     if not claimed:
         return fail(f"approval already {approval.status}", 409, details={"status": approval.status})
-    stream_manager.create_stream(approval.message_id, session_id)
-    run_database_background(lambda: _resume_agent_generation(approval.id))
     return ok({
         "approval": {
             "id": approval.id,

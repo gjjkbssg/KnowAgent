@@ -10,7 +10,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db import OperationalError, ProgrammingError, close_old_connections, connection
+from django.db import OperationalError, ProgrammingError, close_old_connections, connection, transaction
 from django.utils import timezone
 
 from .models import Knowledge, TaskRecord
@@ -24,6 +24,10 @@ HEARTBEAT_INTERVAL = 15
 STALE_LEASE_SECONDS = 90
 STARTUP_RECOVERY_DELAY = 0.1
 WORKER_TOKEN_KEY = "_worker_token"
+RESUME_APPROVAL_TASK = "resume_tool_approval"
+# Resume task IDs match approval IDs. A null result is safe to reclaim.
+RESUME_STARTED = {"resume": "started"}
+RESUME_FINISHED = {"resume": "finished"}
 
 # 任务队列：SQLite 不支持并发写入，使用队列保证顺序执行
 _task_queue: deque = deque()
@@ -71,6 +75,16 @@ def _enqueue_sequential(task_id: str, fn):
     return True
 
 
+def submit_approval_resume(approval_id: str):
+    """Dispatch an already committed approval resume task."""
+    if getattr(settings, "APP_TASKS_SYNC", False):
+        _run_task(approval_id, None)
+    else:
+        start_task_runner()
+        assert _executor is not None
+        _executor.submit(_run_task, approval_id, None)
+
+
 def _process_queue():
     """顺序处理队列中的任务。"""
     global _queue_worker_running
@@ -111,6 +125,11 @@ def _run_task(task_id: str, fn):
         return
 
     record = TaskRecord.objects.get(id=task_id)
+    owned_task = _owned_task_records(task_id, worker_token)
+    if record.task_type == RESUME_APPROVAL_TASK:
+        from chat.views import _resume_agent_generation
+
+        fn = lambda: _resume_agent_generation(task_id, owned_task)
     cache.set(f"task:{task_id}", {"status": "running", "progress": 0.1}, timeout=86400)
 
     stop_event = threading.Event()
@@ -127,7 +146,7 @@ def _run_task(task_id: str, fn):
         for attempt in range(MAX_RETRIES):
             try:
                 result = fn() or {}
-                finalized = _owned_task_records(task_id, worker_token).update(
+                finalized = owned_task.update(
                     status="completed",
                     progress=1,
                     payload=original_payload,
@@ -153,7 +172,11 @@ def _run_task(task_id: str, fn):
 
         # 所有重试都失败
         logger.error("task %s failed: %s", task_id, last_exc)
-        finalized = _owned_task_records(task_id, worker_token).update(
+        # Leave failed resume attempts recoverable. A recovery scan can release a
+        # pre-execution lease or close an interrupted message without replaying it.
+        if record.task_type == RESUME_APPROVAL_TASK:
+            return
+        finalized = owned_task.update(
             status="failed",
             payload=original_payload,
             error_message=str(last_exc),
@@ -230,6 +253,38 @@ def _mark_recovery_failed(record: TaskRecord, message: str, now) -> bool:
     return bool(updated)
 
 
+def _recover_approval_resumes(now, stale_before, counts):
+    resumes = TaskRecord.objects.filter(task_type=RESUME_APPROVAL_TASK)
+    for record in resumes.filter(status="running", updated_at__lt=stale_before):
+        stale = resumes.filter(
+            id=record.id,
+            status="running",
+            updated_at__lt=stale_before,
+            payload=record.payload,
+        )
+        stale = stale.filter(result__isnull=True) if record.result is None else stale.filter(result=record.result)
+        values = {"payload": _payload_without_worker_token(record.payload), "updated_at": now}
+        with transaction.atomic():
+            if record.result is None:
+                changed = stale.update(status="pending", progress=0, **values)
+                counts["stale_reset"] += changed
+            elif record.result == RESUME_FINISHED:
+                changed = stale.update(status="completed", progress=1, **values)
+            else:
+                from chat.views import RESUME_INTERRUPTED, _persist_resume_error
+
+                changed = stale.update(status="failed", error_message=RESUME_INTERRUPTED, **values)
+                if changed:
+                    _persist_resume_error(record.id, RESUME_INTERRUPTED)
+                    counts["discarded"] += 1
+        if changed:
+            cache.delete(f"task:{record.id}")
+
+    for approval_id in resumes.filter(status="pending").values_list("id", flat=True):
+        submit_approval_resume(approval_id)
+        counts["recovered"] += 1
+
+
 def recover_incomplete_tasks(now=None) -> dict:
     now = now or timezone.now()
     stale_before = now - timedelta(seconds=STALE_LEASE_SECONDS)
@@ -241,7 +296,7 @@ def recover_incomplete_tasks(now=None) -> dict:
     }
     unsupported_records = TaskRecord.objects.filter(
         status__in=("pending", "running"),
-    ).exclude(task_type__in=("process_knowledge", "cleanup_knowledge_artifacts"))
+    ).exclude(task_type__in=("process_knowledge", "cleanup_knowledge_artifacts", RESUME_APPROVAL_TASK))
     for record in unsupported_records.order_by("created_at", "id"):
         if _mark_recovery_failed(record, f"unsupported task type: {record.task_type}", now):
             counts["discarded"] += 1
@@ -328,6 +383,7 @@ def recover_incomplete_tasks(now=None) -> dict:
         if enqueued:
             counts["recovered"] += 1
 
+    _recover_approval_resumes(now, stale_before, counts)
     return counts
 
 
@@ -393,12 +449,13 @@ def _ensure_wal_mode():
 
 
 def task_status(task_id: str):
+    # Approval resume records are private to the authenticated chat API.
+    record = TaskRecord.objects.filter(id=task_id).exclude(task_type=RESUME_APPROVAL_TASK).first()
+    if not record:
+        return {"status": "not_found", "progress": 0}
     cached = cache.get(f"task:{task_id}")
     if cached:
         return cached
-    record = TaskRecord.objects.filter(id=task_id).first()
-    if not record:
-        return {"status": "not_found", "progress": 0}
     return {
         "status": record.status,
         "progress": record.progress,
