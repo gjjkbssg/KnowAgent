@@ -26,6 +26,7 @@ from .context_manager import estimate_tokens, estimate_messages_tokens, manage_c
 logger = logging.getLogger(__name__)
 
 MAX_REPEATED_TOOL_ROUNDS = 2  # 连续多少轮发出完全相同的工具调用即判定为卡死
+MAX_CONSECUTIVE_FAILED_TOOL_ROUNDS = 3
 MAX_CONTEXT_TOKENS = 120000  # 约 120K tokens 上限
 MAX_TOOL_OUTPUT = 16 * 1024
 PARALLEL_TOOL_WORKERS = 4
@@ -250,38 +251,57 @@ class AgentEngine:
             "references": self._references,
         }
 
-    def _call_llm_with_tools(self, messages: list[dict], max_retries: int = 3) -> dict:
+    def _with_retry(self, call):
+        from django.conf import settings
+
+        from .retry_policy import is_retryable, retry_delay
+
+        max_attempts = max(1, int(settings.AGENT_LLM_MAX_ATTEMPTS))
+        for attempt in range(max_attempts):
+            try:
+                return call()
+            except Exception as exc:
+                if not is_retryable(exc) or attempt + 1 >= max_attempts:
+                    raise
+                delay = retry_delay(exc, attempt)
+                logger.warning(
+                    "Agent LLM call failed (attempt %s/%s, status=%s, error=%s), retrying in %.3fs",
+                    attempt + 1,
+                    max_attempts,
+                    getattr(exc, "status_code", None),
+                    type(exc).__name__,
+                    delay,
+                )
+                remaining = delay
+                while remaining > 0:
+                    if callable(self.cancel_check) and self.cancel_check():
+                        raise
+                    sleep_for = min(0.5, remaining)
+                    time.sleep(sleep_for)
+                    remaining -= sleep_for
+                if callable(self.cancel_check) and self.cancel_check():
+                    raise
+
+    def _call_llm_with_tools(self, messages: list[dict]) -> dict:
         """
         调用 LLM，支持重试。
-        参考同类知识库系统的 callLLMWithRetry：对瞬态错误（timeout、rate limit、server error）进行重试。
         工具定义按字母排序，确保字节级稳定性（兼容 DeepSeek V4 自动前缀缓存）。
         """
         from .model_providers import chat_completion_raw
         tools = sort_tools_for_cache(self.registry.to_openai_tools(self.allowed_tools))
-
-        last_error = None
-        for attempt in range(max_retries):
-            try:
-                return chat_completion_raw(self.tenant, messages, model_id=self.model_id, tools=tools if tools else None, temperature=self.temperature)
-            except Exception as e:
-                last_error = e
-                error_str = str(e).lower()
-                # 只对瞬态错误重试
-                is_transient = any(keyword in error_str for keyword in [
-                    "timeout", "timed out", "rate limit", "429", "500", "502", "503", "504",
-                    "connection", "reset", "broken pipe",
-                ])
-                if is_transient and attempt < max_retries - 1:
-                    wait_time = (attempt + 1) * 2  # 递增等待：2s, 4s
-                    logger.warning(f"Agent LLM call failed (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s: {e}")
-                    time.sleep(wait_time)
-                else:
-                    raise
-        raise last_error
+        return self._with_retry(
+            lambda: chat_completion_raw(
+                self.tenant,
+                messages,
+                model_id=self.model_id,
+                tools=tools if tools else None,
+                temperature=self.temperature,
+            )
+        )
 
     def _call_llm_simple(self, messages: list[dict]) -> str:
         from .model_providers import chat_completion
-        return chat_completion(self.tenant, messages, model_id=self.model_id)
+        return self._with_retry(lambda: chat_completion(self.tenant, messages, model_id=self.model_id))
 
     def _run_tool(self, tool_name: str, args: dict, context: dict) -> ToolResult:
         """执行工具前校验白名单：模型只能调用本 Agent 被授予的工具。"""
@@ -332,9 +352,13 @@ class AgentEngine:
             signature.append((fn.get("name", ""), normalized))
         return tuple(sorted(signature))
 
-    def _answer_without_tools(self, messages: list[dict], steps: list) -> str:
-        """卡死时不再给工具，要求模型基于已有证据直接作答。"""
-        nudge = {"role": "user", "content": "你在重复调用相同的工具且没有新信息。请停止调用工具，基于已获得的信息直接给出最终回答；信息不足的部分请明确说明。"}
+    def _answer_without_tools(self, messages: list[dict], steps: list, reason: str = "stuck") -> str:
+        """强制模型停止调用工具并基于已有信息作答。"""
+        if reason == "tool_failures":
+            nudge_content = "工具调用连续失败。请停止调用工具，基于已有信息直接给出最终回答；信息不足的部分请明确说明。"
+        else:
+            nudge_content = "你在重复调用相同的工具且没有新信息。请停止调用工具，基于已获得的信息直接给出最终回答；信息不足的部分请明确说明。"
+        nudge = {"role": "user", "content": nudge_content}
         try:
             content = self._call_llm_simple([*messages, nudge])
         except Exception:
@@ -382,6 +406,7 @@ class AgentEngine:
         tools_available = bool(self._granted_tools)
         previous_round_signature = None
         repeated_rounds = 1
+        consecutive_failed_tool_rounds = 0
         final_content = ""
 
         # 顶层 Agent 追踪
@@ -464,7 +489,7 @@ class AgentEngine:
                 previous_round_signature = round_signature
                 if repeated_rounds >= MAX_REPEATED_TOOL_ROUNDS:
                     logger.warning(f"[Agent] Identical tool calls repeated {repeated_rounds} rounds at iteration {iteration}, forcing final answer")
-                    final_content = self._answer_without_tools(messages, steps)
+                    final_content = self._answer_without_tools(messages, steps, reason="stuck")
                     return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="stuck")
 
                 # ── 有工具调用 → 执行工具（支持并行）─────────────────
@@ -528,6 +553,20 @@ class AgentEngine:
                         })
 
                 steps.append(step)
+                if any(record.result is not None and not record.result.error for record in step.tool_calls):
+                    consecutive_failed_tool_rounds = 0
+                else:
+                    consecutive_failed_tool_rounds += 1
+                if consecutive_failed_tool_rounds >= MAX_CONSECUTIVE_FAILED_TOOL_ROUNDS:
+                    logger.warning("[Agent] Tool calls failed for %s consecutive rounds, forcing final answer", consecutive_failed_tool_rounds)
+                    final_content = self._answer_without_tools(messages, steps, reason="tool_failures")
+                    return AgentResult(
+                        content=final_content,
+                        steps=steps,
+                        total_iterations=iteration,
+                        duration_ms=int((time.monotonic() - start_time) * 1000),
+                        stopped_reason="tool_failures",
+                    )
 
         # 达到最大迭代次数
         return AgentResult(content=final_content or "已达到最大推理轮数，基于当前信息给出回答。", steps=steps, total_iterations=self.max_iterations, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="max_iterations")

@@ -1,6 +1,9 @@
 import json
+import math
 import re
 import time
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Generator, Iterable
 
 from django.conf import settings
@@ -19,6 +22,13 @@ _http_session.headers.update({"Content-Type": "application/json"})
 
 class ModelConfigurationError(RuntimeError):
     pass
+
+
+class ModelHTTPError(requests.HTTPError):
+    def __init__(self, status_code: int, retry_after: float | None, message: str, response=None):
+        self.status_code = status_code
+        self.retry_after = retry_after
+        super().__init__(message, response=response)
 
 
 _CREDENTIAL_LIKE_RE = re.compile(
@@ -42,6 +52,24 @@ class ModelAccessDeniedError(ModelConfigurationError):
         super().__init__(f"{self.upstream_code}: {self.safe_message}")
 
 
+def _parse_retry_after(value: str | None) -> float | None:
+    if not value:
+        return None
+    value = value.strip()
+    try:
+        seconds = float(value)
+        return max(0.0, seconds) if math.isfinite(seconds) else None
+    except ValueError:
+        pass
+    try:
+        retry_at = parsedate_to_datetime(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if retry_at.tzinfo is None:
+        retry_at = retry_at.replace(tzinfo=timezone.utc)
+    return max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
+
+
 def _vlm_access_key(tenant: Tenant) -> str:
     return f"vlm:access-denied:{tenant.id}"
 
@@ -63,9 +91,16 @@ def clear_vlm_access_denied(tenant: Tenant) -> None:
 
 
 def _raise_for_model_status(response) -> None:
-    if response.status_code not in {401, 403}:
-        response.raise_for_status()
-        return
+    status_code = int(response.status_code)
+    if status_code not in {401, 403}:
+        if 200 <= status_code < 300:
+            return
+        body = _safe_model_error_text(getattr(response, "text", ""), "", 300)
+        message = f"Model request failed with status {status_code}"
+        if body:
+            message = f"{message}: {body}"
+        retry_after = _parse_retry_after((getattr(response, "headers", None) or {}).get("Retry-After"))
+        raise ModelHTTPError(status_code, retry_after, message, response=response)
     try:
         payload = response.json()
     except ValueError:

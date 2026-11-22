@@ -1,11 +1,14 @@
 import json
-from unittest.mock import patch
+import time
+from unittest.mock import Mock, patch
 
-from django.test import TestCase
+import requests
+from django.test import TestCase, override_settings
 
 from . import model_providers
 from .agent_engine import AgentEngine
-from .agent_tools import KnowledgeSearchTool, get_tool_registry
+from .agent_tools import KnowledgeSearchTool, ToolRegistry, ToolResult, get_tool_registry
+from .model_providers import ModelHTTPError
 from .models import Chunk, Knowledge, KnowledgeBase, Session, Tenant
 
 
@@ -41,6 +44,73 @@ class AgentEngineTests(TestCase):
         ) as final_call:
             result = engine.execute("question")
         return result, model, final_call
+
+    def test_llm_tool_call_retries_with_retry_after(self):
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
+        response = {"content": "ok", "tool_calls": None}
+        with (
+            override_settings(AGENT_LLM_MAX_ATTEMPTS=3),
+            patch.object(model_providers, "chat_completion_raw", side_effect=[ModelHTTPError(429, 0.5, "limited"), response]) as call,
+            patch("personal_knowledge_base.agent_engine.time.sleep") as sleep,
+        ):
+            result = engine._call_llm_with_tools([{"role": "user", "content": "question"}])
+
+        self.assertEqual(result, response)
+        self.assertEqual(call.call_count, 2)
+        sleep.assert_called_once_with(0.5)
+
+    def test_llm_tool_call_does_not_retry_non_retryable_status(self):
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
+        with (
+            override_settings(AGENT_LLM_MAX_ATTEMPTS=3),
+            patch.object(model_providers, "chat_completion_raw", side_effect=ModelHTTPError(400, None, "bad request")) as call,
+            patch("personal_knowledge_base.agent_engine.time.sleep") as sleep,
+            self.assertRaises(ModelHTTPError),
+        ):
+            engine._call_llm_with_tools([{"role": "user", "content": "question"}])
+
+        call.assert_called_once()
+        sleep.assert_not_called()
+
+    def test_llm_tool_call_stops_after_max_attempts(self):
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
+        with (
+            override_settings(AGENT_LLM_MAX_ATTEMPTS=3),
+            patch.object(model_providers, "chat_completion_raw", side_effect=ModelHTTPError(503, None, "unavailable")) as call,
+            patch("personal_knowledge_base.agent_engine.time.sleep"),
+            patch("personal_knowledge_base.retry_policy.retry_delay", return_value=0),
+            self.assertRaises(ModelHTTPError),
+        ):
+            engine._call_llm_with_tools([{"role": "user", "content": "question"}])
+
+        self.assertEqual(call.call_count, 3)
+
+    def test_llm_retry_is_cancelled_during_backoff(self):
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
+        engine.cancel_check = Mock(side_effect=[False, True])
+        with (
+            override_settings(AGENT_LLM_MAX_ATTEMPTS=3),
+            patch.object(model_providers, "chat_completion_raw", side_effect=ModelHTTPError(429, 1.0, "limited")) as call,
+            patch("personal_knowledge_base.agent_engine.time.sleep") as sleep,
+            self.assertRaises(ModelHTTPError),
+        ):
+            engine._call_llm_with_tools([{"role": "user", "content": "question"}])
+
+        call.assert_called_once()
+        sleep.assert_called_once_with(0.5)
+
+    def test_simple_llm_call_uses_shared_retry_policy(self):
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
+        with (
+            override_settings(AGENT_LLM_MAX_ATTEMPTS=3),
+            patch.object(model_providers, "chat_completion", side_effect=[requests.Timeout(), "ok"]) as call,
+            patch("personal_knowledge_base.agent_engine.time.sleep"),
+            patch("personal_knowledge_base.retry_policy.retry_delay", return_value=0),
+        ):
+            result = engine._call_llm_simple([{"role": "user", "content": "question"}])
+
+        self.assertEqual(result, "ok")
+        self.assertEqual(call.call_count, 2)
 
     def test_tool_outside_whitelist_is_rejected_at_execution(self):
         result, model, _ = self.run_engine(
@@ -79,6 +149,57 @@ class AgentEngineTests(TestCase):
         self.assertEqual(len(model.responses), 1)
         self.assertEqual(len(result.steps), 1)
         final_call.assert_called_once()
+
+    def test_three_failed_sequential_tool_rounds_force_final_answer(self):
+        responses = [
+            {"content": "", "tool_calls": [tool_call(f"c{index}", "thinking", {"thought": str(index)})]}
+            for index in range(3)
+        ]
+        with patch.object(AgentEngine, "_run_tool", return_value=ToolResult(output="", error="failed")):
+            result, model, final_call = self.run_engine(responses, allowed_tools=["thinking"])
+
+        self.assertEqual(result.stopped_reason, "tool_failures")
+        self.assertEqual(result.total_iterations, 3)
+        self.assertEqual(len(result.steps), 3)
+        self.assertEqual(model.responses, [])
+        final_call.assert_called_once()
+        self.assertIn("工具调用连续失败", final_call.call_args.args[1][-1]["content"])
+
+    def test_three_failed_parallel_tool_rounds_force_final_answer(self):
+        responses = []
+        for round_number in range(3):
+            calls = [
+                tool_call(f"c{round_number}-{index}", "thinking", {"thought": f"{round_number}-{index}"})
+                for index in range(2)
+            ]
+            responses.append({"content": "", "tool_calls": calls})
+
+        with patch.object(AgentEngine, "_run_tool", return_value=ToolResult(output="", error="failed")) as run_tool:
+            result, _, _ = self.run_engine(responses, allowed_tools=["thinking"])
+
+        self.assertEqual(result.stopped_reason, "tool_failures")
+        self.assertEqual(result.total_iterations, 3)
+        self.assertEqual(run_tool.call_count, 6)
+        self.assertTrue(all(len(step.tool_calls) == 2 for step in result.steps))
+
+    def test_successful_tool_round_resets_failed_round_count(self):
+        responses = [
+            {"content": "", "tool_calls": [tool_call(f"c{index}", "thinking", {"thought": str(index)})]}
+            for index in range(4)
+        ]
+        responses.append({"content": "done", "tool_calls": None})
+        results = [
+            ToolResult(output="", error="failed"),
+            ToolResult(output="ok"),
+            ToolResult(output="", error="failed"),
+            ToolResult(output="", error="failed"),
+        ]
+        with patch.object(AgentEngine, "_run_tool", side_effect=results) as run_tool:
+            result, _, _ = self.run_engine(responses, allowed_tools=["thinking"])
+
+        self.assertEqual(result.stopped_reason, "completed")
+        self.assertEqual(result.total_iterations, 5)
+        self.assertEqual(run_tool.call_count, 4)
 
     def test_different_arguments_are_not_treated_as_stuck(self):
         result, _, _ = self.run_engine(
@@ -179,7 +300,83 @@ class FakeResponse:
         return None
 
 
+class RegistryTestTool:
+    def __init__(self, name, execute, timeout_seconds=None, hard_timeout=False):
+        self._name = name
+        self._execute = execute
+        self.timeout_seconds = timeout_seconds
+        self.hard_timeout = hard_timeout
+
+    def name(self):
+        return self._name
+
+    def execute(self, args, context):
+        return self._execute(args, context)
+
+
 class ToolIsolationTests(TestCase):
+    def test_hard_timeout_returns_promptly_for_slow_tool(self):
+        registry = ToolRegistry()
+
+        def slow_tool(args, context):
+            time.sleep(1)
+            return ToolResult(output="late")
+
+        registry.register(RegistryTestTool("slow", slow_tool, timeout_seconds=0.05, hard_timeout=True))
+        started = time.monotonic()
+        with self.assertLogs("personal_knowledge_base.agent_tools", level="WARNING"):
+            result = registry.execute_tool("slow", {}, {})
+
+        self.assertLess(time.monotonic() - started, 0.5)
+        self.assertIn("timed out", result.error)
+
+    def test_hard_timeout_returns_fast_tool_result(self):
+        registry = ToolRegistry()
+        registry.register(
+            RegistryTestTool("fast", lambda args, context: ToolResult(output="done"), timeout_seconds=1, hard_timeout=True)
+        )
+
+        result = registry.execute_tool("fast", {}, {})
+
+        self.assertEqual(result.output, "done")
+        self.assertEqual(result.error, "")
+
+    def test_inline_tool_gets_private_cooperative_deadline(self):
+        registry = ToolRegistry()
+        received = []
+        registry.register(RegistryTestTool("inline", lambda args, context: received.append(context) or ToolResult("ok")))
+        caller_context = {"value": "preserved"}
+
+        with override_settings(AGENT_TOOL_TIMEOUT_SECONDS=2):
+            result = registry.execute_tool("inline", {}, caller_context)
+
+        self.assertEqual(result.output, "ok")
+        self.assertIsNot(received[0], caller_context)
+        self.assertGreater(received[0]["tool_deadline"], time.monotonic())
+        self.assertEqual(caller_context, {"value": "preserved"})
+
+    def test_network_tools_are_hard_timed_and_cap_request_timeout(self):
+        registry = get_tool_registry()
+        web_search = registry.get("web_search")
+        web_fetch = registry.get("web_fetch")
+        deadline = time.monotonic() + 0.2
+
+        self.assertTrue(web_search.hard_timeout)
+        self.assertTrue(web_fetch.hard_timeout)
+        with patch("personal_knowledge_base.agent_tools.requests.get", return_value=FakeResponse(text="")) as search:
+            web_search.execute({"query": "query"}, {"tool_deadline": deadline})
+        with patch("personal_knowledge_base.agent_tools.fetch_public_url", return_value=FakeResponse(text="ok")) as fetch:
+            web_fetch.execute({"url": "https://example.com"}, {"tool_deadline": deadline})
+
+        self.assertLessEqual(search.call_args.kwargs["timeout"], 0.2)
+        self.assertLessEqual(fetch.call_args.kwargs["timeout"], 0.2)
+
+    def test_actor_timeout_covers_maximum_wait(self):
+        actor_tool = get_tool_registry().get("actor")
+
+        self.assertFalse(actor_tool.hard_timeout)
+        self.assertEqual(actor_tool.timeout_seconds, 125.0)
+
     def test_web_fetch_parses_html(self):
         page = FakeResponse(text="<html><style>p{}</style><script>x()</script><p>Hello <b>KnowAgent</b></p></html>")
 

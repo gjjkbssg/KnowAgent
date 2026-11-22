@@ -202,6 +202,8 @@ APP_EMBEDDING_DIM = int(os.environ.get("APP_EMBEDDING_DIM", "384"))
 APP_TASK_WORKERS = 4
 APP_TASKS_SYNC = "test" in sys.argv
 LLM_CHAT_MODEL_TIMEOUT = int(os.environ.get("LLM_CHAT_MODEL_TIMEOUT", "60"))
+AGENT_LLM_MAX_ATTEMPTS = int(os.environ.get("AGENT_LLM_MAX_ATTEMPTS", "3"))
+AGENT_TOOL_TIMEOUT_SECONDS = float(os.environ.get("AGENT_TOOL_TIMEOUT_SECONDS", "60"))
 
 NEO4J_ENABLE = env_bool("NEO4J_ENABLE", False)
 NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")

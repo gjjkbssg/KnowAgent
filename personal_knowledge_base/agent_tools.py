@@ -14,6 +14,7 @@ import re
 import socket
 import time
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urljoin, urlparse, urlunparse
@@ -22,11 +23,14 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.utils import get_environ_proxies, select_proxy
 
+from django.conf import settings
+from django.db import connection
 from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
 MAX_TOOL_OUTPUT = 16 * 1024  # 16KB，防止上下文窗口污染
+_TOOL_EXECUTOR = ThreadPoolExecutor(max_workers=8, thread_name_prefix="agent-tool")
 
 
 # ── 数据结构 ─────────────────────────────────────────────────────────
@@ -46,8 +50,18 @@ class ToolResult:
         return result
 
 
+def _execute_hard_timeout_tool(tool, args: dict, context: dict) -> ToolResult:
+    try:
+        return tool.execute(args, context)
+    finally:
+        connection.close()
+
+
 # ── 工具基类 ─────────────────────────────────────────────────────────
 class Tool(ABC):
+    timeout_seconds: float | None = None
+    hard_timeout = False
+
     @abstractmethod
     def name(self) -> str:
         pass
@@ -115,8 +129,30 @@ class ToolRegistry:
             return ToolResult(output="", error=f"Unknown tool: {name}")
 
         start = time.monotonic()
+        timeout = getattr(tool, "timeout_seconds", None)
+        if timeout is None:
+            timeout = settings.AGENT_TOOL_TIMEOUT_SECONDS
+        timeout = max(0.0, float(timeout))
+        tool_context = dict(context)
+        tool_context["tool_deadline"] = start + timeout
         try:
-            result = tool.execute(args, context)
+            if getattr(tool, "hard_timeout", False):
+                future = _TOOL_EXECUTOR.submit(_execute_hard_timeout_tool, tool, args, tool_context)
+                try:
+                    result = future.result(timeout=timeout)
+                except FutureTimeoutError:
+                    if future.done():
+                        raise
+                    future.cancel()
+                    # A running worker thread cannot be killed; it closes its DB connection when it returns.
+                    logger.warning("Tool %s timed out after %gs", name, timeout)
+                    return ToolResult(
+                        output="",
+                        error=f"Tool {name} timed out after {timeout:g}s. [Try a narrower request or a different tool.]",
+                        duration_ms=int((time.monotonic() - start) * 1000),
+                    )
+            else:
+                result = tool.execute(args, tool_context)
             result.duration_ms = int((time.monotonic() - start) * 1000)
             return result
         except Exception as e:
@@ -137,6 +173,13 @@ def accessible_knowledge(knowledge_id: str, context: dict):
     if context.get("kb_ids"):
         qs = qs.filter(knowledge_base_id__in=context["kb_ids"])
     return qs.first()
+
+
+def _remaining_tool_timeout(context: dict, maximum: float) -> float:
+    deadline = context.get("tool_deadline")
+    if deadline is None:
+        return maximum
+    return max(0.001, min(maximum, deadline - time.monotonic()))
 
 
 class KnowledgeSearchTool(Tool):
@@ -353,6 +396,8 @@ class ListKnowledgeDocsTool(Tool):
 class WebSearchTool(Tool):
     """网络搜索工具。"""
 
+    hard_timeout = True
+
     def name(self) -> str:
         return "web_search"
 
@@ -380,7 +425,7 @@ class WebSearchTool(Tool):
                 "https://html.duckduckgo.com/html/",
                 params={"q": query},
                 headers={"User-Agent": "Mozilla/5.0"},
-                timeout=10,
+                timeout=_remaining_tool_timeout(context, 10),
             )
             # 提取搜索结果
             results = re.findall(r'class="result__a"[^>]*href="([^"]*)"[^>]*>(.*?)</a>.*?class="result__snippet"[^>]*>(.*?)</span>', resp.text, re.DOTALL)
@@ -430,7 +475,7 @@ class _PinnedHostAdapter(HTTPAdapter):
         return super().proxy_manager_for(proxy, **self._tls_hostname, **kwargs)
 
 
-def fetch_public_url(url: str, timeout: int = 15) -> requests.Response | None:
+def fetch_public_url(url: str, timeout: float = 15) -> requests.Response | None:
     """
     请求公网 URL，不跟随重定向；地址不允许访问时返回 None。
     连接直接发往校验过的 IP，避免校验之后主机名被重新解析到内网（DNS rebinding）。
@@ -461,6 +506,8 @@ def fetch_public_url(url: str, timeout: int = 15) -> requests.Response | None:
 class WebFetchTool(Tool):
     """网页内容获取工具。"""
 
+    hard_timeout = True
+
     def name(self) -> str:
         return "web_fetch"
 
@@ -486,7 +533,7 @@ class WebFetchTool(Tool):
         try:
             # 手动跟随重定向，每一跳都重新校验目标地址
             for _ in range(MAX_FETCH_REDIRECTS + 1):
-                resp = fetch_public_url(url)
+                resp = fetch_public_url(url, timeout=_remaining_tool_timeout(context, 15))
                 if resp is None:
                     return ToolResult(output="", error="URL is not allowed: only public http(s) addresses can be fetched")
                 location = resp.headers.get("Location") if resp.is_redirect else None
@@ -929,6 +976,8 @@ class QueryKnowledgeGraphTool(Tool):
 class ActorTool(Tool):
     """Spawn and manage subagent actors."""
 
+    timeout_seconds = 125.0
+
     def name(self) -> str:
         return "actor"
 
@@ -954,7 +1003,7 @@ class ActorTool(Tool):
                 },
                 "prompt": {"type": "string", "description": "Task prompt for run/spawn."},
                 "actor_id": {"type": "string", "description": "Existing actor id for status/wait/cancel."},
-                "timeout_ms": {"type": "integer", "description": "Timeout for run/wait in milliseconds.", "default": 120000},
+                "timeout_ms": {"type": "integer", "description": "Timeout for run/wait in milliseconds.", "default": 120000, "maximum": 120000},
             },
             "required": ["action"],
         }
@@ -998,6 +1047,7 @@ class ActorTool(Tool):
         if action == "status":
             return ToolResult(output=format_actor_status(ActorRegistry.get(session, actor_id)))
         if action == "wait":
+            timeout_ms = min(max(timeout_ms, 0), 120000)
             result = ActorRunner.wait(session, actor_id, timeout_ms=timeout_ms)
             return ToolResult(output=result.to_output_text(), data=result.metadata or {})
         if action == "cancel":
