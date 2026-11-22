@@ -197,6 +197,27 @@ class MultimodalProcessingTests(TestCase):
         self.assertEqual(len(text_chunks), 2)
         self.assertEqual({chunk.parent_chunk_id for chunk in image_chunks}, {text_chunks[0].id})
 
+    def test_processing_preserves_lifecycle_set_during_processing(self):
+        knowledge = self.create_file_knowledge("manual.txt", b"Document content for lifecycle processing.")
+        lifecycle = {"status": "superseded", "superseded_by": "current-id"}
+
+        def set_lifecycle_during_processing(_knowledge, progress_callback=None):
+            Knowledge.objects.filter(id=knowledge.id).update(metadata={"lifecycle": lifecycle})
+            return {"pages": 0, "links": 0}
+
+        with (
+            patch("personal_knowledge_base.document_processing.enqueue_wiki_ingest", side_effect=set_lifecycle_during_processing),
+            patch("personal_knowledge_base.document_processing.role_completion", return_value="summary"),
+            patch("personal_knowledge_base.document_processing.generate_questions", return_value=[]),
+            patch("personal_knowledge_base.document_processing.extract_metadata", return_value={}),
+            patch("personal_knowledge_base.document_processing.process_graph", return_value=[]),
+            patch("personal_knowledge_base.document_processing.index_chunk"),
+        ):
+            process_knowledge(knowledge.id)
+
+        knowledge.refresh_from_db()
+        self.assertEqual(knowledge.metadata["lifecycle"], lifecycle)
+
     def test_standalone_image_fails_when_both_vlm_calls_fail(self):
         knowledge = self.create_file_knowledge("unreadable.png", noisy_png())
 

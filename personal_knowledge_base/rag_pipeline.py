@@ -196,6 +196,7 @@ def run_rag_pipeline_stream(
 SYSTEM_PROMPT_DEFAULT = """你是一个知识库问答助手。请根据提供的知识库上下文回答用户问题。
 - 优先使用上下文中的信息回答
 - 引用具体来源时注明文档标题
+- 标注“已废止”的资料只在用户问历史版本时作为依据，否则以现行版本为准，并在回答里说明版本。
 - 如果上下文中没有相关信息，如实说明"""
 
 
@@ -320,6 +321,8 @@ def _build_context_with_memory(refs: list, memory_context: str, kb_names: str) -
     context_parts = []
     for i, ref in enumerate(refs[:5], 1):
         title = ref.get("knowledge_title", "Unknown")
+        if ref.get("lifecycle_status") == "superseded":
+            title = f"{title}（已废止）"
         content = ref.get("content", "")[:500]
         context_parts.append(f"[{i}] {title}\n{content}")
 

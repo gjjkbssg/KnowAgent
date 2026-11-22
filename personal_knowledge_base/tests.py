@@ -47,6 +47,78 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.status_code, 201)
         return response.json()["data"]["knowledge"]
 
+    def test_knowledge_lifecycle_put_validates_and_clears_metadata(self):
+        tenant = Tenant.objects.get(id=1)
+        kb = KnowledgeBase.objects.create(tenant=tenant, name="lifecycle")
+        document = Knowledge.objects.create(
+            tenant=tenant,
+            knowledge_base=kb,
+            type="file",
+            title="old",
+            source="old.md",
+            file_name="old.md",
+            parse_status="completed",
+            metadata={"source": "test"},
+        )
+        replacement = Knowledge.objects.create(
+            tenant=tenant,
+            knowledge_base=kb,
+            type="file",
+            title="new",
+            source="new.md",
+            file_name="new.md",
+            parse_status="completed",
+        )
+
+        response = self.client.put(
+            f"/api/v1/knowledge/{document.id}",
+            data=json.dumps({"lifecycle_status": "superseded", "superseded_by": replacement.id}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        document.refresh_from_db()
+        self.assertEqual(
+            document.metadata,
+            {"source": "test", "lifecycle": {"status": "superseded", "superseded_by": replacement.id}},
+        )
+
+        response = self.client.put(
+            f"/api/v1/knowledge/{document.id}",
+            data=json.dumps({"lifecycle_status": "invalid"}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 400)
+
+        other_tenant = Tenant.objects.create(name="other lifecycle tenant")
+        other_kb = KnowledgeBase.objects.create(tenant=other_tenant, name="other lifecycle")
+        other_document = Knowledge.objects.create(
+            tenant=other_tenant,
+            knowledge_base=other_kb,
+            type="file",
+            title="foreign",
+            source="foreign.md",
+            file_name="foreign.md",
+        )
+        response = self.client.put(
+            f"/api/v1/knowledge/{document.id}",
+            data=json.dumps({"lifecycle_status": "superseded", "superseded_by": other_document.id}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response = self.client.put(
+            f"/api/v1/knowledge/{document.id}",
+            data=json.dumps({"lifecycle_status": "current", "superseded_by": replacement.id}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        document.refresh_from_db()
+        self.assertEqual(document.metadata, {"source": "test"})
+
     def test_core_knowledge_chat_flow(self):
         response = self.client.post(
             "/api/v1/knowledge-bases",

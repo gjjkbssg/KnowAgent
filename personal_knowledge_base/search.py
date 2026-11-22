@@ -9,7 +9,7 @@ from typing import Iterable
 from django.conf import settings
 from django.db import connection
 
-from .models import Chunk
+from .models import Chunk, Knowledge
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 TOKEN_RE = re.compile(r"[\w一-鿿]+", re.UNICODE)
 IDENTIFIER_RE = re.compile(r"[A-Za-z]{1,12}(?:[-_]?\d+)+(?:[-_][A-Za-z0-9]+)*", re.I)
 CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]+")
+HISTORICAL_INTENT_RE = re.compile(
+    r"旧版|老版|旧规则|历史版本|历史规则|以前的版本|之前的版本|上一版|早期版本|废止|作废|"
+    r"previous version|old version|deprecated|superseded|legacy",
+    re.I,
+)
 PARTIAL_OVERLAP_THRESHOLD = 0.85
 RRF_K = 60
 
@@ -304,6 +309,37 @@ def diversify_by_knowledge(results: list[dict], max_per_knowledge: int = 2) -> l
             diversified.append(item)
             knowledge_counts[kid] = count + 1
     return diversified
+
+
+def query_wants_history(query: str) -> bool:
+    return bool(HISTORICAL_INTENT_RE.search(query or ""))
+
+
+def apply_version_policy(results: list[dict], query: str) -> list[dict]:
+    current = []
+    superseded = []
+    for result in results:
+        if result.get("lifecycle_status", "current") == "superseded":
+            superseded.append({**result, "lifecycle_status": "superseded"})
+        else:
+            current.append(result)
+    if query_wants_history(query):
+        return superseded + current
+    return current + superseded
+
+
+def apply_version_aware_mmr(results: list[dict], query: str, k: int, lambda_param: float = 0.7) -> list[dict]:
+    prefer_superseded = query_wants_history(query)
+    preferred = []
+    remaining = []
+    for result in results:
+        is_superseded = result.get("lifecycle_status", "current") == "superseded"
+        (preferred if is_superseded == prefer_superseded else remaining).append(result)
+
+    selected = apply_mmr(preferred, k, lambda_param)
+    if len(selected) < k:
+        selected.extend(apply_mmr(remaining, k - len(selected), lambda_param))
+    return selected
 
 
 # ── 短 chunk 相邻扩展 ────────────────────────────────────────────────
@@ -635,6 +671,7 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
                 "knowledge_title": chunk.knowledge.title,
                 "knowledge_description": getattr(chunk.knowledge, "description", "") or "",
                 "knowledge_base_name": chunk.knowledge_base.name,
+                "lifecycle_status": ((chunk.knowledge.metadata or {}).get("lifecycle") or {}).get("status", "current"),
                 "chunk_type": chunk.chunk_type,
                 "parent_chunk_id": chunk.parent_chunk_id,
                 "image_info": chunk.image_info,
@@ -649,23 +686,31 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
     # 关系扩展：头部候选的关联 chunk 也进入候选池，排在已有候选之后，由 Rerank 决定去留
     if results:
         floor_score = min(item["score"] for item in results) * 0.5
-        for extra in expand_relation_context(results[: max(1, top_k)], tenant_id, min(3, top_k)):
+        relation_extras = expand_relation_context(results[: max(1, top_k)], tenant_id, min(3, top_k))
+        extra_knowledge_ids = {item.get("knowledge_id") for item in relation_extras if item.get("knowledge_id")}
+        extra_metadata = dict(
+            Knowledge.objects.filter(id__in=extra_knowledge_ids, tenant_id=tenant_id).values_list("id", "metadata")
+        )
+        for extra in relation_extras:
+            knowledge_metadata = extra_metadata.get(extra.get("knowledge_id")) or {}
+            extra["lifecycle_status"] = ((knowledge_metadata.get("lifecycle") or {}).get("status", "current"))
             results.append({**extra, "score": floor_score})
 
-    results = deduplicate_results(results)
+    results = deduplicate_results(results, query=query)
     results = rerank(query, results, top_k * 2, tenant=Tenant.objects.filter(id=tenant_id).first())
-    results = deduplicate_results(results)
+    results = deduplicate_results(results, query=query)
     results = apply_rerank_threshold(
         results,
         settings.RETRIEVAL_RERANK_THRESHOLD,
         settings.RETRIEVAL_RERANK_FALLBACK_MIN_SCORE,
     )
+    results = apply_version_policy(results, query)
 
     # ── 知识条目级多样性 ────────────────────────────────────────────
     results = diversify_by_knowledge(results, max_per_knowledge=2)
 
-    # ── MMR：从至多 2×top_k 个候选里选出 top_k 个 ───────────────────
-    results = apply_mmr(results, k=max(1, top_k), lambda_param=0.7)
+    # ── MMR：先保留查询偏好的生命周期，再用其他结果补足 ─────────────
+    results = apply_version_aware_mmr(results, query, k=max(1, top_k), lambda_param=0.7)
 
     # ── 短 chunk 扩展 ──────────────────────────────────────────────
     return expand_short_chunks(results, min_chars=350, max_chars=850)
@@ -717,6 +762,17 @@ def prefer_result(left: dict, right: dict) -> dict:
     return left
 
 
+def _prefer_lifecycle_result(left: dict, right: dict, query: str | None) -> dict | None:
+    if query is None:
+        return None
+    left_is_superseded = left.get("lifecycle_status", "current") == "superseded"
+    right_is_superseded = right.get("lifecycle_status", "current") == "superseded"
+    if left_is_superseded == right_is_superseded:
+        return None
+    prefer_superseded = query_wants_history(query)
+    return left if left_is_superseded == prefer_superseded else right
+
+
 def prefer_redundant(left: dict, right: dict) -> dict:
     """
     两条内容重复时留哪一条。篇幅相近算近似重复，留分数高的；
@@ -729,17 +785,25 @@ def prefer_redundant(left: dict, right: dict) -> dict:
     return left if left_size > right_size else right
 
 
-def deduplicate_results(results: list[dict]) -> list[dict]:
+def deduplicate_results(results: list[dict], query: str | None = None) -> list[dict]:
+    def prefer(left: dict, right: dict) -> dict:
+        lifecycle_preferred = _prefer_lifecycle_result(left, right, query)
+        return lifecycle_preferred if lifecycle_preferred is not None else prefer_result(left, right)
+
+    def prefer_redundant_item(left: dict, right: dict) -> dict:
+        lifecycle_preferred = _prefer_lifecycle_result(left, right, query)
+        return lifecycle_preferred if lifecycle_preferred is not None else prefer_redundant(left, right)
+
     by_chunk: dict[str, dict] = {}
     by_signature: dict[str, dict] = {}
     for item in results:
         chunk_id = item.get("chunk_id") or item.get("id")
         if chunk_id and chunk_id in by_chunk:
-            by_chunk[chunk_id] = prefer_result(by_chunk[chunk_id], item)
+            by_chunk[chunk_id] = prefer(by_chunk[chunk_id], item)
             continue
         sig = content_signature(item.get("content", ""))
         if sig and sig in by_signature:
-            preferred = prefer_result(by_signature[sig], item)
+            preferred = prefer(by_signature[sig], item)
             old = by_signature[sig]
             old_id = old.get("chunk_id") or old.get("id")
             if preferred is item and old_id in by_chunk:
@@ -756,7 +820,7 @@ def deduplicate_results(results: list[dict]) -> list[dict]:
     unique: list[dict] = []
     for item in ordered:
         redundant = [idx for idx, kept in enumerate(unique) if is_content_redundant(item, kept)]
-        if any(prefer_redundant(unique[idx], item) is not item for idx in redundant):
+        if any(prefer_redundant_item(unique[idx], item) is not item for idx in redundant):
             continue
         # 一条完整片段可能同时包含好几条已保留的短片段，全部换掉
         unique = [kept for idx, kept in enumerate(unique) if idx not in redundant]

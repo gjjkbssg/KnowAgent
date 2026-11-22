@@ -1,4 +1,5 @@
 import hashlib
+import json
 from pathlib import Path
 
 from django.core.files.base import ContentFile
@@ -12,6 +13,41 @@ from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tena
 
 
 DEMO_KB_NAME = "[面试演示] 智能会议室 Agent"
+
+
+def apply_corpus_lifecycle(corpus_dir: Path, knowledge_base: KnowledgeBase):
+    lifecycle_path = corpus_dir / "lifecycle.json"
+    if not lifecycle_path.is_file():
+        return
+    try:
+        lifecycle_data = json.loads(lifecycle_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CommandError(f"Unable to read lifecycle metadata: {exc}") from exc
+    if not isinstance(lifecycle_data, dict):
+        raise CommandError("Lifecycle metadata must be a JSON object")
+
+    documents = {
+        item.file_name: item
+        for item in Knowledge.objects.filter(knowledge_base=knowledge_base, deleted_at__isnull=True)
+    }
+    for file_name, config in lifecycle_data.items():
+        if not isinstance(config, dict) or config.get("status") not in {"current", "superseded"}:
+            raise CommandError(f"Invalid lifecycle status for {file_name}")
+        item = documents.get(file_name)
+        if item is None:
+            continue
+
+        metadata = dict(item.metadata or {})
+        if config["status"] == "current":
+            metadata.pop("lifecycle", None)
+        else:
+            superseded_by = documents.get(config.get("superseded_by_file") or "")
+            metadata["lifecycle"] = {
+                "status": "superseded",
+                "superseded_by": superseded_by.id if superseded_by else "",
+            }
+        item.metadata = metadata
+        item.save(update_fields=["metadata"])
 
 
 class Command(BaseCommand):
@@ -121,6 +157,7 @@ class Command(BaseCommand):
                 )
             )
 
+        apply_corpus_lifecycle(corpus_dir, kb)
         self.stdout.write(
             self.style.SUCCESS(
                 f"demo ready: kb_id={kb.id} documents={Knowledge.objects.filter(knowledge_base=kb).count()} "

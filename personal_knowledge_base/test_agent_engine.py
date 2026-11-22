@@ -632,6 +632,21 @@ class ToolIsolationTests(TestCase):
         self.assertIn("not allowed", result.error)
         self.assertEqual(get.call_count, 1)
 
+    def test_knowledge_search_marks_superseded_results(self):
+        refs = [{
+            "chunk_id": "old-chunk",
+            "knowledge_title": "Old guide",
+            "lifecycle_status": "superseded",
+            "content": "old evidence",
+            "score": 0.9,
+        }]
+
+        with patch("personal_knowledge_base.search.hybrid_search", return_value=refs):
+            result = KnowledgeSearchTool().execute({"query": "old"}, {"tenant_id": 1, "kb_ids": ["kb"]})
+
+        self.assertIn("Old guide（已废止）", result.output)
+        self.assertIn("标注“已废止”的资料只在用户问历史版本时作为依据", KnowledgeSearchTool().description())
+
     def test_seen_chunks_are_scoped_to_one_agent_execution(self):
         refs = [{"chunk_id": "chunk-1", "knowledge_title": "doc", "content": "evidence text", "score": 0.9}]
         first_agent, second_agent = {"tenant_id": 1, "kb_ids": ["kb"]}, {"tenant_id": 1, "kb_ids": ["kb"]}

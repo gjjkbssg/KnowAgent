@@ -15,6 +15,7 @@ from personal_knowledge_base.search import (
     _ranked_ids,
     _vector_search,
     apply_rerank_threshold,
+    apply_version_policy,
     hybrid_search,
     rrf_channel_weights,
     rrf_fuse,
@@ -46,6 +47,7 @@ def _chunk_rows(chunk_ids, score_map):
                 "knowledge_title": chunk.knowledge.title,
                 "knowledge_source": chunk.knowledge.source,
                 "knowledge_base_name": chunk.knowledge_base.name,
+                "lifecycle_status": ((chunk.knowledge.metadata or {}).get("lifecycle") or {}).get("status", "current"),
                 "metadata": chunk.metadata or {},
             }
         )
@@ -111,7 +113,15 @@ class Command(BaseCommand):
                 raise CommandError(f"Knowledge base does not exist: {name}")
             kb_ids.append(noise.id)
 
-        variants = ["fts_only", "vector_only", "hybrid_raw", "hybrid_rerank", "hybrid_rerank_threshold", "full_pipeline"]
+        variants = [
+            "fts_only",
+            "vector_only",
+            "hybrid_raw",
+            "hybrid_rerank",
+            "hybrid_rerank_threshold",
+            "hybrid_rerank_threshold_version",
+            "full_pipeline",
+        ]
         details = []
         for question in questions:
             query = question["question"]
@@ -141,6 +151,7 @@ class Command(BaseCommand):
                 "hybrid_raw": (raw_rows, round(fts_ms + vector_ms, 2)),
                 "hybrid_rerank": (reranked_rows, rerank_latency),
                 "hybrid_rerank_threshold": (threshold_rows, rerank_latency),
+                "hybrid_rerank_threshold_version": (apply_version_policy(threshold_rows, query), rerank_latency),
                 "full_pipeline": (full_rows, full_ms),
             }
             for variant, (rows, latency_ms) in variant_rows.items():

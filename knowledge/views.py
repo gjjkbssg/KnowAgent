@@ -479,9 +479,37 @@ def knowledge_detail(request, knowledge_id):
         delete_knowledge_content(item)
         return ok({"id": knowledge_id, "task_id": ""})
     data = parse_body(request)
+    lifecycle_status = data.get("lifecycle_status")
+    if "lifecycle_status" in data and lifecycle_status not in {"current", "superseded"}:
+        return fail("invalid lifecycle_status", 400)
+
+    superseded_by = str(data.get("superseded_by") or "").strip()
+    if "superseded_by" in data and lifecycle_status != "current" and superseded_by:
+        if not Knowledge.objects.filter(id=superseded_by, tenant_id=item.tenant_id).exists():
+            return fail("superseded_by must reference knowledge in the same tenant", 400)
+
     for field in ["title", "description", "enable_status", "tag_id"]:
         if field in data:
             setattr(item, field, data[field])
+    if lifecycle_status == "current":
+        metadata = dict(item.metadata or {})
+        metadata.pop("lifecycle", None)
+        item.metadata = metadata
+    elif lifecycle_status == "superseded":
+        metadata = dict(item.metadata or {})
+        lifecycle = dict(metadata.get("lifecycle") or {})
+        lifecycle["status"] = "superseded"
+        lifecycle["superseded_by"] = superseded_by if "superseded_by" in data else lifecycle.get("superseded_by", "")
+        metadata["lifecycle"] = lifecycle
+        item.metadata = metadata
+    elif "superseded_by" in data:
+        metadata = dict(item.metadata or {})
+        lifecycle = metadata.get("lifecycle")
+        if isinstance(lifecycle, dict) and lifecycle.get("status") == "superseded":
+            lifecycle = dict(lifecycle)
+            lifecycle["superseded_by"] = superseded_by
+            metadata["lifecycle"] = lifecycle
+            item.metadata = metadata
     item.save()
     return ok(knowledge_dict(item))
 

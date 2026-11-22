@@ -10,6 +10,7 @@ from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 
 from .management.commands.prepare_public_eval import PUBLIC_KB_NAME
+from .management.commands.run_interview_eval import _chunk_rows
 from .models import Chunk, Knowledge, KnowledgeBase, Tenant
 from .search import index_chunk
 
@@ -57,10 +58,11 @@ class PreparePublicEvalTests(TestCase):
 
         report = json.loads((self.out / "public.json").read_text(encoding="utf-8"))
         self.assertEqual((report["question_count"], report["chunk_count"]), (1, 3))
-        self.assertEqual(len(report["summary"]), 6)
-        self.assertEqual(len(report["by_category"]), 6)
+        self.assertEqual(len(report["summary"]), 7)
+        self.assertEqual(len(report["by_category"]), 7)
         variants = {row["variant"] for row in report["summary"]}
         self.assertIn("hybrid_rerank_threshold", variants)
+        self.assertIn("hybrid_rerank_threshold_version", variants)
         detail = report["details"][0]
         self.assertTrue({"result_count", "scores", "gold_flags"} <= detail.keys())
         self.assertTrue(all(isinstance(flag, bool) for flag in detail["gold_flags"]))
@@ -86,6 +88,22 @@ class PreparePublicEvalTests(TestCase):
         )
         # 三个段落全部会进 Top-10，按段落 ID 标注的正例一定被找到
         self.assertEqual(next(row for row in report["summary"] if row["variant"] == "full_pipeline")["hit_at_10"], 1.0)
+
+    def test_eval_chunk_rows_include_lifecycle_status(self):
+        kb = KnowledgeBase.objects.create(tenant=self.tenant, name="lifecycle")
+        knowledge = Knowledge.objects.create(
+            tenant=self.tenant,
+            knowledge_base=kb,
+            title="old version",
+            source="old.md",
+            parse_status="completed",
+            metadata={"lifecycle": {"status": "superseded", "superseded_by": ""}},
+        )
+        chunk = Chunk.objects.create(tenant=self.tenant, knowledge_base=kb, knowledge=knowledge, content="old version", chunk_index=0)
+
+        rows = _chunk_rows([chunk.id], {chunk.id: 0.5})
+
+        self.assertEqual(rows[0]["lifecycle_status"], "superseded")
 
     def test_noise_knowledge_bases_are_searched_together_with_the_target(self):
         self.prepare()

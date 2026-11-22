@@ -5,9 +5,11 @@ import { dirname, resolve } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const apiSource = readFileSync(resolve(__dirname, 'index.ts'), 'utf8')
+const knowledgeDetailSource = readFileSync(resolve(__dirname, '../views/KnowledgeDetail.vue'), 'utf8')
+
+assert.match(knowledgeDetailSource, /\bapi\.updateKnowledge\s*\(/)
 
 const removedMethods = [
-  'updateKnowledge',
   'previewKnowledgeUrl',
   'downloadKnowledgeUrl',
   'updateTag',
