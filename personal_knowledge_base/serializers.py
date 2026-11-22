@@ -75,14 +75,14 @@ def user_dict(user: User | None):
     }
 
 
-def tenant_dict(tenant: Tenant | None):
+def tenant_dict(tenant: Tenant | None, *, include_api_key: bool = False):
     if not tenant:
         return None
     return {
         "id": tenant.id,
         "name": tenant.name,
         "description": tenant.description,
-        "api_key": tenant.api_key,
+        "api_key": tenant.api_key if include_api_key else "",
         "status": tenant.status,
         "business": tenant.business,
         "storage_quota": tenant.storage_quota,

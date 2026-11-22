@@ -3,7 +3,7 @@ import uuid
 
 from django.test import Client, TestCase
 
-from personal_knowledge_base.authentication import issue_tokens
+from personal_knowledge_base.authentication import hash_password, issue_tokens
 from personal_knowledge_base.models import Tenant, TenantMember, User
 
 
@@ -93,14 +93,20 @@ class TenantAdminAuthorizationTests(TestCase):
                 )
 
     def test_viewer_can_read_but_cannot_mutate_tenant_or_members(self):
-        self.assertEqual(
-            self._request("GET", self._detail(), headers=self.viewer_headers).status_code,
-            200,
-        )
+        detail = self._request("GET", self._detail(), headers=self.viewer_headers)
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()["data"]["api_key"], "")
         self.assertEqual(
             self._request("GET", self._members(), headers=self.viewer_headers).status_code,
             200,
         )
+        tenant_list = self._request(
+            "GET",
+            "/api/v1/tenants",
+            headers=self.viewer_headers,
+        )
+        self.assertEqual(tenant_list.status_code, 200)
+        self.assertEqual(tenant_list.json()["data"]["items"][0]["api_key"], "")
         requests = [
             ("PATCH", self._detail(), {"name": "not allowed"}),
             ("DELETE", self._detail(), None),
@@ -127,10 +133,12 @@ class TenantAdminAuthorizationTests(TestCase):
             ).status_code,
             200,
         )
-        self.assertEqual(
-            self._request("POST", self._api_key(), headers=self.admin_headers).status_code,
-            200,
-        )
+        detail = self._request("GET", self._detail(), headers=self.admin_headers)
+        self.assertEqual(detail.json()["data"]["api_key"], self.target.api_key)
+        rotated = self._request("POST", self._api_key(), headers=self.admin_headers)
+        self.assertEqual(rotated.status_code, 200)
+        self.target.refresh_from_db()
+        self.assertEqual(rotated.json()["data"]["api_key"], self.target.api_key)
         added = self._request(
             "POST",
             self._members(),
@@ -173,6 +181,8 @@ class TenantAdminAuthorizationTests(TestCase):
             ).status_code,
             200,
         )
+        detail = self._request("GET", self._detail(), headers=self.owner_headers)
+        self.assertEqual(detail.json()["data"]["api_key"], self.target.api_key)
         self.assertEqual(
             self._request("POST", self._api_key(), headers=self.owner_headers).status_code,
             200,
@@ -227,24 +237,83 @@ class TenantAdminAuthorizationTests(TestCase):
 
     def test_api_key_can_access_its_tenant_but_not_another(self):
         own_headers = {"HTTP_X_API_KEY": self.target.api_key}
-        self.assertEqual(
-            self._request("GET", self._detail(), headers=own_headers).status_code,
-            200,
+        detail = self._request("GET", self._detail(), headers=own_headers)
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()["data"]["api_key"], "")
+        updated = self._request(
+            "PATCH",
+            self._detail(),
+            {"name": "updated by api key"},
+            own_headers,
         )
-        self.assertEqual(
-            self._request(
-                "PATCH",
-                self._detail(),
-                {"name": "updated by api key"},
-                own_headers,
-            ).status_code,
-            200,
-        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.json()["data"]["api_key"], "")
         self._assert_error(
             self._request("GET", self._detail(self.other.id), headers=own_headers),
             404,
             "not found",
         )
+        self._assert_error(
+            self._request("DELETE", self._detail(), headers=own_headers),
+            403,
+            "forbidden",
+        )
+        self._assert_error(
+            self._request(
+                "POST",
+                self._members(),
+                {"email": self.unaffiliated.email, "role": "owner"},
+                own_headers,
+            ),
+            403,
+            "forbidden",
+        )
+        self._assert_error(
+            self._request(
+                "PATCH",
+                self._member(self.owner.id),
+                {"role": "viewer"},
+                own_headers,
+            ),
+            403,
+            "forbidden",
+        )
+        rotated = self._request("POST", self._api_key(), headers=own_headers)
+        self.assertEqual(rotated.status_code, 200)
+        self.assertTrue(rotated.json()["data"]["api_key"])
+
+    def test_viewer_login_and_me_do_not_expose_tenant_api_key(self):
+        self.viewer.password_hash = hash_password("viewer-password")
+        self.viewer.save(update_fields=["password_hash"])
+        login = self._request(
+            "POST",
+            "/api/v1/auth/login",
+            {"email": self.viewer.email, "password": "viewer-password"},
+        )
+        self.assertEqual(login.status_code, 200)
+        self.assertEqual(login.json()["data"]["tenant"]["api_key"], "")
+
+        me = self._request("GET", "/api/v1/auth/me", headers=self.viewer_headers)
+        self.assertEqual(me.status_code, 200)
+        self.assertEqual(me.json()["data"]["tenant"]["api_key"], "")
+
+    def test_switch_tenant_requires_membership_and_redacts_for_viewer(self):
+        other_tenant = self._request(
+            "POST",
+            "/api/v1/auth/switch-tenant",
+            {"tenant_id": self.other.id},
+            self.viewer_headers,
+        )
+        self._assert_error(other_tenant, 404, "tenant not found")
+
+        member_tenant = self._request(
+            "POST",
+            "/api/v1/auth/switch-tenant",
+            {"tenant_id": self.target.id},
+            self.viewer_headers,
+        )
+        self.assertEqual(member_tenant.status_code, 200)
+        self.assertEqual(member_tenant.json()["data"]["tenant"]["api_key"], "")
         self._assert_error(
             self._request(
                 "POST",

@@ -53,7 +53,7 @@ def _authorized_tenant(ctx: ServiceContext, tenant_id):
         if membership is None:
             raise NotFound("not found")
         tenant = get_or_404(Tenant, id=tenant_id)
-    return tenant, role_for(user, tenant)
+    return tenant, "admin" if user is None else role_for(user, tenant)
 
 
 def _require_roles(role: str, allowed: set[str]) -> None:
@@ -66,6 +66,14 @@ def _validate_tenant_role(role: str) -> None:
         raise InvalidInput("invalid role")
 
 
+def _tenant_dict_for_user(user, tenant) -> dict:
+    include_api_key = (
+        user is not None
+        and (user.is_system_admin or role_for(user, tenant) in TENANT_MANAGEMENT_ROLES)
+    )
+    return tenant_dict(tenant, include_api_key=include_api_key)
+
+
 def list_tenants(user, tenant) -> dict:
     if user and user.can_access_all_tenants:
         qs = Tenant.objects.filter(deleted_at__isnull=True)
@@ -74,7 +82,7 @@ def list_tenants(user, tenant) -> dict:
         qs = Tenant.objects.filter(id__in=ids, deleted_at__isnull=True)
     else:
         qs = Tenant.objects.filter(id=tenant.id)
-    items = [tenant_dict(t) for t in qs]
+    items = [_tenant_dict_for_user(user, t) for t in qs]
     return {"items": items, "tenants": items}
 
 
@@ -87,12 +95,13 @@ def create_tenant(user, data: dict) -> dict:
     )
     if user:
         TenantMember.objects.create(user=user, tenant=tenant, role="owner")
-    return tenant_dict(tenant)
+    return _tenant_dict_for_user(user, tenant)
 
 
 def get_tenant_detail(ctx: ServiceContext, tenant_id) -> dict:
-    tenant, _ = _authorized_tenant(ctx, tenant_id)
-    return tenant_dict(tenant)
+    tenant, role = _authorized_tenant(ctx, tenant_id)
+    include_api_key = ctx.user is not None and role in TENANT_MANAGEMENT_ROLES
+    return tenant_dict(tenant, include_api_key=include_api_key)
 
 
 def update_tenant(ctx: ServiceContext, tenant_id, data: dict) -> dict:
@@ -102,7 +111,8 @@ def update_tenant(ctx: ServiceContext, tenant_id, data: dict) -> dict:
         if field in data:
             setattr(target, field, data[field])
     target.save()
-    return tenant_dict(target)
+    include_api_key = ctx.user is not None and role in TENANT_MANAGEMENT_ROLES
+    return tenant_dict(target, include_api_key=include_api_key)
 
 
 def delete_tenant(ctx: ServiceContext, tenant_id) -> dict:
@@ -174,7 +184,7 @@ def rotate_tenant_api_key(ctx: ServiceContext, tenant_id) -> dict:
     _require_roles(role, TENANT_MANAGEMENT_ROLES)
     tenant.api_key = secrets.token_urlsafe(24)
     tenant.save(update_fields=["api_key", "updated_at"])
-    return tenant_dict(tenant)
+    return tenant_dict(tenant, include_api_key=True)
 
 
 def tenant_kv_field(key: str) -> str:
