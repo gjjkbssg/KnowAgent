@@ -266,11 +266,14 @@ def message_dict(message: Message):
     from django.utils import timezone
     from .models import AgentToolApproval
 
-    approval = AgentToolApproval.objects.filter(
-        message=message,
-        status="pending",
-        expires_at__gt=timezone.now(),
-    ).first()
+    # 只有未完成的 assistant 消息才可能在等待确认，避免列表接口每条消息都多一次查询
+    approval = None
+    if message.role == "assistant" and not message.is_completed:
+        approval = AgentToolApproval.objects.filter(
+            message=message,
+            status="pending",
+            expires_at__gt=timezone.now(),
+        ).first()
     if approval:
         result["pending_tool_approval"] = {
             "id": approval.id,
