@@ -267,19 +267,38 @@ def session_stop(request, session_id):
     data = parse_body(request)
     message_id = data.get("message_id") or data.get("id")
     if message_id:
-        target_message = Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).first()
-        Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).update(is_completed=True, updated_at=timezone.now())
-        if target_message:
-            cancelled = AgentToolApproval.objects.filter(message=target_message, status="pending").update(
+        matching_messages = Message.objects.filter(
+            Q(id=message_id) | Q(request_id=message_id),
+            session_id=session_id,
+        )
+        messages = list(matching_messages)
+        message_by_id = {message.id: message for message in messages}
+        matching_message_ids = list(message_by_id)
+        target_message = next((message for message in messages if message.role == "assistant"), None)
+        target_message = target_message or (messages[0] if messages else None)
+        matching_messages.update(is_completed=True, updated_at=timezone.now())
+        pending_approval_message_ids = list(
+            AgentToolApproval.objects.filter(
+                message_id__in=matching_message_ids,
+                status="pending",
+            ).values_list("message_id", flat=True).distinct()
+        )
+        if pending_approval_message_ids:
+            cancelled = AgentToolApproval.objects.filter(
+                message_id__in=matching_message_ids,
+                status="pending",
+            ).update(
                 status="cancelled",
                 decided_at=timezone.now(),
             )
             if cancelled:
-                stream_manager.append_event(
-                    target_message.id,
-                    "complete",
-                    {"done": True, "content": target_message.content or "生成已取消。"},
-                )
+                for approval_message_id in pending_approval_message_ids:
+                    cancelled_message = message_by_id.get(approval_message_id)
+                    stream_manager.append_event(
+                        approval_message_id,
+                        "complete",
+                        {"done": True, "content": (cancelled_message.content if cancelled_message else "") or "生成已取消。"},
+                    )
         parent_message_id = target_message.id if target_message else message_id
         for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
             ActorRegistry.cancel_actor(session, actor.actor_id)

@@ -151,6 +151,28 @@ class ToolApprovalTests(TestCase):
         self.assertEqual(approval.status, "cancelled")
         self.assertTrue(message.is_completed)
 
+    def test_session_stop_by_request_id_cancels_assistant_approval(self):
+        approval, message, user_message = self.create_pending()
+        request_id = "shared-request-id"
+        user_message.request_id = request_id
+        user_message.save(update_fields=["request_id", "updated_at"])
+        message.request_id = request_id
+        message.save(update_fields=["request_id", "updated_at"])
+        stream = stream_manager.create_stream(message.id, self.session.id)
+
+        response = self.client.post(
+            f"/api/v1/sessions/{self.session.id}/stop",
+            data=json.dumps({"message_id": request_id}),
+            content_type="application/json",
+            **self.headers,
+        )
+        approval.refresh_from_db()
+        message.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(approval.status, "cancelled")
+        self.assertTrue(message.is_completed)
+        self.assertTrue(stream.is_complete)
+
     def test_resume_reloads_checkpoint_without_stream_manager_state(self):
         from chat.views import _resume_agent_generation
 
