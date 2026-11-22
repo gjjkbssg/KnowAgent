@@ -696,9 +696,9 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
             extra["lifecycle_status"] = ((knowledge_metadata.get("lifecycle") or {}).get("status", "current"))
             results.append({**extra, "score": floor_score})
 
-    results = deduplicate_results(results)
+    results = deduplicate_results(results, query=query)
     results = rerank(query, results, top_k * 2, tenant=Tenant.objects.filter(id=tenant_id).first())
-    results = deduplicate_results(results)
+    results = deduplicate_results(results, query=query)
     results = apply_rerank_threshold(
         results,
         settings.RETRIEVAL_RERANK_THRESHOLD,
@@ -762,6 +762,17 @@ def prefer_result(left: dict, right: dict) -> dict:
     return left
 
 
+def _prefer_lifecycle_result(left: dict, right: dict, query: str | None) -> dict | None:
+    if query is None:
+        return None
+    left_is_superseded = left.get("lifecycle_status", "current") == "superseded"
+    right_is_superseded = right.get("lifecycle_status", "current") == "superseded"
+    if left_is_superseded == right_is_superseded:
+        return None
+    prefer_superseded = query_wants_history(query)
+    return left if left_is_superseded == prefer_superseded else right
+
+
 def prefer_redundant(left: dict, right: dict) -> dict:
     """
     两条内容重复时留哪一条。篇幅相近算近似重复，留分数高的；
@@ -774,17 +785,25 @@ def prefer_redundant(left: dict, right: dict) -> dict:
     return left if left_size > right_size else right
 
 
-def deduplicate_results(results: list[dict]) -> list[dict]:
+def deduplicate_results(results: list[dict], query: str | None = None) -> list[dict]:
+    def prefer(left: dict, right: dict) -> dict:
+        lifecycle_preferred = _prefer_lifecycle_result(left, right, query)
+        return lifecycle_preferred if lifecycle_preferred is not None else prefer_result(left, right)
+
+    def prefer_redundant_item(left: dict, right: dict) -> dict:
+        lifecycle_preferred = _prefer_lifecycle_result(left, right, query)
+        return lifecycle_preferred if lifecycle_preferred is not None else prefer_redundant(left, right)
+
     by_chunk: dict[str, dict] = {}
     by_signature: dict[str, dict] = {}
     for item in results:
         chunk_id = item.get("chunk_id") or item.get("id")
         if chunk_id and chunk_id in by_chunk:
-            by_chunk[chunk_id] = prefer_result(by_chunk[chunk_id], item)
+            by_chunk[chunk_id] = prefer(by_chunk[chunk_id], item)
             continue
         sig = content_signature(item.get("content", ""))
         if sig and sig in by_signature:
-            preferred = prefer_result(by_signature[sig], item)
+            preferred = prefer(by_signature[sig], item)
             old = by_signature[sig]
             old_id = old.get("chunk_id") or old.get("id")
             if preferred is item and old_id in by_chunk:
@@ -801,7 +820,7 @@ def deduplicate_results(results: list[dict]) -> list[dict]:
     unique: list[dict] = []
     for item in ordered:
         redundant = [idx for idx, kept in enumerate(unique) if is_content_redundant(item, kept)]
-        if any(prefer_redundant(unique[idx], item) is not item for idx in redundant):
+        if any(prefer_redundant_item(unique[idx], item) is not item for idx in redundant):
             continue
         # 一条完整片段可能同时包含好几条已保留的短片段，全部换掉
         unique = [kept for idx, kept in enumerate(unique) if idx not in redundant]

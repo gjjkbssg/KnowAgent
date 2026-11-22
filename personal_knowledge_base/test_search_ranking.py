@@ -460,6 +460,29 @@ class DeduplicateResultsTests(SimpleTestCase):
 
         self.assertEqual([item["chunk_id"] for item in results], ["high", "other"])
 
+    def test_lifecycle_preference_wins_for_near_duplicates_when_query_is_given(self):
+        shared = "The E17 controller resets after 30 seconds and records the active firmware version for audit."
+        superseded = {
+            "chunk_id": "old",
+            "content": f"{shared} Previous policy applies.",
+            "score": 0.9,
+            "lifecycle_status": "superseded",
+        }
+        current = {
+            "chunk_id": "current",
+            "content": f"{shared} Current policy applies.",
+            "score": 0.6,
+            "lifecycle_status": "current",
+        }
+
+        current_first = deduplicate_results([superseded, current], query="E17 policy")
+        history_first = deduplicate_results([superseded, current], query="旧版 E17 policy")
+        unchanged = deduplicate_results([superseded, current])
+
+        self.assertEqual([item["chunk_id"] for item in current_first], ["current"])
+        self.assertEqual([item["chunk_id"] for item in history_first], ["old"])
+        self.assertEqual([item["chunk_id"] for item in unchanged], ["old"])
+
 
 class VersionPolicyTests(SimpleTestCase):
     def test_query_wants_history_matches_historical_terms_only(self):
