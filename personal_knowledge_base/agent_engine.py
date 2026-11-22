@@ -489,9 +489,19 @@ class AgentEngine:
             fn = tc.get("function", {})
             name = fn.get("name", "")
             args = self._parse_tool_arguments(tc)
+            tool = self.registry.get(name)
+            expected_tool = (state.get("gated_tools") or {}).get(tc_id)
             if tc_id in gated_ids and decision == "rejected":
                 result = ToolResult(output="", error="User rejected this tool call; it was not executed.")
-            elif self.registry.get(name) is None:
+            elif tool is None or (
+                tc_id in gated_ids
+                and decision == "approved"
+                and expected_tool
+                and (
+                    getattr(tool, "service_id", "") != expected_tool.get("service_id", "")
+                    or getattr(tool, "remote_tool_name", name) != expected_tool.get("remote_tool_name", name)
+                )
+            ):
                 result = ToolResult(output="", error="tool no longer available")
             else:
                 try:
@@ -684,17 +694,25 @@ class AgentEngine:
                 if gated:
                     summaries = []
                     gated_ids = []
+                    gated_tools = {}
                     for tc, tool in gated:
                         fn = tc.get("function", {})
                         args = self._parse_tool_arguments(tc)
                         tc_id = tc.get("id", "")
                         gated_ids.append(tc_id)
+                        remote_tool_name = getattr(tool, "remote_tool_name", fn.get("name", ""))
+                        service_id = getattr(tool, "service_id", "")
+                        gated_tools[tc_id] = {
+                            "service_id": service_id,
+                            "remote_tool_name": remote_tool_name,
+                        }
                         summaries.append({
                             "id": tc_id,
                             "name": fn.get("name", ""),
                             "arguments": args,
+                            "service_id": service_id,
                             "service_name": getattr(tool, "service_name", ""),
-                            "remote_tool_name": getattr(tool, "remote_tool_name", fn.get("name", "")),
+                            "remote_tool_name": remote_tool_name,
                         })
                     step.tool_calls = [
                         ToolCallRecord(tc.get("id", ""), tc.get("function", {}).get("name", ""), self._parse_tool_arguments(tc))
@@ -717,6 +735,7 @@ class AgentEngine:
                         },
                         "pending_round": {"iteration": iteration, "content": content, "tool_calls": tool_calls},
                         "gated_tool_call_ids": gated_ids,
+                        "gated_tools": gated_tools,
                     }
                     return AgentResult(content, steps, iteration, int((time.monotonic() - start_time) * 1000), "awaiting_approval", pending_approval=summaries, checkpoint=checkpoint)
 

@@ -9,6 +9,7 @@ from . import model_providers
 from .agent_engine import AgentEngine, AgentResult, AgentStep, ToolCallRecord
 from .agent_tools import KnowledgeSearchTool, Tool, ToolRegistry, ToolResult, get_tool_registry
 from .model_providers import ModelHTTPError
+from .mcp_client import MCPTool
 from .models import Chunk, Knowledge, KnowledgeBase, Session, Tenant
 
 
@@ -282,6 +283,31 @@ class AgentEngineTests(TestCase):
         self.assertEqual(calls, [{"x": 1}])
         self.assertEqual(resumed.content, "done")
         self.assertEqual(resumed.stopped_reason, "completed")
+
+    def test_resume_does_not_execute_same_name_tool_from_another_service(self):
+        client_a = Mock()
+        client_b = Mock()
+        tool_a = MCPTool("service-a", "Service A", "delete", "delete", {}, {}, client_a, name="mcp_shared_tool")
+        tool_b = MCPTool("service-b", "Service B", "delete", "delete", {}, {}, client_b, name="mcp_shared_tool")
+        response = {"content": "", "tool_calls": [tool_call("g1", tool_a.name(), {"id": "item-1"})]}
+
+        with patch.object(
+            model_providers,
+            "chat_completion_raw",
+            side_effect=[response, {"content": "done", "tool_calls": None}],
+        ):
+            suspended = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": [], "extra_tools": [tool_a]}).execute("question")
+            resumed = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": [], "extra_tools": [tool_b]}).resume(
+                suspended.checkpoint, "approved"
+            )
+
+        client_b.call_tool.assert_not_called()
+        self.assertEqual(resumed.steps[0].tool_calls[0].result.error, "tool no longer available")
+        self.assertEqual(suspended.pending_approval[0]["service_id"], "service-a")
+        self.assertEqual(
+            suspended.checkpoint["gated_tools"]["g1"],
+            {"service_id": "service-a", "remote_tool_name": "delete"},
+        )
 
     def test_checkpoint_serialization_preserves_full_tool_result(self):
         output = "x" * 20000
