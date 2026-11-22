@@ -9,7 +9,7 @@ const props = defineProps<{
   historyLoading?: boolean
   hasMore?: boolean
 }>()
-const emit = defineEmits<{ loadMore: [] }>()
+const emit = defineEmits<{ loadMore: []; decideApproval: [payload: { approvalId: string; decision: 'approve' | 'reject'; messageId: string }] }>()
 
 const scroller = ref<HTMLElement | null>(null)
 const userScrolledUp = ref(false)
@@ -53,7 +53,7 @@ defineExpose({ scrollToBottom })
       <button v-if="hasMore && messages.length" class="load-history-btn" @click="$emit('loadMore')">加载更早消息</button>
       <template v-for="(message, index) in messages" :key="message.id || `${message.role}-${message.created_at}-${index}`">
         <UserMessage v-if="message.role === 'user'" :message="message" />
-        <AssistantMessage v-else :message="message" :loading="loading && index === messages.length - 1" />
+        <AssistantMessage v-else :message="message" :loading="loading && index === messages.length - 1" @decide-approval="emit('decideApproval', { ...$event, messageId: message.id })" />
       </template>
       <!-- 流式等待提示：正在请求但还没有 assistant 消息 -->
       <AssistantMessage v-if="loading && (!messages.length || messages[messages.length - 1]?.role === 'user')" :message="{ content: '', is_completed: false, agent_steps: [{ type: 'search' }] }" loading />

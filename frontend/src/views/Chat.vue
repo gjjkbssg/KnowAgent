@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MessagePlugin } from 'tdesign-vue-next'
-import { api, streamChat, continueStream } from '../api'
+import { api, streamChat, continueStream, decideToolApproval } from '../api'
 import { useChatStore } from '../stores/chat'
 import ChatInput from './chat/components/ChatInput.vue'
 import ChatTimeline from './chat/components/ChatTimeline.vue'
@@ -75,7 +75,7 @@ async function loadMessages(reset = true) {
     // 参考同类知识库系统的 onAfterMsgList 逻辑
     if (reset && items.length > 0) {
       const lastMsg = items[items.length - 1]
-      if (lastMsg.role === 'assistant' && !lastMsg.is_completed) {
+      if (lastMsg.role === 'assistant' && !lastMsg.is_completed && !lastMsg.pending_tool_approval) {
         // 发现未完成的 assistant 消息，尝试恢复
         recoveredIncomplete = true
         await _recoverIncompleteMessage(lastMsg)
@@ -275,6 +275,15 @@ function handleStreamEvent(event: string, data: any) {
         lastCall.duration_ms = data.duration_ms
       }
     }
+  } else if (responseType === 'tool_approval_required') {
+    const id = data.assistant_message_id || currentAssistantId.value
+    const target = messages.value.find((m) => m.id === id)
+    if (target) {
+      target.pending_tool_approval = data.approval
+      target.is_completed = false
+    }
+    replying.value = false
+    currentAssistantId.value = ''
   } else if (['actor_started', 'actor_update', 'actor_tool_call', 'actor_tool_result', 'actor_completed', 'actor_failed'].includes(responseType)) {
     upsertActorTrace({ ...data, assistant_message_id: data.assistant_message_id || currentAssistantId.value })
   } else if (responseType === 'complete') {
@@ -297,9 +306,30 @@ function handleStreamEvent(event: string, data: any) {
     upsertAssistant({ id: data.id || currentAssistantId.value, knowledge_references: data.knowledge_references || [] }, false)
   } else if (event === 'done') {
     const target = messages.value.find((m) => m.id === data.message_id)
-    if (target) target.is_completed = true
+    if (target && !target.pending_tool_approval) target.is_completed = true
   }
   timelineRef.value?.scrollToBottom()
+}
+
+async function handleToolApproval(payload: { approvalId: string; decision: 'approve' | 'reject'; messageId: string }) {
+  const target = messages.value.find((message) => message.id === payload.messageId)
+  if (!target || !sessionId.value) return
+  try {
+    await decideToolApproval(sessionId.value, payload.approvalId, payload.decision)
+    target.pending_tool_approval = null
+    target.is_completed = false
+    await _recoverIncompleteMessage(target)
+  } catch (error: any) {
+    const status = error?.response?.status
+    if (status === 409 || status === 410) {
+      MessagePlugin.warning(error?.response?.data?.message || '该确认已失效，请刷新消息')
+      await loadMessages(true)
+    } else {
+      MessagePlugin.error(error?.response?.data?.message || '提交确认失败')
+    }
+  } finally {
+    if (target) target.approval_submitting = false
+  }
 }
 
 function buildLocalUser(payload: any) {
@@ -536,7 +566,7 @@ watch(
     </section>
 
     <section v-else class="wk-chat-main">
-      <ChatTimeline ref="timelineRef" :messages="messages" :loading="replying" :history-loading="historyLoading" :has-more="hasMoreHistory" @load-more="loadMessages(false)" />
+      <ChatTimeline ref="timelineRef" :messages="messages" :loading="replying" :history-loading="historyLoading" :has-more="hasMoreHistory" @load-more="loadMessages(false)" @decide-approval="handleToolApproval" />
       <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" @send="send" @stop="stopReply" />
     </section>
   </main>

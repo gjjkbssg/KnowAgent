@@ -54,6 +54,10 @@ export async function continueStream(sessionId: string, messageId: string, onEve
   await streamWithResume(() => resume({ messageId, lastEventId: '' }), resume, onEvent)
 }
 
+export function decideToolApproval(sessionId: string, approvalId: string, decision: 'approve' | 'reject') {
+  return client.post(`/api/v1/sessions/${sessionId}/tool-approvals/${approvalId}`, { decision })
+}
+
 export const api = {
   autoSetup: () => client.post('/api/v1/auth/auto-setup'),
   login: (data: any) => client.post('/api/v1/auth/login', data),

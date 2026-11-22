@@ -335,6 +335,35 @@ class Message(TimeStampedModel):
         ]
 
 
+class AgentToolApproval(TimeStampedModel):
+    id = models.CharField(max_length=36, primary_key=True, default=uuid_str)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="tool_approvals")
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name="tool_approvals")
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="tool_approvals")
+    status = models.CharField(
+        max_length=16,
+        choices=[
+            ("pending", "Pending"),
+            ("approved", "Approved"),
+            ("rejected", "Rejected"),
+            ("expired", "Expired"),
+            ("cancelled", "Cancelled"),
+        ],
+        default="pending",
+    )
+    tool_calls = models.JSONField(default=list)
+    checkpoint = models.JSONField(default=dict)
+    decided_by = models.CharField(max_length=36, blank=True, default="")
+    decided_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "agent_tool_approvals"
+        indexes = [
+            models.Index(fields=["tenant", "session", "status"], name="tool_appr_tenant_sess_idx"),
+        ]
+
+
 class AgentActor(TimeStampedModel):
     id = models.CharField(max_length=36, primary_key=True, default=uuid_str)
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name="agent_actors")

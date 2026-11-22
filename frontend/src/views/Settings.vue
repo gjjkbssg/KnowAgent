@@ -33,7 +33,7 @@ const visible = ref(false)
 const currentUser = ref<any>(null)
 const passwordForm = ref({ old_password: '', new_password: '', confirm_password: '' })
 const mcpDialogVisible = ref(false)
-const mcpForm = ref({ id: '', name: '', description: '', url: '', api_key: '', enabled: true })
+const mcpForm = ref({ id: '', name: '', description: '', url: '', api_key: '', enabled: true, approval_mode: 'always' })
 
 const requestedSection = String(route.query.section || 'general')
 const activeSection = ref(requestedSection === 'tenant' ? 'general' : requestedSection)
@@ -355,12 +355,12 @@ async function changePassword() {
 }
 
 function openMcpDialog() {
-  mcpForm.value = { id: '', name: '', description: '', url: '', api_key: '', enabled: true }
+  mcpForm.value = { id: '', name: '', description: '', url: '', api_key: '', enabled: true, approval_mode: 'always' }
   mcpDialogVisible.value = true
 }
 
 function editMcpService(service: any) {
-  mcpForm.value = { ...service, api_key: '' }
+  mcpForm.value = { ...service, api_key: '', approval_mode: service.approval_mode || 'always' }
   mcpDialogVisible.value = true
 }
 
@@ -1064,6 +1064,8 @@ onMounted(() => {
         <t-input v-model="mcpForm.name" label="服务名称" placeholder="my-mcp-service" />
         <t-input v-model="mcpForm.url" class="wide" label="服务 URL" placeholder="http://localhost:8000/mcp" />
         <t-input v-model="mcpForm.api_key" type="password" label="API Key" :placeholder="mcpForm.id ? '留空则保持不变' : '留空则不使用认证'" />
+        <t-select v-model="mcpForm.approval_mode" label="工具确认策略" :options="[{ label: '每次都需确认', value: 'always' }, { label: '只读工具免确认', value: 'read_only_auto' }, { label: '无需确认', value: 'never' }]" />
+        <p class="wide">只读标记由 MCP 服务端提供。</p>
         <t-textarea v-model="mcpForm.description" class="wide" label="描述" placeholder="服务用途说明" />
         <label class="switch-line"><input v-model="mcpForm.enabled" type="checkbox" /> 启用服务</label>
       </div>

@@ -240,7 +240,7 @@ def message_dict(message: Message):
     except Exception:
         actor_traces = []
 
-    return {
+    result = {
         "id": message.id,
         "request_id": message.request_id,
         "session_id": message.session_id,
@@ -263,6 +263,25 @@ def message_dict(message: Message):
         "created_at": iso(message.created_at),
         "updated_at": iso(message.updated_at),
     }
+    from django.utils import timezone
+    from .models import AgentToolApproval
+
+    # 只有未完成的 assistant 消息才可能在等待确认，避免列表接口每条消息都多一次查询
+    approval = None
+    if message.role == "assistant" and not message.is_completed:
+        approval = AgentToolApproval.objects.filter(
+            message=message,
+            status="pending",
+            expires_at__gt=timezone.now(),
+        ).first()
+    if approval:
+        result["pending_tool_approval"] = {
+            "id": approval.id,
+            "status": approval.status,
+            "tool_calls": approval.tool_calls,
+            "expires_at": iso(approval.expires_at),
+        }
+    return result
 
 
 def model_dict(model: ModelConfig):
@@ -309,6 +328,8 @@ def resource_dict(resource: GenericResource):
     if resource.resource_type == "mcp_services":
         api_key_set = bool(data.pop("api_key", ""))
         data.pop("api_key_set", None)
+        if data.get("approval_mode") == "always":
+            data.pop("approval_mode")
         if api_key_set:
             data["api_key_set"] = True
     data.setdefault("id", resource.id)

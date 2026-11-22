@@ -60,6 +60,8 @@ class MessageStream:
 
             if event_type == "complete":
                 self.is_complete = True
+            elif event_type == "approval_required":
+                self.is_complete = True
             elif event_type == "error":
                 self.is_error = True
                 self.error_message = data.get("content", "")

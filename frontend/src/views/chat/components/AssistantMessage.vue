@@ -6,6 +6,7 @@ import ToolResultRenderer from './ToolResultRenderer.vue'
 import { renderMarkdownLite } from '../../../utils/markdown-lite.mjs'
 
 const props = defineProps<{ message: any; loading?: boolean }>()
+const emit = defineEmits<{ decideApproval: [payload: { approvalId: string; decision: 'approve' | 'reject' }] }>()
 
 const isThinking = computed(() => props.loading && !props.message?.content?.trim())
 const isStreaming = computed(() => props.loading && props.message?.content?.trim() && !props.message?.is_completed)
@@ -13,6 +14,19 @@ const toolCalls = computed(() => props.message?.agent_tool_calls || [])
 const actorTraces = computed(() => props.message?.actor_traces || [])
 
 const renderedContent = computed(() => renderMarkdownLite(props.message?.content || ''))
+const approvalTools = computed(() => props.message?.pending_tool_approval?.tool_calls || [])
+
+function decideApproval(decision: 'approve' | 'reject') {
+  const approvalId = props.message?.pending_tool_approval?.id
+  if (!approvalId || props.message?.approval_submitting) return
+  props.message.approval_submitting = true
+  emit('decideApproval', { approvalId, decision })
+}
+
+function prettyArguments(value: any) {
+  const text = JSON.stringify(value ?? {}, null, 2) || '{}'
+  return text.length > 2000 ? `${text.slice(0, 1999)}…` : text
+}
 
 function copyAnswer() {
   navigator.clipboard?.writeText(props.message?.content || '')
@@ -67,6 +81,18 @@ function copyAnswer() {
     <div v-if="message.content" class="message-body markdown-lite" v-html="renderedContent"></div>
     <span v-if="isStreaming" class="streaming-cursor">▋</span>
 
+    <section v-if="message?.pending_tool_approval" class="tool-approval-card">
+      <strong>以下操作需要你确认后才会执行</strong>
+      <div v-for="tool in approvalTools" :key="tool.id" class="tool-approval-item">
+        <div>{{ tool.service_name }} / {{ tool.remote_tool_name }}</div>
+        <pre>{{ prettyArguments(tool.arguments) }}</pre>
+      </div>
+      <div class="tool-approval-actions">
+        <button :disabled="message.approval_submitting" @click="decideApproval('approve')">批准执行</button>
+        <button :disabled="message.approval_submitting" @click="decideApproval('reject')">拒绝</button>
+      </div>
+    </section>
+
     <!-- 引用列表 -->
     <CitationList :references="message.knowledge_references" />
 
@@ -80,6 +106,35 @@ function copyAnswer() {
 </template>
 
 <style scoped>
+.tool-approval-card {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid #f2c66d;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.tool-approval-item {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.tool-approval-item pre {
+  max-height: 180px;
+  overflow: auto;
+  padding: 8px;
+  border-radius: 6px;
+  background: #f7f7f7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tool-approval-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 /* ── Agent 工具调用追踪 ─────────────────────────────────────────── */
 .agent-tool-trace {
   padding: 8px 0;
