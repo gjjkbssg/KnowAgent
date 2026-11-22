@@ -3,9 +3,11 @@ import secrets
 from django.db.models import Q
 from django.utils import timezone
 
+from personal_knowledge_base.authentication import role_for
 from personal_knowledge_base.models import AuditLog, Tenant, TenantMember, User
 from personal_knowledge_base.serializers import membership_dict, tenant_dict, user_dict
-from services.errors import Forbidden, NotFound, Unauthorized, get_or_404
+from services.context import ServiceContext
+from services.errors import Forbidden, InvalidInput, NotFound, Unauthorized, get_or_404
 
 
 TENANT_KV_FIELDS = {
@@ -27,6 +29,41 @@ TENANT_KV_FIELDS = {
     "retrieval_config": "retrieval_config",
     "prompt-templates": "credentials",
 }
+
+TENANT_ROLES = {"owner", "admin", "viewer"}
+TENANT_MANAGEMENT_ROLES = {"owner", "admin"}
+
+
+def _authorized_tenant(ctx: ServiceContext, tenant_id):
+    user = ctx.user
+    if user is None:
+        if ctx.tenant is None:
+            raise Unauthorized("unauthorized")
+        if ctx.tenant.id != tenant_id:
+            raise NotFound("not found")
+        tenant = ctx.tenant
+    elif user.is_system_admin:
+        tenant = get_or_404(Tenant, id=tenant_id)
+    else:
+        membership = TenantMember.objects.filter(
+            user=user,
+            tenant_id=tenant_id,
+            status="active",
+        ).first()
+        if membership is None:
+            raise NotFound("not found")
+        tenant = get_or_404(Tenant, id=tenant_id)
+    return tenant, role_for(user, tenant)
+
+
+def _require_roles(role: str, allowed: set[str]) -> None:
+    if role not in allowed:
+        raise Forbidden("forbidden")
+
+
+def _validate_tenant_role(role: str) -> None:
+    if not isinstance(role, str) or role not in TENANT_ROLES:
+        raise InvalidInput("invalid role")
 
 
 def list_tenants(user, tenant) -> dict:
@@ -53,16 +90,14 @@ def create_tenant(user, data: dict) -> dict:
     return tenant_dict(tenant)
 
 
-def get_tenant(tenant_id):
-    return get_or_404(Tenant, id=tenant_id)
+def get_tenant_detail(ctx: ServiceContext, tenant_id) -> dict:
+    tenant, _ = _authorized_tenant(ctx, tenant_id)
+    return tenant_dict(tenant)
 
 
-def get_tenant_detail(tenant_id) -> dict:
-    return tenant_dict(get_tenant(tenant_id))
-
-
-def update_tenant(tenant_id, data: dict) -> dict:
-    target = get_tenant(tenant_id)
+def update_tenant(ctx: ServiceContext, tenant_id, data: dict) -> dict:
+    target, role = _authorized_tenant(ctx, tenant_id)
+    _require_roles(role, TENANT_MANAGEMENT_ROLES)
     for field in ["name", "description", "business", "status"]:
         if field in data:
             setattr(target, field, data[field])
@@ -70,52 +105,73 @@ def update_tenant(tenant_id, data: dict) -> dict:
     return tenant_dict(target)
 
 
-def delete_tenant(tenant_id) -> dict:
-    target = get_tenant(tenant_id)
+def delete_tenant(ctx: ServiceContext, tenant_id) -> dict:
+    target, role = _authorized_tenant(ctx, tenant_id)
+    _require_roles(role, {"owner"})
     target.deleted_at = timezone.now()
     target.save(update_fields=["deleted_at", "updated_at"])
     return {}
 
 
-def list_tenant_members(tenant_id) -> dict:
-    tenant = get_tenant(tenant_id)
+def list_tenant_members(ctx: ServiceContext, tenant_id) -> dict:
+    tenant, _ = _authorized_tenant(ctx, tenant_id)
     members = TenantMember.objects.filter(tenant=tenant, status="active").select_related("user")
     return {"items": [{**membership_dict(m), "user": user_dict(m.user)} for m in members]}
 
 
-def add_tenant_member(tenant_id, data: dict) -> dict:
-    tenant = get_tenant(tenant_id)
+def add_tenant_member(ctx: ServiceContext, tenant_id, data: dict) -> dict:
+    tenant, role = _authorized_tenant(ctx, tenant_id)
+    _require_roles(role, TENANT_MANAGEMENT_ROLES)
+    member_role = data.get("role", "viewer")
+    _validate_tenant_role(member_role)
+    if member_role == "owner" and role != "owner":
+        raise Forbidden("forbidden")
     user = User.objects.filter(Q(email=data.get("email")) | Q(id=data.get("user_id"))).first()
     if not user:
         raise NotFound("user not found")
+    existing_member = TenantMember.objects.filter(user=user, tenant=tenant).first()
+    if existing_member is not None and existing_member.role == "owner" and role != "owner":
+        raise Forbidden("forbidden")
     member, _ = TenantMember.objects.update_or_create(
         user=user,
         tenant=tenant,
-        defaults={"role": data.get("role", "viewer"), "status": "active"},
+        defaults={"role": member_role, "status": "active"},
     )
     return membership_dict(member)
 
 
-def get_tenant_member(tenant_id, user_id):
-    tenant = get_tenant(tenant_id)
+def _get_tenant_member(tenant, user_id):
     return get_or_404(TenantMember, tenant=tenant, user_id=user_id)
 
 
-def delete_tenant_member(tenant_id, user_id) -> dict:
-    member = get_tenant_member(tenant_id, user_id)
+def delete_tenant_member(ctx: ServiceContext, tenant_id, user_id) -> dict:
+    tenant, role = _authorized_tenant(ctx, tenant_id)
+    _require_roles(role, TENANT_MANAGEMENT_ROLES)
+    member = _get_tenant_member(tenant, user_id)
+    if member.role == "owner" and role != "owner":
+        raise Forbidden("forbidden")
     member.delete()
     return {}
 
 
-def update_tenant_member(tenant_id, user_id, data: dict) -> dict:
-    member = get_tenant_member(tenant_id, user_id)
-    member.role = data.get("role", member.role)
+def update_tenant_member(ctx: ServiceContext, tenant_id, user_id, data: dict) -> dict:
+    tenant, role = _authorized_tenant(ctx, tenant_id)
+    _require_roles(role, TENANT_MANAGEMENT_ROLES)
+    member = _get_tenant_member(tenant, user_id)
+    if member.role == "owner" and role != "owner":
+        raise Forbidden("forbidden")
+    member_role = data.get("role", member.role)
+    _validate_tenant_role(member_role)
+    if member_role == "owner" and role != "owner":
+        raise Forbidden("forbidden")
+    member.role = member_role
     member.save(update_fields=["role", "updated_at"])
     return membership_dict(member)
 
 
-def rotate_tenant_api_key(tenant_id) -> dict:
-    tenant = get_tenant(tenant_id)
+def rotate_tenant_api_key(ctx: ServiceContext, tenant_id) -> dict:
+    tenant, role = _authorized_tenant(ctx, tenant_id)
+    _require_roles(role, TENANT_MANAGEMENT_ROLES)
     tenant.api_key = secrets.token_urlsafe(24)
     tenant.save(update_fields=["api_key", "updated_at"])
     return tenant_dict(tenant)
