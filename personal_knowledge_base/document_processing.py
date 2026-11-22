@@ -397,7 +397,6 @@ def process_knowledge(knowledge_id: str):
             metadata["processing_warnings"] = warnings
         else:
             metadata.pop("processing_warnings", None)
-        knowledge.metadata = metadata
         # 将摘要写入 description 字段，供 RAG 文档头部使用
         if summary and not knowledge.description:
             knowledge.description = summary[:300]
@@ -406,6 +405,12 @@ def process_knowledge(knowledge_id: str):
         knowledge.summary_status = "completed"
         knowledge.processed_at = timezone.now()
         knowledge.error_message = ""
+        current_metadata = Knowledge.objects.filter(id=knowledge_id).values_list("metadata", flat=True).first() or {}
+        if "lifecycle" in current_metadata:
+            metadata["lifecycle"] = current_metadata["lifecycle"]
+        else:
+            metadata.pop("lifecycle", None)
+        knowledge.metadata = metadata
         knowledge.save(update_fields=["metadata", "description", "parse_status", "summary_status", "processed_at", "error_message", "updated_at"])
 
         # 完成根 span
