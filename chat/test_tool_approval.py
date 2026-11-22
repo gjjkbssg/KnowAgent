@@ -5,6 +5,7 @@ from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from django.core.cache import cache
 from django.db import IntegrityError, connections
 from django.test import Client, TransactionTestCase
 from django.utils import timezone
@@ -92,6 +93,17 @@ class ToolApprovalTests(TransactionTestCase):
         approval.refresh_from_db()
         self.assertEqual(approval.status, "pending")
         self.assertFalse(TaskRecord.objects.filter(id=approval.id).exists())
+
+    def test_public_progress_hides_approval_resumes_from_database_and_cache(self):
+        approval, _, _ = self.create_pending()
+        TaskRecord.objects.create(id=approval.id, task_type=tasks.RESUME_APPROVAL_TASK)
+        url = f"/api/v1/knowledge/move/progress/{approval.id}"
+        hidden = {"status": "not_found", "progress": 0}
+        self.assertEqual(self.client.get(url).json()["data"], hidden)
+        cache_key = f"task:{approval.id}"
+        cache.set(cache_key, {"status": "running", "progress": 0.1})
+        self.addCleanup(cache.delete, cache_key)
+        self.assertEqual(self.client.get(url).json()["data"], hidden)
 
     def test_invalid_decision_and_foreign_session_are_rejected(self):
         approval, _, _ = self.create_pending()
