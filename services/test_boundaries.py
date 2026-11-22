@@ -1,5 +1,6 @@
 import ast
 from pathlib import Path
+import re
 import unittest
 
 
@@ -50,3 +51,12 @@ class ServiceBoundaryTests(unittest.TestCase):
                     ):
                         violations.append(f"{path}:{node.lineno}: HTTP method comparison in service")
         self.assertEqual(violations, [])
+
+    def test_views_report_direct_orm_usage(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        counts = {
+            str(path.relative_to(repo_root)): len(re.findall(r"\.objects\.", path.read_text(encoding="utf-8")))
+            for path in sorted(repo_root.glob("*/views.py"))
+        }
+        total = sum(counts.values())
+        print(f"Direct .objects. usages in */views.py: {total} ({counts})")
