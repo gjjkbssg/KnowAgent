@@ -1,15 +1,10 @@
 import uuid
 
-from django.db.models import Q
 from django.http import StreamingHttpResponse
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from personal_knowledge_base.http_helpers import auth_context, parse_body
-from personal_knowledge_base.models import AgentToolApproval, Message, Session, TaskRecord
 from personal_knowledge_base.responses import fail, ok, service_errors
-from personal_knowledge_base.tasks import RESUME_APPROVAL_TASK
 from services.chat_generation import ChatTurn, decide_tool_approval, start_chat_turn
 from services.chat_sessions import (
     batch_delete_sessions,
@@ -18,14 +13,19 @@ from services.chat_sessions import (
     create_session,
     delete_message as delete_message_service,
     delete_session,
+    expire_stale_approvals,
     generate_session_title,
+    get_stream_message,
     get_session,
+    get_tenant_session,
     list_sessions,
     load_messages,
+    pending_approval,
     pin_session,
     search_messages,
     stop_session,
     update_session,
+    waits_for_resume,
 )
 from services.context import ServiceContext
 
@@ -104,12 +104,13 @@ def session_stop(request, session_id):
 
 
 @csrf_exempt
+@service_errors
 def continue_stream(request, session_id):
     user, tenant = auth_context(request)
     if not tenant:
         return fail("unauthorized", 401)
 
-    session = get_object_or_404(Session, id=session_id, tenant=tenant)
+    ctx = _context(request, user, tenant)
 
     message_id = request.GET.get("message_id") or request.GET.get("query")
     if not message_id:
@@ -117,41 +118,17 @@ def continue_stream(request, session_id):
         message_id = data.get("message_id") or data.get("query")
 
     if not message_id:
+        get_tenant_session(ctx, session_id)
         return fail("message_id is required", 400)
 
-    message = Message.objects.filter(
-        Q(id=message_id) | Q(request_id=message_id),
-        session_id=session_id,
-    ).first()
-
-    if not message:
-        return fail("message not found", 404)
-
-    now = timezone.now()
-    expired_count = AgentToolApproval.objects.filter(
-        message=message,
-        status="pending",
-        expires_at__lte=now,
-    ).update(status="expired", decided_at=now, updated_at=now)
-    if expired_count:
-        Message.objects.filter(id=message.id).update(
-            content="等待确认超时，未执行该操作。",
-            rendered_content="等待确认超时，未执行该操作。",
-            is_completed=True,
-            updated_at=timezone.now(),
-        )
-        message.refresh_from_db()
+    message = expire_stale_approvals(get_stream_message(ctx, session_id, message_id))
 
     try:
         last_event_id = max(-1, int(request.headers.get("Last-Event-ID", "")))
     except ValueError:
         last_event_id = -1
 
-    approval = AgentToolApproval.objects.filter(
-        message=message,
-        status="pending",
-        expires_at__gt=timezone.now(),
-    ).first()
+    approval = pending_approval(message)
     terminal_event = stream_terminal_event(message.id)
     replayable = False
     if terminal_event:
@@ -178,10 +155,7 @@ def continue_stream(request, session_id):
             content_type="text/event-stream",
         )
 
-    wait_for_resume = TaskRecord.objects.filter(
-        task_type=RESUME_APPROVAL_TASK,
-        id__in=message.tool_approvals.values("id"),
-    ).exists()
+    wait_for_resume = waits_for_resume(message)
     events = stream_message_events(
         message,
         last_event_id=last_event_id,

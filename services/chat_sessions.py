@@ -8,11 +8,11 @@ from personal_knowledge_base.context_snapshot import clear_context_snapshots
 from personal_knowledge_base.http_helpers import bool_from_value, bounded_int, paginate
 from personal_knowledge_base.memory import delete_session_memory
 from personal_knowledge_base.model_providers import role_completion
-from personal_knowledge_base.models import AgentToolApproval, KnowledgeBase, Message, Session
+from personal_knowledge_base.models import AgentToolApproval, KnowledgeBase, Message, Session, TaskRecord
 from personal_knowledge_base.serializers import message_dict, session_dict
 from personal_knowledge_base.stream_manager import stream_manager
 from services.context import ServiceContext
-from services.errors import get_or_404
+from services.errors import NotFound, get_or_404
 
 
 SESSION_CONFIG_FIELDS = {
@@ -53,6 +53,52 @@ def session_state_from_payload(data, fallback=None):
 
 def get_tenant_session(ctx: ServiceContext, session_id):
     return get_or_404(Session, id=session_id, tenant=ctx.tenant)
+
+
+def get_stream_message(ctx: ServiceContext, session_id, message_id) -> Message:
+    get_tenant_session(ctx, session_id)
+    message = Message.objects.filter(
+        Q(id=message_id) | Q(request_id=message_id),
+        session_id=session_id,
+    ).first()
+    if not message:
+        raise NotFound("message not found")
+    return message
+
+
+def expire_stale_approvals(message) -> Message:
+    now = timezone.now()
+    expired_count = AgentToolApproval.objects.filter(
+        message=message,
+        status="pending",
+        expires_at__lte=now,
+    ).update(status="expired", decided_at=now, updated_at=now)
+    if expired_count:
+        Message.objects.filter(id=message.id).update(
+            content="等待确认超时，未执行该操作。",
+            rendered_content="等待确认超时，未执行该操作。",
+            is_completed=True,
+            updated_at=timezone.now(),
+        )
+        message.refresh_from_db()
+    return message
+
+
+def pending_approval(message):
+    return AgentToolApproval.objects.filter(
+        message=message,
+        status="pending",
+        expires_at__gt=timezone.now(),
+    ).first()
+
+
+def waits_for_resume(message) -> bool:
+    from personal_knowledge_base.tasks import RESUME_APPROVAL_TASK
+
+    return TaskRecord.objects.filter(
+        task_type=RESUME_APPROVAL_TASK,
+        id__in=message.tool_approvals.values("id"),
+    ).exists()
 
 
 def list_sessions(ctx: ServiceContext, params: Mapping):
