@@ -36,8 +36,9 @@ def parse_sse(text):
 
 
 def assert_monotonic_ids(testcase, frames):
-    ids = [frame["id"] for frame in frames if isinstance(frame["id"], int)]
-    testcase.assertEqual(ids, sorted(ids))
+    ids = [frame["id"] for frame in frames]
+    testcase.assertTrue(all(isinstance(frame_id, int) for frame_id in ids), ids)
+    testcase.assertEqual(ids, sorted(set(ids)), "SSE ids must be unique and increasing")
 
 
 class SseApiContractTests(unittest.TestCase):
@@ -138,6 +139,21 @@ class SseApiContractTests(unittest.TestCase):
         ]
         self.assertTrue(all(frame_id > last_event_id for frame_id in resumed_ids))
         self.assertEqual(resumed_frames[-1]["event"], "done")
+        for resume_after in [None] + event_ids:
+            replay = self.client.get(
+                f"{API}/sessions/continue-stream/{session_id}",
+                params={"message_id": message_id},
+                headers={} if resume_after is None else {"Last-Event-ID": str(resume_after)},
+            )
+            self.assertEqual(replay.status_code, 200, replay.text[:500])
+            expected = frames if resume_after is None else [
+                frame for frame in frames if frame["id"] > resume_after
+            ]
+            self.assertEqual(
+                parse_sse(replay.text),
+                expected,
+                f"{kind} replay after Last-Event-ID {resume_after} differs from the live stream",
+            )
         responses[f"{kind}_event_ids"] = {
             "chat": event_ids,
             "continue_stream": resumed_ids,

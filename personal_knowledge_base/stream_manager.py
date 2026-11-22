@@ -34,9 +34,11 @@ class StreamEvent:
 class MessageStream:
     """单个消息的事件流"""
 
-    def __init__(self, message_id: str, session_id: str):
+    def __init__(self, message_id: str, session_id: str, first_event_frame_id: int = 2):
         self.message_id = message_id
         self.session_id = session_id
+        # Headers occupy IDs 0 and 1. Resumed rounds retain the previous round's positions.
+        self.first_event_frame_id = first_event_frame_id
         self.events: list[StreamEvent] = []
         self.is_complete = False
         self.is_error = False
@@ -115,10 +117,10 @@ class StreamManager:
                 cls._instance._cleanup_thread.start()
             return cls._instance
 
-    def create_stream(self, message_id: str, session_id: str) -> MessageStream:
+    def create_stream(self, message_id: str, session_id: str, *, first_event_frame_id: int = 2) -> MessageStream:
         """创建新的消息流"""
         with self._data_lock:
-            stream = MessageStream(message_id, session_id)
+            stream = MessageStream(message_id, session_id, first_event_frame_id)
             self._streams[message_id] = stream
             logger.info(f"[StreamManager] Created stream for message {message_id}")
             return stream

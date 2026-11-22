@@ -11,7 +11,7 @@
           "request_id": "str"
         },
         "event": "str",
-        "id": "null"
+        "id": "number"
       }
     ],
     "status": "number"
@@ -21,36 +21,14 @@
     "frames": [
       {
         "data": {
-          "actor_traces": [],
-          "agent_duration_ms": "number",
-          "agent_id": "str",
-          "agent_steps": [
-            {
-              "iteration": "number",
-              "thought": "str",
-              "timestamp": "number"
-            }
-          ],
-          "attachments": [],
-          "channel": "str",
+          "assistant_message_id": "str",
           "content": "str",
-          "created_at": "str",
-          "id": "str",
-          "images": [],
-          "is_completed": "bool",
-          "is_fallback": "bool",
-          "knowledge_id": "str",
-          "knowledge_references": [],
-          "mentioned_items": [],
-          "rendered_content": "str",
-          "request_id": "str",
-          "role": "str",
-          "session_id": "str",
-          "updated_at": "str",
-          "visible_to_user": "bool"
+          "done": "bool",
+          "response_type": "str",
+          "session_id": "str"
         },
         "event": "str",
-        "id": "null"
+        "id": "number"
       }
     ],
     "status": "number"
@@ -59,7 +37,9 @@
     "chat": [
       "number"
     ],
-    "continue_stream": []
+    "continue_stream": [
+      "number"
+    ]
   },
   "agent_messages_load": {
     "body": {
@@ -133,7 +113,7 @@
           "request_id": "str"
         },
         "event": "str",
-        "id": "null"
+        "id": "number"
       }
     ],
     "status": "number"
@@ -143,37 +123,14 @@
     "frames": [
       {
         "data": {
-          "actor_traces": [],
-          "agent_duration_ms": "number",
-          "agent_id": "str",
-          "agent_steps": [
-            {
-              "count": "number",
-              "intent": "str",
-              "query": "str",
-              "type": "str"
-            }
-          ],
-          "attachments": [],
-          "channel": "str",
+          "assistant_message_id": "str",
           "content": "str",
-          "created_at": "str",
-          "id": "str",
-          "images": [],
-          "is_completed": "bool",
-          "is_fallback": "bool",
-          "knowledge_id": "str",
-          "knowledge_references": [],
-          "mentioned_items": [],
-          "rendered_content": "str",
-          "request_id": "str",
-          "role": "str",
-          "session_id": "str",
-          "updated_at": "str",
-          "visible_to_user": "bool"
+          "done": "bool",
+          "response_type": "str",
+          "session_id": "str"
         },
         "event": "str",
-        "id": "null"
+        "id": "number"
       }
     ],
     "status": "number"
@@ -182,7 +139,9 @@
     "chat": [
       "number"
     ],
-    "continue_stream": []
+    "continue_stream": [
+      "number"
+    ]
   },
   "knowledge_messages_load": {
     "body": {

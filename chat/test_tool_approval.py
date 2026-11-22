@@ -16,6 +16,7 @@ from personal_knowledge_base.mcp_client import MCPTool
 from personal_knowledge_base.models import AgentToolApproval, Message, Session, TaskRecord, Tenant
 from personal_knowledge_base.serializers import message_dict
 from personal_knowledge_base.stream_manager import stream_manager
+from personal_knowledge_base.test_stream_resume import parse_sse
 
 
 class ToolApprovalTests(TransactionTestCase):
@@ -161,12 +162,13 @@ class ToolApprovalTests(TransactionTestCase):
         stream_manager.remove_stream(message.id)
         response = self.client.get(
             f"/api/v1/sessions/continue-stream/{self.session.id}?message_id={message.id}",
+            HTTP_LAST_EVENT_ID="9",
             **self.headers,
         )
-        body = b"".join(response.streaming_content).decode()
-        self.assertIn("tool_approval_required", body)
-        self.assertIn(approval.id, body)
-        self.assertIn("event: done", body)
+        frames = parse_sse(response)
+        self.assertEqual([(frame_id, event) for frame_id, event, _ in frames], [(10, "message"), (11, "done")])
+        self.assertEqual(frames[0][2]["response_type"], "tool_approval_required")
+        self.assertEqual(frames[0][2]["approval"]["id"], approval.id)
 
     def test_session_stop_cancels_pending_approval(self):
         approval, message, _ = self.create_pending()
@@ -243,6 +245,7 @@ class ToolApprovalTests(TransactionTestCase):
         # Open the reconnect before recovery, then consume it without the worker's stream.
         response = self.client.get(
             f"/api/v1/sessions/continue-stream/{self.session.id}?message_id={message.id}",
+            HTTP_LAST_EVENT_ID="9",
             **self.headers,
         )
         with (
@@ -261,9 +264,10 @@ class ToolApprovalTests(TransactionTestCase):
         self.assertTrue(message.is_completed)
         self.assertEqual(message.content, "finished")
         stream_manager.remove_stream(message.id)
-        body = b"".join(response.streaming_content).decode()
-        self.assertIn("finished", body)
-        self.assertIn("event: done", body)
+        frames = parse_sse(response)
+        self.assertEqual([frame_id for frame_id, _, _ in frames], [10, 11, 12])
+        self.assertEqual(frames[0][2]["content"], "finished")
+        self.assertEqual(frames[-1][1], "done")
 
     def test_recovered_rejection_completes_without_calling_the_tool(self):
         approval, message, client, toolset = self.queue_approval_without_dispatch("reject")
@@ -281,16 +285,14 @@ class ToolApprovalTests(TransactionTestCase):
         self.assertTrue(message.is_completed)
         self.assertEqual(message.content, "rejected")
 
-    def test_reconnect_uses_new_offsets_when_the_worker_replaces_the_approval_stream(self):
+    def test_reconnect_keeps_frame_ids_increasing_and_replayable_after_stream_replacement(self):
         approval, message, client, toolset = self.queue_approval_without_dispatch()
         old_stream = stream_manager.create_stream(message.id, self.session.id)
         old_stream.append_event("thinking", {"content": "waiting for approval"})
         old_stream.append_event("approval_required", {"approval": {"id": approval.id}})
-        response = self.client.get(
-            f"/api/v1/sessions/continue-stream/{self.session.id}?message_id={message.id}",
-            HTTP_LAST_EVENT_ID="0",
-            **self.headers,
-        )
+        url = f"/api/v1/sessions/continue-stream/{self.session.id}?message_id={message.id}"
+        # IDs 0–4 cover the header, thinking event, approval request and done frame.
+        response = self.client.get(url, HTTP_LAST_EVENT_ID="4", **self.headers)
         with (
             patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
             patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
@@ -299,11 +301,13 @@ class ToolApprovalTests(TransactionTestCase):
             patch("chat.views.schedule_chat_maintenance"),
             patch("chat.views.time.sleep", side_effect=lambda _: tasks.recover_incomplete_tasks()),
         ):
-            body = b"".join(response.streaming_content).decode()
+            frames = parse_sse(response)
         client.call_tool.assert_called_once()
-        self.assertIn('id: 0\nevent: message\ndata: {"response_type": "tool_call"', body)
-        self.assertIn('id: 1\nevent: message\ndata: {"response_type": "tool_result"', body)
-        self.assertIn("event: done", body)
+        self.assertEqual([frame_id for frame_id, _, _ in frames], list(range(5, 5 + len(frames))))
+        self.assertEqual(frames[0][2]["response_type"], "tool_call")
+        self.assertEqual(frames[1][2]["response_type"], "tool_result")
+        self.assertEqual(frames[-1][1], "done")
+        self.assertEqual(parse_sse(self.client.get(url, HTTP_LAST_EVENT_ID="5", **self.headers)), frames[1:])
 
     def test_two_recovery_workers_claim_the_same_pending_resume_once(self):
         approval, message, client, toolset = self.queue_approval_without_dispatch()
@@ -421,6 +425,11 @@ class ToolApprovalTests(TransactionTestCase):
 
     def test_recovery_preserves_next_approval_after_result_was_committed(self):
         approval, message, client, toolset = self.queue_approval_without_dispatch()
+        response = self.client.get(
+            f"/api/v1/sessions/continue-stream/{self.session.id}?message_id={message.id}",
+            HTTP_LAST_EVENT_ID="9",
+            **self.headers,
+        )
         with (
             patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
             patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
@@ -440,7 +449,11 @@ class ToolApprovalTests(TransactionTestCase):
         message.refresh_from_db()
         self.assertFalse(message.is_completed)
         self.assertEqual(message.content, "Second approval")
-        self.assertEqual(message.tool_approvals.filter(status="pending").count(), 1)
+        pending = message.tool_approvals.get(status="pending")
+        stream_manager.remove_stream(message.id)
+        frames = parse_sse(response)
+        self.assertEqual([(frame_id, event) for frame_id, event, _ in frames], [(10, "message"), (11, "done")])
+        self.assertEqual(frames[0][2]["approval"]["id"], pending.id)
 
     def test_approval_stream_event_is_terminal(self):
         from chat.views import _persist_agent_result, stream_message_events
