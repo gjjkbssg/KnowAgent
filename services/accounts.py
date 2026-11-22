@@ -4,10 +4,22 @@ from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 
-from personal_knowledge_base.authentication import hash_password, issue_tokens, verify_password
+from personal_knowledge_base.authentication import hash_password, issue_tokens, role_for, verify_password
 from personal_knowledge_base.models import AuthToken, Tenant, TenantMember, User
 from personal_knowledge_base.serializers import membership_dict, tenant_dict, user_dict
 from services.errors import Conflict, Forbidden, InvalidInput, NotFound, Unauthorized
+
+
+def _tenant_dict_for_user(user, tenant):
+    include_api_key = (
+        user is not None
+        and tenant is not None
+        and (
+            user.is_system_admin
+            or role_for(user, tenant) in {"owner", "admin"}
+        )
+    )
+    return tenant_dict(tenant, include_api_key=include_api_key)
 
 
 def register(data: dict) -> dict:
@@ -22,7 +34,12 @@ def register(data: dict) -> dict:
     user = User.objects.create(username=username, email=email, password_hash=hash_password(password), tenant=tenant)
     TenantMember.objects.create(user=user, tenant=tenant, role="owner")
     token, refresh = issue_tokens(user)
-    return {"user": user_dict(user), "tenant": tenant_dict(tenant), "token": token, "refresh_token": refresh}
+    return {
+        "user": user_dict(user),
+        "tenant": _tenant_dict_for_user(user, tenant),
+        "token": token,
+        "refresh_token": refresh,
+    }
 
 
 def auto_setup() -> dict:
@@ -47,7 +64,7 @@ def auto_setup() -> dict:
     token, refresh = issue_tokens(user)
     return {
         "user": user_dict(user),
-        "tenant": tenant_dict(user.tenant),
+        "tenant": _tenant_dict_for_user(user, user.tenant),
         "token": token,
         "refresh_token": refresh,
     }
@@ -63,7 +80,7 @@ def login(data: dict) -> dict:
     memberships = [membership_dict(m) for m in TenantMember.objects.filter(user=user, status="active")]
     return {
         "user": user_dict(user),
-        "tenant": tenant_dict(tenant),
+        "tenant": _tenant_dict_for_user(user, tenant),
         "token": token,
         "refresh_token": refresh,
         "memberships": memberships,
@@ -92,7 +109,7 @@ def refresh(data: dict) -> dict:
         "refreshToken": refresh_token,
         "refresh_token": refresh_token,
         "user": user_dict(auth.user),
-        "tenant": tenant_dict(auth.user.tenant),
+        "tenant": _tenant_dict_for_user(auth.user, auth.user.tenant),
     }
 
 
@@ -108,13 +125,17 @@ def current_user(user, tenant) -> dict:
     memberships = [membership_dict(m) for m in TenantMember.objects.filter(user=user, status="active")]
     return {
         "user": user_dict(user),
-        "tenant": tenant_dict(tenant or user.tenant),
+        "tenant": _tenant_dict_for_user(user, tenant or user.tenant),
         "memberships": memberships,
     }
 
 
 def validate_auth(user, tenant) -> dict:
-    return {"valid": bool(user or tenant), "user": user_dict(user), "tenant": tenant_dict(tenant)}
+    return {
+        "valid": bool(user or tenant),
+        "user": user_dict(user),
+        "tenant": _tenant_dict_for_user(user, tenant),
+    }
 
 
 def update_preferences(user, data: dict) -> dict:
@@ -140,7 +161,13 @@ def change_password(user, data: dict) -> dict:
 def switch_tenant(user, tenant_id) -> dict:
     if not user:
         raise Unauthorized("unauthorized")
+    if not user.is_system_admin and not TenantMember.objects.filter(
+        user=user,
+        tenant_id=tenant_id,
+        status="active",
+    ).exists():
+        raise NotFound("tenant not found")
     tenant = Tenant.objects.filter(id=tenant_id).first()
     if not tenant:
         raise NotFound("tenant not found")
-    return {"tenant": tenant_dict(tenant), "user": user_dict(user)}
+    return {"tenant": _tenant_dict_for_user(user, tenant), "user": user_dict(user)}

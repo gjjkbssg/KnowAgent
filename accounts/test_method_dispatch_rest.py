@@ -2,7 +2,13 @@ import json
 
 from django.test import Client, TestCase
 
-from personal_knowledge_base.models import GenericResource, ModelConfig, Tenant, TenantMember
+from personal_knowledge_base.models import (
+    GenericResource,
+    ModelConfig,
+    Tenant,
+    TenantMember,
+    User,
+)
 
 
 class ServiceLayerRestMethodDispatchTests(TestCase):
@@ -35,6 +41,17 @@ class ServiceLayerRestMethodDispatchTests(TestCase):
         self.assertEqual(self.tenant.name, "updated by PATCH")
 
         member = TenantMember.objects.get(tenant=self.tenant)
+        second_owner = User.objects.create(
+            username=f"second-owner-{member.user_id}",
+            email=f"second-owner-{member.user_id}@example.test",
+            password_hash="unused",
+            tenant=self.tenant,
+        )
+        TenantMember.objects.create(
+            user=second_owner,
+            tenant=self.tenant,
+            role="owner",
+        )
         response = self._request(
             "PATCH",
             f"/api/v1/tenants/{self.tenant.id}/members/{member.user_id}",

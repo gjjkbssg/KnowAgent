@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from personal_knowledge_base.http_helpers import auth_context, parse_body
 from personal_knowledge_base.responses import fail, ok, service_errors
+from services.context import ServiceContext
 from services.accounts import (
     auto_setup,
     change_password,
@@ -31,6 +32,17 @@ from services.tenants import (
     update_tenant_kv,
     update_tenant_member,
 )
+
+
+def _tenant_admin_context(request):
+    user, tenant = auth_context(request)
+    if user is None and tenant is None:
+        return None
+    return ServiceContext(
+        tenant=tenant or (user.tenant if user else None),
+        user=user,
+        request_id=request.headers.get("X-Request-ID", ""),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -145,31 +157,39 @@ def tenants_collection(request):
 @csrf_exempt
 @service_errors
 def tenant_detail(request, tenant_id):
-    auth_context(request)
+    ctx = _tenant_admin_context(request)
+    if ctx is None:
+        return fail("unauthorized", 401)
     if request.method == "GET":
-        return ok(get_tenant_detail(tenant_id))
+        return ok(get_tenant_detail(ctx, tenant_id))
     if request.method == "DELETE":
-        return ok(delete_tenant(tenant_id))
-    return ok(update_tenant(tenant_id, parse_body(request)))
+        return ok(delete_tenant(ctx, tenant_id))
+    return ok(update_tenant(ctx, tenant_id, parse_body(request)))
 
 
 @csrf_exempt
 @service_errors
 def tenant_members(request, tenant_id, user_id=None):
+    ctx = _tenant_admin_context(request)
+    if ctx is None:
+        return fail("unauthorized", 401)
     if request.method == "GET":
-        return ok(list_tenant_members(tenant_id))
+        return ok(list_tenant_members(ctx, tenant_id))
     data = parse_body(request)
     if request.method == "POST":
-        return ok(add_tenant_member(tenant_id, data))
+        return ok(add_tenant_member(ctx, tenant_id, data))
     if request.method == "DELETE":
-        return ok(delete_tenant_member(tenant_id, user_id))
-    return ok(update_tenant_member(tenant_id, user_id, data))
+        return ok(delete_tenant_member(ctx, tenant_id, user_id))
+    return ok(update_tenant_member(ctx, tenant_id, user_id, data))
 
 
 @csrf_exempt
 @service_errors
 def tenant_api_key(request, tenant_id):
-    return ok(rotate_tenant_api_key(tenant_id))
+    ctx = _tenant_admin_context(request)
+    if ctx is None:
+        return fail("unauthorized", 401)
+    return ok(rotate_tenant_api_key(ctx, tenant_id))
 
 
 @csrf_exempt
