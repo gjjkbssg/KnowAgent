@@ -135,6 +135,15 @@ class TenantAdminAuthorizationTests(TestCase):
         )
         detail = self._request("GET", self._detail(), headers=self.admin_headers)
         self.assertEqual(detail.json()["data"]["api_key"], self.target.api_key)
+        tenant_list = self._request(
+            "GET",
+            "/api/v1/tenants",
+            headers=self.admin_headers,
+        )
+        self.assertEqual(
+            tenant_list.json()["data"]["items"][0]["api_key"],
+            self.target.api_key,
+        )
         rotated = self._request("POST", self._api_key(), headers=self.admin_headers)
         self.assertEqual(rotated.status_code, 200)
         self.target.refresh_from_db()
@@ -254,6 +263,15 @@ class TenantAdminAuthorizationTests(TestCase):
             "not found",
         )
         self._assert_error(
+            self._request(
+                "POST",
+                self._api_key(self.other.id),
+                headers=own_headers,
+            ),
+            404,
+            "not found",
+        )
+        self._assert_error(
             self._request("DELETE", self._detail(), headers=own_headers),
             403,
             "forbidden",
@@ -314,21 +332,11 @@ class TenantAdminAuthorizationTests(TestCase):
         )
         self.assertEqual(member_tenant.status_code, 200)
         self.assertEqual(member_tenant.json()["data"]["tenant"]["api_key"], "")
-        self._assert_error(
-            self._request(
-                "POST",
-                self._api_key(self.other.id),
-                headers=own_headers,
-            ),
-            404,
-            "not found",
-        )
 
     def test_system_admin_can_access_and_manage_any_tenant(self):
-        self.assertEqual(
-            self._request("GET", self._detail(), headers=self.system_admin_headers).status_code,
-            200,
-        )
+        detail = self._request("GET", self._detail(), headers=self.system_admin_headers)
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()["data"]["api_key"], self.target.api_key)
         self.assertEqual(
             self._request("GET", self._members(), headers=self.system_admin_headers).status_code,
             200,
