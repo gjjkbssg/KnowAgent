@@ -43,8 +43,13 @@ from personal_knowledge_base.responses import fail, ok
 from personal_knowledge_base.search import hybrid_search
 from personal_knowledge_base.serializers import message_dict, session_dict
 from personal_knowledge_base.stream_manager import stream_manager
-
-from personal_knowledge_base.authentication import require_auth
+from personal_knowledge_base.http_helpers import (
+    auth_context,
+    bool_from_value,
+    bounded_int,
+    paginate,
+    parse_body,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -103,26 +108,6 @@ def _persist_assistant_content_with_retry(assistant_id, content: str, max_attemp
     return False
 
 
-# ── Helper functions (copied from personal_knowledge_base/views.py) ──────
-
-def parse_body(request):
-    if request.content_type and request.content_type.startswith("multipart/"):
-        return request.POST.dict()
-    if not request.body:
-        return {}
-    try:
-        return json.loads(request.body.decode("utf-8"))
-    except Exception:
-        return {}
-
-
-def auth_context(request):
-    try:
-        return require_auth(request)
-    except PermissionError:
-        return None, None
-
-
 def tenant_session(request, session_id):
     """Return (session, None) for the caller's tenant, or (None, error response)."""
     _, tenant = auth_context(request)
@@ -141,14 +126,6 @@ SESSION_CONFIG_FIELDS = {
     "enable_memory",
     "mcp_service_ids",
 }
-
-
-def bool_from_value(value, default=False):
-    if value is None:
-        return default
-    if isinstance(value, bool):
-        return value
-    return str(value).lower() in {"1", "true", "yes", "on", "enabled"}
 
 
 def normalize_session_state(value=None):
@@ -173,30 +150,6 @@ def session_state_from_payload(data, fallback=None):
         if field in source:
             state[field] = source[field]
     return normalize_session_state(state)
-
-
-def bounded_int(value, default, minimum=None, maximum=None):
-    try:
-        number = int(value if value not in (None, "") else default)
-    except (TypeError, ValueError):
-        number = default
-    if minimum is not None:
-        number = max(number, minimum)
-    if maximum is not None:
-        number = min(number, maximum)
-    return number
-
-
-def paginate(qs, request):
-    page_size = bounded_int(request.GET.get("page_size", request.GET.get("limit", 20)), 20, 1, 200)
-    if "offset" in request.GET and "page" not in request.GET:
-        offset = bounded_int(request.GET.get("offset"), 0, 0)
-        page = offset // page_size + 1
-    else:
-        page = bounded_int(request.GET.get("page"), 1, 1)
-        offset = (page - 1) * page_size
-    total = qs.count()
-    return qs[offset : offset + page_size], {"page": page, "page_size": page_size, "total": total}
 
 
 # ── Session CRUD ─────────────────────────────────────────────────────────

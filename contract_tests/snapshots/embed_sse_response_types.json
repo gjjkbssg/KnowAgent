@@ -1,0 +1,12 @@
+{
+  "agent": [
+    "agent_query",
+    "answer",
+    "complete"
+  ],
+  "knowledge": [
+    "agent_query",
+    "answer",
+    "complete"
+  ]
+}

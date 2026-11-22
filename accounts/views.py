@@ -7,7 +7,8 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from personal_knowledge_base.authentication import hash_password, issue_tokens, require_auth, verify_password
+from personal_knowledge_base.authentication import hash_password, issue_tokens, verify_password
+from personal_knowledge_base.http_helpers import auth_context, parse_body
 from personal_knowledge_base.models import (
     AuditLog,
     AuthToken,
@@ -21,28 +22,6 @@ from personal_knowledge_base.serializers import (
     tenant_dict,
     user_dict,
 )
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers (moved from personal_knowledge_base.views)
-# ---------------------------------------------------------------------------
-
-def parse_body(request):
-    if request.content_type and request.content_type.startswith("multipart/"):
-        return request.POST.dict()
-    if not request.body:
-        return {}
-    try:
-        return json.loads(request.body.decode("utf-8"))
-    except Exception:
-        return {}
-
-
-def auth_context(request):
-    try:
-        return require_auth(request)
-    except PermissionError:
-        return None, None
 
 
 TENANT_KV_FIELDS = {

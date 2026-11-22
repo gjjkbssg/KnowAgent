@@ -12,7 +12,7 @@ from personal_knowledge_base.model_usage import model_usage_summary
 from personal_knowledge_base.models import ModelConfig, ModelUsage
 from personal_knowledge_base.responses import fail, ok
 from personal_knowledge_base.serializers import model_dict
-from personal_knowledge_base.views import auth_context, parse_body
+from personal_knowledge_base.http_helpers import auth_context, parse_body
 
 
 @csrf_exempt
