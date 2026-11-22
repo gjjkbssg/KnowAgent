@@ -11,10 +11,10 @@ from .authentication import tenant_scoped
 from .graph_rag import graph_database_engine, graph_rag_enabled, neo4j_configured
 from .http_helpers import auth_context
 from .model_providers import bailian_status
-from .models import Chunk, GenericResource, KnowledgeBase, Session, TaskRecord
+from .models import Chunk, GenericResource, KnowledgeBase, Session
 from .responses import fail, ok
 from .serializers import chunk_dict, kb_dict, session_dict
-from .tasks import RESUME_APPROVAL_TASK, task_status
+from .tasks import task_status
 
 
 def health(request):
@@ -117,6 +117,4 @@ def im_callback(request, channel_id):
 
 
 def task_progress(request, task_id):
-    if TaskRecord.objects.filter(id=task_id, task_type=RESUME_APPROVAL_TASK).exists():
-        return ok({"status": "not_found", "progress": 0})
     return ok(task_status(task_id))

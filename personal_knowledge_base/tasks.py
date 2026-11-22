@@ -449,12 +449,13 @@ def _ensure_wal_mode():
 
 
 def task_status(task_id: str):
+    # Approval resume records are private to the authenticated chat API.
+    record = TaskRecord.objects.filter(id=task_id).exclude(task_type=RESUME_APPROVAL_TASK).first()
+    if not record:
+        return {"status": "not_found", "progress": 0}
     cached = cache.get(f"task:{task_id}")
     if cached:
         return cached
-    record = TaskRecord.objects.filter(id=task_id).first()
-    if not record:
-        return {"status": "not_found", "progress": 0}
     return {
         "status": record.status,
         "progress": record.progress,
