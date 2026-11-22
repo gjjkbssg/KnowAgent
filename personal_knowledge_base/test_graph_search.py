@@ -95,7 +95,15 @@ class GraphSearchTests(TestCase):
 
     def test_graph_tool_shows_the_relation_chain_to_the_model(self):
         relation = {"node1": "CO2 传感器", "node2": "E17", "type": "causes"}
-        hit = {"chunk_id": self.chunk.id, "knowledge_title": "故障复盘", "content": self.chunk.content, "match_type": "graph"}
+        self.chunk.knowledge.metadata = {"lifecycle": {"status": "superseded", "superseded_by": ""}}
+        self.chunk.knowledge.save(update_fields=["metadata"])
+        hit = {
+            "chunk_id": self.chunk.id,
+            "knowledge_id": self.chunk.knowledge_id,
+            "knowledge_title": "故障复盘",
+            "content": self.chunk.content,
+            "match_type": "graph",
+        }
         context = {"tenant_id": self.tenant.id, "kb_ids": [self.kb.id]}
         with patch.object(graph_rag, "graph_search", return_value=([hit], [relation])), patch.object(
             graph_rag, "expand_relation_context", return_value=[]
@@ -103,5 +111,6 @@ class GraphSearchTests(TestCase):
             result = QueryKnowledgeGraphTool().execute({"query": "E17 的原因"}, context)
 
         self.assertIn("- CO2 传感器 -[causes]-> E17", result.output)
-        self.assertIn("[1] 故障复盘 (graph)", result.output)
+        self.assertIn("[1] 故障复盘（已废止） (graph)", result.output)
+        self.assertEqual(result.data[0]["lifecycle_status"], "superseded")
         self.assertEqual(result.data, [hit])

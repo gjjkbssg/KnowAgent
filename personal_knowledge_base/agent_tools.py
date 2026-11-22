@@ -23,6 +23,7 @@ from django.conf import settings
 from django.db import connection
 from django.db.models import Q
 
+from .models import Knowledge
 from .safe_http import _PinnedHostAdapter, prepare_public_url, resolve_public_address
 
 logger = logging.getLogger(__name__)
@@ -194,7 +195,11 @@ class KnowledgeSearchTool(Tool):
         return "knowledge_search"
 
     def description(self) -> str:
-        return "Search the knowledge base for relevant documents. Returns document chunks with titles and relevance scores. Duplicate chunks from previous calls are marked as already seen."
+        return (
+            "Search the knowledge base for relevant documents. Returns document chunks with titles and relevance scores. "
+            "Duplicate chunks from previous calls are marked as already seen. "
+            "标注“已废止”的资料只在用户问历史版本时作为依据，否则以现行版本为准，并在回答里说明版本。"
+        )
 
     def parameters(self) -> dict:
         return {
@@ -228,6 +233,8 @@ class KnowledgeSearchTool(Tool):
         for i, r in enumerate(refs, 1):
             chunk_id = r.get("chunk_id", "")
             title = r.get("knowledge_title", "Unknown")
+            if r.get("lifecycle_status") == "superseded":
+                title = f"{title}（已废止）"
             content = r.get("content", "")[:500]
             score = r.get("score", 0)
 
@@ -914,11 +921,21 @@ class QueryKnowledgeGraphTool(Tool):
             # 扩展关系上下文
             expanded = expand_relation_context(results, tenant_id, limit=3)
             results.extend(expanded)
+            knowledge_ids = {item.get("knowledge_id") for item in results if item.get("knowledge_id")}
+            lifecycle_metadata = dict(
+                Knowledge.objects.filter(id__in=knowledge_ids, tenant_id=tenant_id).values_list("id", "metadata")
+            )
+            for item in results:
+                if "lifecycle_status" not in item:
+                    metadata = lifecycle_metadata.get(item.get("knowledge_id")) or {}
+                    item["lifecycle_status"] = ((metadata.get("lifecycle") or {}).get("status", "current"))
 
             # 格式化输出
             lines = []
             for i, r in enumerate(results[:10], 1):
                 title = r.get("knowledge_title", "Unknown")
+                if r.get("lifecycle_status") == "superseded":
+                    title = f"{title}（已废止）"
                 content = r.get("content", "")[:300]
                 match_type = r.get("match_type", "graph")
                 lines.append(f"[{i}] {title} ({match_type})\n{content}")

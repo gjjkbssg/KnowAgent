@@ -9,7 +9,7 @@ from typing import Iterable
 from django.conf import settings
 from django.db import connection
 
-from .models import Chunk
+from .models import Chunk, Knowledge
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,10 @@ logger = logging.getLogger(__name__)
 TOKEN_RE = re.compile(r"[\w一-鿿]+", re.UNICODE)
 IDENTIFIER_RE = re.compile(r"[A-Za-z]{1,12}(?:[-_]?\d+)+(?:[-_][A-Za-z0-9]+)*", re.I)
 CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]+")
+HISTORICAL_INTENT_RE = re.compile(
+    r"旧版|老版|历史|以前|之前|过去|原来|废止|作废|停用的|上一版|早期|previous|old version|deprecated|superseded|legacy",
+    re.I,
+)
 PARTIAL_OVERLAP_THRESHOLD = 0.85
 RRF_K = 60
 
@@ -304,6 +308,23 @@ def diversify_by_knowledge(results: list[dict], max_per_knowledge: int = 2) -> l
             diversified.append(item)
             knowledge_counts[kid] = count + 1
     return diversified
+
+
+def query_wants_history(query: str) -> bool:
+    return bool(HISTORICAL_INTENT_RE.search(query or ""))
+
+
+def apply_version_policy(results: list[dict], query: str) -> list[dict]:
+    current = []
+    superseded = []
+    for result in results:
+        if result.get("lifecycle_status", "current") == "superseded":
+            superseded.append({**result, "lifecycle_status": "superseded"})
+        else:
+            current.append(result)
+    if query_wants_history(query):
+        return superseded + current
+    return current + superseded
 
 
 # ── 短 chunk 相邻扩展 ────────────────────────────────────────────────
@@ -635,6 +656,7 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
                 "knowledge_title": chunk.knowledge.title,
                 "knowledge_description": getattr(chunk.knowledge, "description", "") or "",
                 "knowledge_base_name": chunk.knowledge_base.name,
+                "lifecycle_status": ((chunk.knowledge.metadata or {}).get("lifecycle") or {}).get("status", "current"),
                 "chunk_type": chunk.chunk_type,
                 "parent_chunk_id": chunk.parent_chunk_id,
                 "image_info": chunk.image_info,
@@ -649,7 +671,14 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
     # 关系扩展：头部候选的关联 chunk 也进入候选池，排在已有候选之后，由 Rerank 决定去留
     if results:
         floor_score = min(item["score"] for item in results) * 0.5
-        for extra in expand_relation_context(results[: max(1, top_k)], tenant_id, min(3, top_k)):
+        relation_extras = expand_relation_context(results[: max(1, top_k)], tenant_id, min(3, top_k))
+        extra_knowledge_ids = {item.get("knowledge_id") for item in relation_extras if item.get("knowledge_id")}
+        extra_metadata = dict(
+            Knowledge.objects.filter(id__in=extra_knowledge_ids, tenant_id=tenant_id).values_list("id", "metadata")
+        )
+        for extra in relation_extras:
+            knowledge_metadata = extra_metadata.get(extra.get("knowledge_id")) or {}
+            extra["lifecycle_status"] = ((knowledge_metadata.get("lifecycle") or {}).get("status", "current"))
             results.append({**extra, "score": floor_score})
 
     results = deduplicate_results(results)
@@ -660,6 +689,7 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
         settings.RETRIEVAL_RERANK_THRESHOLD,
         settings.RETRIEVAL_RERANK_FALLBACK_MIN_SCORE,
     )
+    results = apply_version_policy(results, query)
 
     # ── 知识条目级多样性 ────────────────────────────────────────────
     results = diversify_by_knowledge(results, max_per_knowledge=2)

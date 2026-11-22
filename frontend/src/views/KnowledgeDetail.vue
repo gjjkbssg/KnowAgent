@@ -288,6 +288,12 @@ async function removeDoc(doc: any) {
   await loadDocs()
 }
 
+async function toggleLifecycle(doc: any) {
+  const lifecycleStatus = doc.metadata?.lifecycle?.status === 'superseded' ? 'current' : 'superseded'
+  await api.updateKnowledge(doc.id, { lifecycle_status: lifecycleStatus })
+  await Promise.all([loadDocs(), loadAllDocs()])
+}
+
 async function batchDeleteDocs() {
   if (!selectedIds.value.length) return
   if (!confirm(`删除选中的 ${selectedIds.value.length} 个条目？`)) return
@@ -638,7 +644,10 @@ onUnmounted(() => {
                 <tr v-for="doc in visibleDocs" :key="doc.id">
                   <td><input v-model="selectedIds" :value="doc.id" type="checkbox" /></td>
                   <td class="doc-title-cell">
-                    <strong>{{ doc.title }}</strong>
+                    <strong>
+                      {{ doc.title }}
+                      <t-tag v-if="doc.metadata?.lifecycle?.status === 'superseded'" theme="danger">已废止</t-tag>
+                    </strong>
                     <p>{{ doc.summary_status === 'completed' ? '摘要已生成' : (doc.error_message || '等待摘要/索引') }}</p>
                   </td>
                   <td class="doc-source" :title="doc.file_name || doc.source || doc.type">{{ doc.file_name || doc.source || doc.type || '-' }}</td>
@@ -653,6 +662,7 @@ onUnmounted(() => {
                   <td class="action-cell">
                     <div class="table-actions tiered">
                       <button class="primary-action" @click="openChunks(doc)">Chunk</button>
+                      <button @click="toggleLifecycle(doc)">{{ doc.metadata?.lifecycle?.status === 'superseded' ? '恢复为现行' : '标记为已废止' }}</button>
                       <button @click="reparse(doc)">重解析</button>
                       <button v-if="doc.parse_status !== 'completed'" @click="cancelParse(doc)">取消</button>
                       <button class="danger" @click="removeDoc(doc)">删除</button>

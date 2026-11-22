@@ -11,11 +11,13 @@ from personal_knowledge_base.search import (
     _fts_search,
     apply_mmr,
     apply_rerank_threshold,
+    apply_version_policy,
     build_fts_query,
     cjk_bigram_text,
     deduplicate_results,
     hybrid_search,
     index_chunk,
+    query_wants_history,
     retokenize_fts_rows,
     rrf_channel_weights,
     rrf_fuse,
@@ -29,9 +31,15 @@ class SearchRankingTests(TestCase):
         self.kb = KnowledgeBase.objects.create(tenant=self.tenant, name="kb")
         self.other_kb = KnowledgeBase.objects.create(tenant=self.tenant, name="other")
 
-    def add_chunk(self, content, kb=None, title="doc", index=0):
+    def add_chunk(self, content, kb=None, title="doc", index=0, metadata=None):
         kb = kb or self.kb
-        knowledge = Knowledge.objects.create(tenant=self.tenant, knowledge_base=kb, title=title, parse_status="completed")
+        knowledge = Knowledge.objects.create(
+            tenant=self.tenant,
+            knowledge_base=kb,
+            title=title,
+            parse_status="completed",
+            metadata=metadata or {},
+        )
         chunk = Chunk.objects.create(
             tenant=self.tenant,
             knowledge_base=kb,
@@ -230,6 +238,76 @@ class SearchRankingTests(TestCase):
 
         self.assertEqual(len(results), 3)
 
+    def test_hybrid_search_orders_current_and_historical_versions_by_query_intent(self):
+        superseded = self.add_chunk(
+            "chiller legacy setup uses pressure limit alpha and manual valve control",
+            title="legacy setup",
+            metadata={"lifecycle": {"status": "superseded", "superseded_by": "current-id"}},
+        )
+        current = self.add_chunk(
+            "chiller current configuration uses temperature target beta and automatic valve control",
+            title="current setup",
+        )
+        scores = {superseded.id: 1.0, current.id: 0.9}
+
+        def search_for(query):
+            with (
+                patch.object(search, "_fts_search", return_value=scores),
+                patch.object(search, "_vector_search", return_value={}),
+                patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
+                patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+                patch(
+                    "personal_knowledge_base.model_providers.rerank",
+                    side_effect=lambda _query, rows, top_k=None, tenant=None: [
+                        {**row, "score": 1.0} for row in rows
+                    ],
+                ),
+            ):
+                return hybrid_search(self.tenant.id, [self.kb.id], query, 2)
+
+        neutral = search_for("chiller setup")
+        historical = search_for("旧版 chiller setup")
+
+        self.assertEqual([item["chunk_id"] for item in neutral], [current.id, superseded.id])
+        self.assertEqual([item["chunk_id"] for item in historical], [superseded.id, current.id])
+        self.assertEqual(neutral[1]["lifecycle_status"], "superseded")
+
+    def test_relation_expansion_rows_receive_knowledge_lifecycle_status(self):
+        current = self.add_chunk("current chiller valve setting with automatic controls", title="current")
+        superseded = self.add_chunk(
+            "old pressure regulation notes for the manual pump",
+            title="superseded",
+            metadata={"lifecycle": {"status": "superseded", "superseded_by": "current-id"}},
+        )
+        extra = {
+            "chunk_id": superseded.id,
+            "id": superseded.id,
+            "content": superseded.content,
+            "knowledge_id": superseded.knowledge_id,
+            "knowledge_base_id": self.kb.id,
+            "knowledge_title": superseded.knowledge.title,
+            "knowledge_base_name": self.kb.name,
+            "match_type": "graph",
+            "metadata": {},
+        }
+
+        with (
+            patch.object(search, "_fts_search", return_value={current.id: 1.0}),
+            patch.object(search, "_vector_search", return_value={}),
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[extra]),
+            patch(
+                "personal_knowledge_base.model_providers.rerank",
+                side_effect=lambda _query, rows, top_k=None, tenant=None: [
+                    {**row, "score": 1.0} for row in rows
+                ],
+            ),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "neutral query", 2)
+
+        self.assertEqual([item["chunk_id"] for item in results], [current.id, superseded.id])
+        self.assertEqual(results[1]["lifecycle_status"], "superseded")
+
 
 class CJKTextTests(SimpleTestCase):
     def test_cjk_runs_are_replaced_with_overlapping_bigrams(self):
@@ -370,3 +448,29 @@ class DeduplicateResultsTests(SimpleTestCase):
         ])
 
         self.assertEqual([item["chunk_id"] for item in results], ["high", "other"])
+
+
+class VersionPolicyTests(SimpleTestCase):
+    def test_query_wants_history_matches_historical_terms_only(self):
+        for query in ("查旧版", "历史规则", "deprecated procedure"):
+            with self.subTest(query=query):
+                self.assertTrue(query_wants_history(query))
+        for query in ("现在应该怎么做", "按现行规则处理"):
+            with self.subTest(query=query):
+                self.assertFalse(query_wants_history(query))
+
+    def test_apply_version_policy_stably_partitions_without_dropping_results(self):
+        results = [
+            {"id": "current-1"},
+            {"id": "old-1", "lifecycle_status": "superseded"},
+            {"id": "current-2", "lifecycle_status": "current"},
+            {"id": "old-2", "lifecycle_status": "superseded"},
+        ]
+
+        current_first = apply_version_policy(results, "current rule")
+        history_first = apply_version_policy(results, "旧版 rule")
+
+        self.assertEqual([item["id"] for item in current_first], ["current-1", "current-2", "old-1", "old-2"])
+        self.assertEqual([item["id"] for item in history_first], ["old-1", "old-2", "current-1", "current-2"])
+        self.assertEqual(len(current_first), len(results))
+        self.assertEqual([item["lifecycle_status"] for item in current_first if item["id"].startswith("old")], ["superseded", "superseded"])

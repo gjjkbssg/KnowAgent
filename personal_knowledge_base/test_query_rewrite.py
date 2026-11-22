@@ -5,7 +5,7 @@ from django.test import TestCase
 from personal_knowledge_base import model_providers
 from personal_knowledge_base.models import KnowledgeBase, Message, Session, Tenant
 from personal_knowledge_base.query_understand import understand_query
-from personal_knowledge_base.rag_pipeline import run_rag_pipeline
+from personal_knowledge_base.rag_pipeline import SYSTEM_PROMPT_DEFAULT, _build_context_with_memory, run_rag_pipeline
 
 
 class QueryRewriteHistoryTests(TestCase):
@@ -79,6 +79,14 @@ class QueryRewriteHistoryTests(TestCase):
         self.assertIn("用户：XH-100 出现 E42 是什么意思？", prompt)
         self.assertIn("助手：E42 表示 Wi-Fi 连接失败。", prompt)
         self.assertEqual(result["rewrite_query"], "XH-100 出现 E42 的排查顺序")
+
+    def test_rag_context_marks_superseded_titles_and_prompt_explains_policy(self):
+        refs = [{"knowledge_title": "旧版说明", "lifecycle_status": "superseded", "content": "旧版内容"}]
+        with patch("chat.views._build_document_header", return_value=""):
+            context = _build_context_with_memory(refs, "", "")
+
+        self.assertIn("旧版说明（已废止）", context)
+        self.assertIn("标注“已废止”的资料只在用户问历史版本时作为依据", SYSTEM_PROMPT_DEFAULT)
 
     def test_prompt_has_no_history_section_for_a_first_question(self):
         reply = '{"rewrite_query": "q", "intent": "kb_search", "image_description": ""}'

@@ -70,6 +70,7 @@ export const api = {
   copyKb: (sourceId: string) => client.post('/api/v1/knowledge-bases/copy', { source_id: sourceId }),
   moveTargets: (kbId: string) => client.get(`/api/v1/knowledge-bases/${kbId}/move-targets`),
   listKnowledge: (kbId: string, params: any = {}) => client.get(`/api/v1/knowledge-bases/${kbId}/knowledge`, { params }),
+  updateKnowledge: (id: string, data: any) => client.put(`/api/v1/knowledge/${id}`, data),
   getKnowledgeSpans: (knowledgeId: string) => client.get(`/api/v1/knowledge/${knowledgeId}/stages`),
   uploadFile: (kbId: string, file: File, options: { tag_id?: string; process_config?: any } = {}) => {
     const fd = new FormData()
