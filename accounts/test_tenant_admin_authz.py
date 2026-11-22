@@ -306,6 +306,24 @@ class TenantAdminAuthorizationTests(TestCase):
         self.assertEqual(rotated.status_code, 200)
         self.assertTrue(rotated.json()["data"]["api_key"])
 
+    def test_api_key_tenant_creation_returns_a_usable_key(self):
+        response = self._request(
+            "POST",
+            "/api/v1/tenants",
+            {"name": "Created by tenant API key"},
+            headers={"HTTP_X_API_KEY": self.target.api_key},
+        )
+        self.assertEqual(response.status_code, 201)
+        created = response.json()["data"]
+        self.assertTrue(created["api_key"])
+
+        detail = self._request(
+            "GET",
+            self._detail(created["id"]),
+            headers={"HTTP_X_API_KEY": created["api_key"]},
+        )
+        self.assertEqual(detail.status_code, 200)
+
     def test_viewer_login_and_me_do_not_expose_tenant_api_key(self):
         self.viewer.password_hash = hash_password("viewer-password")
         self.viewer.save(update_fields=["password_hash"])

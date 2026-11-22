@@ -103,7 +103,7 @@ def create_tenant(user, data: dict) -> dict:
     )
     if user:
         TenantMember.objects.create(user=user, tenant=tenant, role="owner")
-    return _tenant_dict_for_user(user, tenant)
+    return tenant_dict(tenant, include_api_key=True)
 
 
 def get_tenant_detail(ctx: ServiceContext, tenant_id) -> dict:
