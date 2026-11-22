@@ -309,6 +309,30 @@ class AgentEngineTests(TestCase):
             {"service_id": "service-a", "remote_tool_name": "delete"},
         )
 
+    def test_last_round_approval_uses_max_iterations_fallback(self):
+        expected = "已达到最大推理轮数，基于当前信息给出回答。"
+        response = {
+            "content": "我现在去删除",
+            "tool_calls": [tool_call("g1", "mcp_test_action", {"x": 1})],
+        }
+        for decision in ("approved", "rejected"):
+            with self.subTest(decision=decision):
+                calls = []
+                tool = GatedTool(calls)
+                config = {"allowed_tools": [], "extra_tools": [tool], "max_rounds": 1}
+                with patch.object(model_providers, "chat_completion_raw", return_value=response):
+                    suspended = AgentEngine(self.tenant, "session", agent_config=config).execute("question")
+                    resumed = AgentEngine(
+                        self.tenant,
+                        "session",
+                        agent_config={"allowed_tools": [], "extra_tools": [GatedTool(calls)], "max_rounds": 1},
+                    ).resume(suspended.checkpoint, decision)
+
+                self.assertEqual(suspended.stopped_reason, "awaiting_approval")
+                self.assertEqual(resumed.stopped_reason, "max_iterations")
+                self.assertEqual(resumed.content, expected)
+                self.assertEqual(calls, [{"x": 1}] if decision == "approved" else [])
+
     def test_checkpoint_serialization_preserves_full_tool_result(self):
         output = "x" * 20000
         result = AgentResult(

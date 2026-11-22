@@ -727,7 +727,7 @@ class AgentEngine:
                         "previous_round_signature": [list(item) for item in previous_round_signature] if previous_round_signature else None,
                         "repeated_rounds": repeated_rounds,
                         "consecutive_failed_tool_rounds": consecutive_failed_tool_rounds,
-                        "final_content": content,
+                        "final_content": final_content,
                         "context": {
                             "seen_chunks": sorted(context.get("seen_chunks", set())),
                             "seen_wiki_slugs": sorted(context.get("seen_wiki_slugs", set())),
