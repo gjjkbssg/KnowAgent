@@ -94,9 +94,25 @@ class MCPServiceManagementTests(TestCase):
                 "description": "Echo text",
                 "input_schema": {"type": "object", "properties": {"text": {"type": "string"}}},
                 "annotations": {"title": "Echo"},
+                "requires_approval": True,
             },
         )
         self.assertNotIn("action-key", test_response.content.decode())
+
+    def test_mcp_service_default_approval_mode_is_always(self):
+        from .views import default_resource_payload
+
+        self.assertEqual(default_resource_payload("mcp_services", {"name": "service"})["approval_mode"], "always")
+
+    def test_resource_output_omits_only_the_default_approval_mode(self):
+        resource = self.create_service(approval_mode="always")
+        default_response = self.client.get(f"/api/v1/mcp-services/{resource.id}", **self.headers)
+        self.assertNotIn("approval_mode", default_response.json()["data"])
+
+        resource.data["approval_mode"] = "never"
+        resource.save(update_fields=["data", "updated_at"])
+        configured_response = self.client.get(f"/api/v1/mcp-services/{resource.id}", **self.headers)
+        self.assertEqual(configured_response.json()["data"]["approval_mode"], "never")
 
     def test_test_action_reports_connection_failure_with_http_200(self):
         server = FakeMCPServer()

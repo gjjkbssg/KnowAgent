@@ -47,6 +47,18 @@ class ToolResult:
             result["data"] = self.data
         return result
 
+    def to_checkpoint_dict(self) -> dict:
+        return {"output": self.output, "data": self.data, "error": self.error, "duration_ms": self.duration_ms}
+
+    @classmethod
+    def from_dict(cls, value: dict) -> "ToolResult":
+        return cls(
+            output=value.get("output", ""),
+            data=value.get("data"),
+            error=value.get("error", ""),
+            duration_ms=value.get("duration_ms", 0),
+        )
+
 
 def _execute_hard_timeout_tool(tool, args: dict, context: dict) -> ToolResult:
     try:
@@ -81,6 +93,9 @@ class Tool(ABC):
         context: 运行时上下文 {"tenant": ..., "kb_ids": ..., "session_id": ..., "user_id": ...}
         """
         pass
+
+    def requires_approval(self) -> bool:
+        return False
 
     def to_openai_tool(self) -> dict:
         """转换为 OpenAI function calling 格式。"""

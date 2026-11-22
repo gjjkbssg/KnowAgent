@@ -3,6 +3,7 @@ import logging
 import threading
 import time
 import uuid
+from datetime import timedelta
 from concurrent.futures import ThreadPoolExecutor
 
 from django.db import OperationalError, close_old_connections, connection
@@ -37,7 +38,7 @@ from personal_knowledge_base.context_snapshot import (
 from personal_knowledge_base.agent_engine import AgentEngine
 from personal_knowledge_base.memory import add_episode as memory_add_episode, delete_session_memory, is_memory_available, retrieve_memory
 from personal_knowledge_base.model_providers import ModelConfigurationError, chat_completion, chat_completion_stream, role_completion
-from personal_knowledge_base.models import KnowledgeBase, Message, Session
+from personal_knowledge_base.models import AgentToolApproval, KnowledgeBase, Message, Session, User
 from personal_knowledge_base.query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
 from personal_knowledge_base.responses import fail, ok
 from personal_knowledge_base.search import hybrid_search
@@ -268,6 +269,17 @@ def session_stop(request, session_id):
     if message_id:
         target_message = Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).first()
         Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).update(is_completed=True, updated_at=timezone.now())
+        if target_message:
+            cancelled = AgentToolApproval.objects.filter(message=target_message, status="pending").update(
+                status="cancelled",
+                decided_at=timezone.now(),
+            )
+            if cancelled:
+                stream_manager.append_event(
+                    target_message.id,
+                    "complete",
+                    {"done": True, "content": target_message.content or "生成已取消。"},
+                )
         parent_message_id = target_message.id if target_message else message_id
         for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
             ActorRegistry.cancel_actor(session, actor.actor_id)
@@ -319,6 +331,14 @@ def stream_message_events(message: Message, offset: int = 0, idle_timeout: float
                 }
             elif event.event_type == "error":
                 payload = {"response_type": "error", "content": data.get("content", "生成失败"), "done": True}
+            elif event.event_type == "approval_required":
+                payload = {
+                    "response_type": "tool_approval_required",
+                    "approval": data.get("approval", {}),
+                }
+                yield sse_frame({**payload, "assistant_message_id": msg_id}, event_id=event.offset)
+                yield sse_frame({"message_id": msg_id}, "done", event_id=event.offset)
+                return
             else:
                 continue
             yield sse_frame({**payload, "assistant_message_id": msg_id}, event_id=event.offset)
@@ -381,6 +401,45 @@ def continue_stream(request, session_id):
 
     if not message:
         return fail("message not found", 404)
+
+    now = timezone.now()
+    expired_count = AgentToolApproval.objects.filter(
+        message=message,
+        status="pending",
+        expires_at__lte=now,
+    ).update(status="expired", decided_at=now, updated_at=now)
+    if expired_count:
+        Message.objects.filter(id=message.id).update(
+            content="等待确认超时，未执行该操作。",
+            rendered_content="等待确认超时，未执行该操作。",
+            is_completed=True,
+            updated_at=timezone.now(),
+        )
+        message.refresh_from_db()
+
+    approval = AgentToolApproval.objects.filter(
+        message=message,
+        status="pending",
+        expires_at__gt=timezone.now(),
+    ).first()
+    if approval:
+        def approval_events():
+            yield sse_frame(
+                {
+                    "response_type": "tool_approval_required",
+                    "approval": {
+                        "id": approval.id,
+                        "status": approval.status,
+                        "tool_calls": approval.tool_calls,
+                        "expires_at": approval.expires_at.isoformat(),
+                    },
+                    "assistant_message_id": message.id,
+                },
+                event_id=0,
+            )
+            yield sse_frame({"message_id": message.id}, "done", event_id=0)
+
+        return StreamingHttpResponse(approval_events(), content_type="text/event-stream")
 
     # 如果消息已完成，直接返回完成事件
     if message.is_completed:
@@ -539,6 +598,95 @@ def _save_session_after_chat(session, data, kb_ids, query, tenant):
 
 # ── Agent generation (background thread) ─────────────────────────────────
 
+APPROVAL_CONFIG_FIELDS = {
+    "allowed_tools", "model_id", "temperature", "system_prompt", "max_rounds",
+    "parallel_tool_calls", "agent_mode", "knowledge_base_ids", "actor_id",
+    "parent_message_id", "allow_actor_tool",
+}
+
+
+def _persist_agent_result(result, *, assistant_msg_id, stream, tenant, user_id, user,
+                          user_msg_id, session_id, query, agent_config, mcp_service_ids,
+                          enable_memory, enable_chat_history, enable_snapshot):
+    steps = [step.to_dict() for step in result.steps]
+    refs = result.references
+    if getattr(result, "stopped_reason", "completed") == "awaiting_approval":
+        from django.conf import settings
+
+        checkpoint = dict(getattr(result, "checkpoint", None) or {})
+        checkpoint["chat"] = {
+            "agent_config": {key: value for key, value in agent_config.items() if key in APPROVAL_CONFIG_FIELDS},
+            "mcp_service_ids": list(mcp_service_ids or []),
+            "user_id": user_id,
+            "user_message_id": user_msg_id,
+            "enable_memory": bool(enable_memory),
+            "enable_chat_history": bool(enable_chat_history),
+            "enable_snapshot": bool(enable_snapshot),
+            "query": query,
+            "session_id": session_id,
+        }
+        expires_at = timezone.now() + timedelta(seconds=settings.AGENT_APPROVAL_TTL_SECONDS)
+        approval = AgentToolApproval.objects.create(
+            tenant=tenant,
+            session_id=session_id,
+            message_id=assistant_msg_id,
+            tool_calls=getattr(result, "pending_approval", []),
+            checkpoint=checkpoint,
+            expires_at=expires_at,
+        )
+        Message.objects.filter(id=assistant_msg_id).update(
+            content=result.content,
+            rendered_content=result.content,
+            knowledge_references=refs,
+            agent_steps=steps,
+            agent_duration_ms=result.duration_ms,
+            is_completed=False,
+            updated_at=timezone.now(),
+        )
+        if stream:
+            stream.set_final_result(result.content, refs, steps, result.duration_ms)
+            stream.append_event("approval_required", {
+                "approval": {
+                    "id": approval.id,
+                    "status": approval.status,
+                    "tool_calls": approval.tool_calls,
+                    "expires_at": approval.expires_at.isoformat(),
+                }
+            })
+        return approval
+
+    Message.objects.filter(id=assistant_msg_id).update(
+        content=result.content,
+        rendered_content=result.content,
+        knowledge_references=refs,
+        agent_steps=steps,
+        agent_duration_ms=result.duration_ms,
+        is_completed=True,
+        updated_at=timezone.now(),
+    )
+    if stream:
+        stream.set_final_result(result.content, refs, steps, result.duration_ms)
+        stream.append_event("complete", {"done": True, "content": result.content})
+    schedule_chat_maintenance(
+        tenant=tenant,
+        user_message_id=user_msg_id,
+        assistant_message_id=assistant_msg_id,
+        session_id=session_id,
+        query=query,
+        answer=result.content,
+        mode="agent",
+        max_rounds=agent_config.get("max_rounds", 5),
+        model_id=agent_config.get("model_id", ""),
+        enable_memory=enable_memory and bool(user),
+        user_id=user_id,
+        enable_chat_history=enable_chat_history,
+        enable_snapshot=enable_snapshot,
+        indexer=index_qa_to_kb_async,
+        snapshot_refresher=refresh_context_snapshot_async,
+    )
+    return None
+
+
 def _run_agent_generation(
     assistant_msg_id: str,
     session_id: str,
@@ -602,46 +750,21 @@ def _run_agent_generation(
         # 执行 Agent
         result = engine.execute(query, history=history_msgs, context_str=agent_context, on_event=on_event)
 
-        refs = result.references
-
-        # 更新 assistant 消息（最终状态）
-        Message.objects.filter(id=assistant_msg_id).update(
-            content=result.content,
-            rendered_content=result.content,
-            knowledge_references=refs,
-            agent_steps=[s.to_dict() for s in result.steps],
-            agent_duration_ms=result.duration_ms,
-            is_completed=True,
-            updated_at=timezone.now(),
-        )
-
-        # 设置最终结果到 stream（用于 continue-stream 回放）
-        stream.set_final_result(
-            content=result.content,
-            refs=refs,
-            steps=[s.to_dict() for s in result.steps],
-            duration_ms=result.duration_ms,
-        )
-
-        # 追加 complete 事件
-        stream.append_event("complete", {"done": True, "content": result.content})
-
-        schedule_chat_maintenance(
+        _persist_agent_result(
+            result,
+            assistant_msg_id=assistant_msg_id,
+            stream=stream,
             tenant=tenant,
-            user_message_id=user_msg_id,
-            assistant_message_id=assistant_msg_id,
+            user_id=user_id,
+            user=user,
+            user_msg_id=user_msg_id,
             session_id=session_id,
             query=query,
-            answer=result.content,
-            mode="agent",
-            max_rounds=agent_config.get("max_rounds", 5),
-            model_id=agent_config.get("model_id", ""),
-            enable_memory=enable_memory and bool(user),
-            user_id=user_id,
+            agent_config=agent_config,
+            mcp_service_ids=mcp_service_ids,
+            enable_memory=enable_memory,
             enable_chat_history=enable_chat_history,
             enable_snapshot=enable_snapshot,
-            indexer=index_qa_to_kb_async,
-            snapshot_refresher=refresh_context_snapshot_async,
         )
 
         logger.info(f"[Agent] Generation completed for message {assistant_msg_id}")
@@ -668,6 +791,134 @@ def _run_agent_generation(
             connection.close()
         except Exception:
             pass
+
+
+def _resume_agent_generation(approval_id: str):
+    toolset = None
+    approval = AgentToolApproval.objects.select_related("tenant", "session", "message").filter(id=approval_id).first()
+    if not approval or approval.status not in {"approved", "rejected"}:
+        return
+    checkpoint = approval.checkpoint or {}
+    chat_state = checkpoint.get("chat", {})
+    session_id = str(approval.session_id)
+    message_id = str(approval.message_id)
+    stream = stream_manager.get_stream(message_id) or stream_manager.create_stream(message_id, session_id)
+    try:
+        from personal_knowledge_base.mcp_client import load_mcp_toolset
+
+        toolset = load_mcp_toolset(approval.tenant, chat_state.get("mcp_service_ids", []))
+        agent_config = dict(chat_state.get("agent_config") or {})
+        agent_config["extra_tools"] = toolset.tools
+        engine = AgentEngine(
+            tenant=approval.tenant,
+            session_id=session_id,
+            user_id=chat_state.get("user_id", ""),
+            agent_config=agent_config,
+        )
+        result = engine.resume(checkpoint, "approved" if approval.status == "approved" else "rejected", on_event=lambda kind, data: stream.append_event(kind, data))
+        user = User.objects.filter(id=chat_state.get("user_id", "")).first()
+        _persist_agent_result(
+            result,
+            assistant_msg_id=message_id,
+            stream=stream,
+            tenant=approval.tenant,
+            user_id=chat_state.get("user_id", ""),
+            user=user,
+            user_msg_id=chat_state.get("user_message_id", ""),
+            session_id=session_id,
+            query=chat_state.get("query", ""),
+            agent_config=agent_config,
+            mcp_service_ids=chat_state.get("mcp_service_ids", []),
+            enable_memory=chat_state.get("enable_memory", False),
+            enable_chat_history=chat_state.get("enable_chat_history", True),
+            enable_snapshot=chat_state.get("enable_snapshot", True),
+        )
+    except Exception as exc:
+        logger.exception("[Agent] Resume failed for approval %s", approval_id)
+        stream.append_event("error", {"content": str(exc)})
+        Message.objects.filter(id=message_id).update(
+            content=f"生成失败: {exc}",
+            rendered_content=f"生成失败: {exc}",
+            is_completed=True,
+            updated_at=timezone.now(),
+        )
+    finally:
+        if toolset:
+            toolset.close()
+        from django.db import connection
+        connection.close()
+
+
+@csrf_exempt
+def tool_approval_decision(request, session_id, approval_id):
+    if request.method != "POST":
+        return fail("method not allowed", 405)
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    approval = get_object_or_404(
+        AgentToolApproval,
+        id=approval_id,
+        tenant=tenant,
+        session_id=session_id,
+    )
+    data = parse_body(request)
+    decision = data.get("decision")
+    if decision not in {"approve", "reject"}:
+        return fail("decision must be approve or reject", 400)
+
+    from django.db import transaction
+    expired_now = False
+    with transaction.atomic():
+        now = timezone.now()
+        claimed = AgentToolApproval.objects.filter(
+            id=approval.id,
+            status="pending",
+            expires_at__gt=now,
+        ).update(
+            status="approved" if decision == "approve" else "rejected",
+            decided_by=str(user.id) if user else "",
+            decided_at=now,
+            updated_at=now,
+        )
+        if not claimed:
+            expired = AgentToolApproval.objects.filter(
+                id=approval.id,
+                status="pending",
+                expires_at__lte=now,
+            ).update(status="expired", decided_at=now, updated_at=now)
+            if expired:
+                expired_now = True
+                approval.status = "expired"
+                Message.objects.filter(id=approval.message_id).update(
+                    content="等待确认超时，未执行该操作。",
+                    rendered_content="等待确认超时，未执行该操作。",
+                    is_completed=True,
+                    updated_at=now,
+                )
+                claimed = False
+            else:
+                approval.refresh_from_db()
+        else:
+            approval.status = "approved" if decision == "approve" else "rejected"
+            approval.decided_by = str(user.id) if user else ""
+            approval.decided_at = now
+    if expired_now:
+        stream_manager.append_event(approval.message_id, "complete", {"done": True, "content": "等待确认超时，未执行该操作。"})
+        return fail("审批已过期，操作未执行。", 410)
+    if not claimed:
+        return fail(f"approval already {approval.status}", 409, details={"status": approval.status})
+    stream_manager.create_stream(approval.message_id, session_id)
+    run_database_background(lambda: _resume_agent_generation(approval.id))
+    return ok({
+        "approval": {
+            "id": approval.id,
+            "status": approval.status,
+            "tool_calls": approval.tool_calls,
+            "expires_at": approval.expires_at.isoformat(),
+        },
+        "message_id": approval.message_id,
+    })
 
 
 # ── Speed optimization helpers ───────────────────────────────────────────
@@ -912,39 +1163,24 @@ def chat_endpoint(request, session_id, agent=False):
             result = engine.execute(query, history=history_msgs, context_str=run_context)
         finally:
             toolset.close()
-        answer = result.content
-        refs = result.references
-        agent_steps_data = [s.to_dict() for s in result.steps]
-        agent_duration_ms = result.duration_ms
-
-        Message.objects.filter(id=assistant.id).update(
-            content=answer,
-            rendered_content=answer,
-            knowledge_references=refs,
-            agent_steps=agent_steps_data,
-            agent_duration_ms=agent_duration_ms,
-            is_completed=True,
-            updated_at=timezone.now(),
-        )
-        assistant.refresh_from_db()
-        schedule_chat_maintenance(
+        _persist_agent_result(
+            result,
+            assistant_msg_id=assistant.id,
+            stream=None,
             tenant=tenant,
-            user_message_id=str(user_msg.id),
-            assistant_message_id=str(assistant.id),
+            user_id=str(user.id) if user else "",
+            user=user,
+            user_msg_id=str(user_msg.id),
             session_id=str(session.id),
             query=query,
-            answer=assistant.content,
-            mode="agent",
-            max_rounds=agent_config["max_rounds"],
-            model_id=agent_config.get("model_id", ""),
-            enable_memory=enable_memory and bool(user) and not skip_expensive_prefetch,
-            user_id=str(user.id) if user else "",
+            agent_config=agent_config,
+            mcp_service_ids=service_ids,
+            enable_memory=enable_memory and not skip_expensive_prefetch,
             enable_chat_history=not skip_expensive_prefetch,
             enable_snapshot=not skip_expensive_prefetch,
-            indexer=index_qa_to_kb_async,
-            snapshot_refresher=refresh_context_snapshot_async,
         )
-        return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
+        assistant.refresh_from_db()
+        return ok({"message": message_dict(assistant), "answer": assistant.content, "references": result.references})
 
     # ── RAG 管道执行 ──────────────────────────────────────────────
     # 参考同类知识库系统的 KnowledgeQA 管道：

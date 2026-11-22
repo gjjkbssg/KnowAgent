@@ -13,6 +13,7 @@ urlpatterns = [
     path("sessions/<str:session_id>/messages", views.session_messages_clear),
     path("sessions/<str:session_id>/generate_title", views.session_title),
     path("sessions/<str:session_id>/stop", views.session_stop),
+    path("sessions/<str:session_id>/tool-approvals/<str:approval_id>", views.tool_approval_decision),
     path("sessions/<str:session_id>/pin", views.session_pin),
 
     # ── Continue stream (断线重连) ──────────────────────────────────

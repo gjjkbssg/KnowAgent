@@ -6,8 +6,8 @@ import requests
 from django.test import TestCase, override_settings
 
 from . import model_providers
-from .agent_engine import AgentEngine
-from .agent_tools import KnowledgeSearchTool, ToolRegistry, ToolResult, get_tool_registry
+from .agent_engine import AgentEngine, AgentResult, AgentStep, ToolCallRecord
+from .agent_tools import KnowledgeSearchTool, Tool, ToolRegistry, ToolResult, get_tool_registry
 from .model_providers import ModelHTTPError
 from .models import Chunk, Knowledge, KnowledgeBase, Session, Tenant
 
@@ -30,6 +30,30 @@ class ScriptedModel:
     def __call__(self, tenant, messages, model_id="", tools=None, temperature=None):
         self.advertised.append([tool["function"]["name"] for tool in tools or []])
         return self.responses.pop(0)
+
+
+class GatedTool(Tool):
+    def __init__(self, calls, name="mcp_test_action"):
+        self.calls = calls
+        self.tool_name = name
+        self.service_name = "test service"
+        self.remote_tool_name = "action"
+
+    def name(self):
+        return self.tool_name
+
+    def description(self):
+        return "gated action"
+
+    def parameters(self):
+        return {"type": "object", "properties": {}}
+
+    def requires_approval(self):
+        return True
+
+    def execute(self, args, context):
+        self.calls.append(args)
+        return ToolResult(output="executed")
 
 
 class AgentEngineTests(TestCase):
@@ -239,6 +263,126 @@ class AgentEngineTests(TestCase):
         result, _, _ = self.run_engine([{"content": "你好", "tool_calls": None}], allowed_tools=["knowledge_search"])
 
         self.assertEqual(result.references, [])
+
+    def test_approval_suspends_before_tool_execution_and_resumes_in_new_engine(self):
+        calls = []
+        first_tool = GatedTool(calls)
+        response = {"content": "Checking", "tool_calls": [tool_call("g1", first_tool.name(), {"x": 1})]}
+        final = {"content": "done", "tool_calls": None}
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": [], "extra_tools": [first_tool]})
+        with patch.object(model_providers, "chat_completion_raw", side_effect=[response, final]):
+            suspended = engine.execute("question")
+            self.assertEqual(suspended.stopped_reason, "awaiting_approval")
+            self.assertEqual(calls, [])
+            json.dumps(suspended.checkpoint)
+            second_tool = GatedTool(calls)
+            resumed_engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": [], "extra_tools": [second_tool]})
+            resumed = resumed_engine.resume(suspended.checkpoint, "approved")
+
+        self.assertEqual(calls, [{"x": 1}])
+        self.assertEqual(resumed.content, "done")
+        self.assertEqual(resumed.stopped_reason, "completed")
+
+    def test_checkpoint_serialization_preserves_full_tool_result(self):
+        output = "x" * 20000
+        result = AgentResult(
+            content="answer",
+            steps=[AgentStep(1, tool_calls=[ToolCallRecord("c1", "tool", {"a": 1}, ToolResult(output, {"ok": True}, duration_ms=12))])],
+            total_iterations=1,
+            duration_ms=12,
+        )
+        restored = AgentResult.from_dict(result.to_checkpoint_dict())
+
+        self.assertEqual(restored.steps[0].tool_calls[0].result.output, output)
+        self.assertEqual(restored.steps[0].tool_calls[0].result.data, {"ok": True})
+        self.assertEqual(restored.steps[0].tool_calls[0].result.duration_ms, 12)
+
+    def test_rejected_call_is_recorded_without_execution(self):
+        calls = []
+        gated = GatedTool(calls)
+        response = {"content": "", "tool_calls": [tool_call("g1", gated.name(), {})]}
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": [], "extra_tools": [gated]})
+        with patch.object(model_providers, "chat_completion_raw", side_effect=[response, {"content": "done", "tool_calls": None}]):
+            suspended = engine.execute("question")
+            result = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": [], "extra_tools": [GatedTool(calls)]}).resume(
+                suspended.checkpoint, "rejected"
+            )
+
+        self.assertEqual(calls, [])
+        self.assertEqual(result.steps[0].tool_calls[0].result.error, "User rejected this tool call; it was not executed.")
+
+    def test_mixed_gated_and_builtin_calls_are_all_suspended_then_run(self):
+        executed = []
+        gated = GatedTool(executed)
+        response = {
+            "content": "",
+            "tool_calls": [
+                tool_call("g1", gated.name(), {"x": 1}),
+                tool_call("b1", "thinking", {"thought": "plan"}),
+            ],
+        }
+
+        def run_tool(engine, name, args, context):
+            executed.append(name)
+            return ToolResult(output="ok")
+
+        with patch.object(
+            model_providers,
+            "chat_completion_raw",
+            side_effect=[response, {"content": "done", "tool_calls": None}],
+        ), patch.object(AgentEngine, "_run_tool", autospec=True, side_effect=run_tool):
+            first = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"], "extra_tools": [gated]}).execute("question")
+            self.assertEqual(executed, [])
+            final = AgentEngine(
+                self.tenant, "session",
+                agent_config={"allowed_tools": ["thinking"], "extra_tools": [GatedTool(executed)]},
+            ).resume(first.checkpoint, "approved")
+
+        self.assertEqual(set(executed), {gated.name(), "thinking"})
+        self.assertEqual(final.stopped_reason, "completed")
+
+    def test_checkpoint_preserves_failed_round_counter_across_rejection(self):
+        calls = []
+        responses = [
+            {"content": "", "tool_calls": [tool_call("b1", "thinking", {"thought": "fail"})]},
+            {"content": "", "tool_calls": [tool_call("g1", "mcp_test_action", {"x": 1})]},
+            {"content": "", "tool_calls": [tool_call("g2", "mcp_test_action", {"x": 2})]},
+            {"content": "done", "tool_calls": None},
+        ]
+
+        def run_tool(engine, name, args, context):
+            if name == "thinking":
+                return ToolResult(output="", error="failed")
+            calls.append(args)
+            return ToolResult(output="ok")
+
+        with patch.object(model_providers, "chat_completion_raw", side_effect=responses), patch.object(
+            AgentEngine, "_run_tool", autospec=True, side_effect=run_tool
+        ):
+            first = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"], "extra_tools": [GatedTool(calls)]}).execute("question")
+            second = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"], "extra_tools": [GatedTool(calls)]}).resume(first.checkpoint, "reject")
+
+        self.assertEqual(first.checkpoint["consecutive_failed_tool_rounds"], 1)
+        self.assertEqual(second.stopped_reason, "awaiting_approval")
+        self.assertEqual(second.checkpoint["consecutive_failed_tool_rounds"], 1)
+        self.assertEqual(calls, [])
+
+    def test_approval_can_suspend_again_on_a_later_round(self):
+        calls = []
+        response1 = {"content": "", "tool_calls": [tool_call("g1", "mcp_test_action", {"x": 1})]}
+        response2 = {"content": "", "tool_calls": [tool_call("g2", "mcp_test_action", {"x": 2})]}
+        final = {"content": "done", "tool_calls": None}
+        with patch.object(model_providers, "chat_completion_raw", side_effect=[response1, response2, final]):
+            first_engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": [], "extra_tools": [GatedTool(calls)]})
+            first = first_engine.execute("question")
+            second_engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": [], "extra_tools": [GatedTool(calls)]})
+            second = second_engine.resume(first.checkpoint, "approved")
+            third_engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": [], "extra_tools": [GatedTool(calls)]})
+            third = third_engine.resume(second.checkpoint, "approved")
+
+        self.assertEqual(second.stopped_reason, "awaiting_approval")
+        self.assertEqual(third.content, "done")
+        self.assertEqual(len(calls), 2)
 
     def test_evidence_found_by_a_subagent_reaches_the_main_answer(self):
         session = Session.objects.create(tenant=self.tenant, title="s")

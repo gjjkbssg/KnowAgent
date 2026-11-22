@@ -46,6 +46,22 @@ class ToolCallRecord:
             d["result"] = self.result.to_dict()
         return d
 
+    def to_checkpoint_dict(self) -> dict:
+        d = {"id": self.id, "name": self.name, "arguments": self.arguments}
+        if self.result:
+            d["result"] = self.result.to_checkpoint_dict()
+        return d
+
+    @classmethod
+    def from_dict(cls, value: dict) -> "ToolCallRecord":
+        result = value.get("result")
+        return cls(
+            id=value.get("id", ""),
+            name=value.get("name", ""),
+            arguments=value.get("arguments") or {},
+            result=ToolResult.from_dict(result) if isinstance(result, dict) else None,
+        )
+
 
 @dataclass
 class AgentStep:
@@ -60,6 +76,23 @@ class AgentStep:
             d["tool_calls"] = [tc.to_dict() for tc in self.tool_calls]
         d["timestamp"] = self.timestamp
         return d
+
+    def to_checkpoint_dict(self) -> dict:
+        return {
+            "iteration": self.iteration,
+            "thought": self.thought,
+            "tool_calls": [tc.to_checkpoint_dict() for tc in self.tool_calls],
+            "timestamp": self.timestamp,
+        }
+
+    @classmethod
+    def from_dict(cls, value: dict) -> "AgentStep":
+        return cls(
+            iteration=value.get("iteration", 0),
+            thought=value.get("thought", ""),
+            tool_calls=[ToolCallRecord.from_dict(item) for item in value.get("tool_calls", [])],
+            timestamp=value.get("timestamp", 0.0),
+        )
 
 
 MAX_AGENT_REFERENCES = 10
@@ -91,6 +124,13 @@ class ReferenceCollector:
         cited_ids = {ref["chunk_id"] for ref in cited}
         return (cited + [ref for ref in refs if ref["chunk_id"] not in cited_ids])[:limit]
 
+    def to_list(self) -> list[dict]:
+        with self._lock:
+            return list(self._refs.values())
+
+    def load_list(self, refs: list[dict]) -> None:
+        self.add(refs)
+
 
 @dataclass
 class AgentResult:
@@ -100,6 +140,8 @@ class AgentResult:
     duration_ms: int
     stopped_reason: str = "completed"
     references: list[dict] = field(default_factory=list)
+    pending_approval: list[dict] = field(default_factory=list)
+    checkpoint: dict | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -109,6 +151,31 @@ class AgentResult:
             "duration_ms": self.duration_ms,
             "stopped_reason": self.stopped_reason,
         }
+
+    def to_checkpoint_dict(self) -> dict:
+        return {
+            "content": self.content,
+            "steps": [step.to_checkpoint_dict() for step in self.steps],
+            "total_iterations": self.total_iterations,
+            "duration_ms": self.duration_ms,
+            "stopped_reason": self.stopped_reason,
+            "references": self.references,
+            "pending_approval": self.pending_approval,
+            "checkpoint": self.checkpoint,
+        }
+
+    @classmethod
+    def from_dict(cls, value: dict) -> "AgentResult":
+        return cls(
+            content=value.get("content", ""),
+            steps=[AgentStep.from_dict(item) for item in value.get("steps", [])],
+            total_iterations=value.get("total_iterations", 0),
+            duration_ms=value.get("duration_ms", 0),
+            stopped_reason=value.get("stopped_reason", "completed"),
+            references=value.get("references") or [],
+            pending_approval=value.get("pending_approval") or [],
+            checkpoint=value.get("checkpoint"),
+        )
 
 
 # ── 优雅降级：从工具结果综合答案 ────────────────────────────────────
@@ -389,17 +456,103 @@ class AgentEngine:
         result.references = self._references.for_answer(result.content)
         return result
 
+    def resume(self, checkpoint: dict, decision: str, on_event: callable = None) -> AgentResult:
+        if decision in {"approve", "approved"}:
+            decision = "approved"
+        elif decision in {"reject", "rejected"}:
+            decision = "rejected"
+        else:
+            raise ValueError("decision must be approve or reject")
+        self._references = ReferenceCollector()
+        self._references.load_list(checkpoint.get("context", {}).get("references", []))
+        result = self._execute(
+            checkpoint.get("query", ""),
+            None,
+            "",
+            on_event,
+            state=checkpoint,
+            decision=decision,
+        )
+        result.references = self._references.for_answer(result.content)
+        return result
+
+    def _execute_pending_round(self, state: dict, messages: list[dict], steps: list[AgentStep], context: dict, on_event):
+        pending = state["pending_round"]
+        step = steps[-1]
+        tool_calls = pending["tool_calls"]
+        gated_ids = set(state.get("gated_tool_call_ids", []))
+        decision = state["decision"]
+        messages.append({"role": "assistant", "content": pending.get("content", ""), "tool_calls": tool_calls})
+
+        def execute_one(tc):
+            tc_id = tc.get("id", "")
+            fn = tc.get("function", {})
+            name = fn.get("name", "")
+            args = self._parse_tool_arguments(tc)
+            if tc_id in gated_ids and decision == "rejected":
+                result = ToolResult(output="", error="User rejected this tool call; it was not executed.")
+            elif self.registry.get(name) is None:
+                result = ToolResult(output="", error="tool no longer available")
+            else:
+                try:
+                    result = self._run_tool(name, args, context)
+                except Exception as exc:
+                    result = ToolResult(output="", error=str(exc))
+            return ToolCallRecord(tc_id, name, args, result)
+
+        if self.parallel_tools and len(tool_calls) > 1:
+            records_by_id = {}
+            with ThreadPoolExecutor(max_workers=PARALLEL_TOOL_WORKERS) as executor:
+                futures = {executor.submit(execute_one, tc): tc for tc in tool_calls}
+                for future in as_completed(futures):
+                    record = future.result()
+                    records_by_id[record.id] = record
+            records = [records_by_id[tc.get("id", "")] for tc in tool_calls if tc.get("id", "") in records_by_id]
+        else:
+            records = [execute_one(tc) for tc in tool_calls]
+        for record in records:
+            tc_id, name, args, result = record.id, record.name, record.arguments, record.result
+            result = result or ToolResult(output="", error="No result")
+            if on_event:
+                on_event("tool_call", {"iteration": step.iteration, "name": name, "arguments": args, "tool_call_id": tc_id})
+                on_event("tool_result", {"iteration": step.iteration, "name": name, "output": result.output[:500], "error": result.error, "duration_ms": result.duration_ms, "tool_call_id": tc_id})
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc_id,
+                "name": name,
+                "content": result.output[:MAX_TOOL_OUTPUT] if not result.error else f"Error: {result.error}",
+            })
+        step.tool_calls = records
+        all_rejected = bool(tool_calls) and all(tc.get("id") in gated_ids for tc in tool_calls) and decision == "rejected"
+        if not all_rejected:
+            if any(record.result and not record.result.error for record in records):
+                state["consecutive_failed_tool_rounds"] = 0
+            else:
+                state["consecutive_failed_tool_rounds"] += 1
+        return all_rejected
+
+    @staticmethod
+    def _parse_tool_arguments(tc: dict) -> dict:
+        raw_args = tc.get("function", {}).get("arguments", "{}")
+        try:
+            value = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+            return value if isinstance(value, dict) else {}
+        except (json.JSONDecodeError, TypeError):
+            return {}
+
     def _execute(
         self,
         query: str,
         history: list[dict] | None,
         context_str: str,
         on_event: callable,
+        state: dict | None = None,
+        decision: str = "",
     ) -> AgentResult:
         from .observability import trace_agent_execution, trace_llm_call, trace_tool_execution
 
         start_time = time.monotonic()
-        steps: list[AgentStep] = []
+        steps: list[AgentStep] = [AgentStep.from_dict(item) for item in state.get("steps", [])] if state else []
         context = self._build_context()
         system_prompt = self._build_system_prompt()
 
@@ -408,16 +561,36 @@ class AgentEngine:
         else:
             user_content = query
 
-        messages = [{"role": "system", "content": system_prompt}]
-        if history:
-            messages.extend(history)
-        messages.append({"role": "user", "content": user_content})
+        if state:
+            messages = state["messages"]
+            seen = state.get("context", {})
+            context["seen_chunks"] = set(seen.get("seen_chunks", []))
+            context["seen_wiki_slugs"] = set(seen.get("seen_wiki_slugs", []))
+            next_iteration = state.get("next_iteration", 1)
+        else:
+            messages = [{"role": "system", "content": system_prompt}]
+            if history:
+                messages.extend(history)
+            messages.append({"role": "user", "content": user_content})
+            next_iteration = 1
 
         tools_available = bool(self._granted_tools)
-        previous_round_signature = None
-        repeated_rounds = 1
-        consecutive_failed_tool_rounds = 0
-        final_content = ""
+        previous_round_signature = state.get("previous_round_signature") if state else None
+        if previous_round_signature is not None:
+            previous_round_signature = tuple(tuple(item) for item in previous_round_signature)
+        repeated_rounds = state.get("repeated_rounds", 1) if state else 1
+        consecutive_failed_tool_rounds = state.get("consecutive_failed_tool_rounds", 0) if state else 0
+        final_content = state.get("final_content", "") if state else ""
+
+        if state:
+            if callable(self.cancel_check) and self.cancel_check():
+                return AgentResult("生成已取消。", steps, next_iteration - 1, 0, "cancelled")
+            state["decision"] = decision
+            self._execute_pending_round(state, messages, steps, context, on_event)
+            consecutive_failed_tool_rounds = state["consecutive_failed_tool_rounds"]
+            if consecutive_failed_tool_rounds >= MAX_CONSECUTIVE_FAILED_TOOL_ROUNDS:
+                final_content = self._answer_without_tools(messages, steps, reason="tool_failures")
+                return AgentResult(final_content, steps, next_iteration - 1, int((time.monotonic() - start_time) * 1000), "tool_failures")
 
         # 顶层 Agent 追踪
         with trace_agent_execution(
@@ -430,7 +603,7 @@ class AgentEngine:
             agent_trace.metadata["max_iterations"] = self.max_iterations
             agent_trace.metadata["allowed_tools"] = self.allowed_tools
 
-            for iteration in range(1, self.max_iterations + 1):
+            for iteration in range(next_iteration, self.max_iterations + 1):
                 if callable(self.cancel_check) and self.cancel_check():
                     return AgentResult(
                         content=final_content or "生成已取消。",
@@ -501,6 +674,51 @@ class AgentEngine:
                     logger.warning(f"[Agent] Identical tool calls repeated {repeated_rounds} rounds at iteration {iteration}, forcing final answer")
                     final_content = self._answer_without_tools(messages, steps, reason="stuck")
                     return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="stuck")
+
+                gated = []
+                for tc in tool_calls:
+                    name = tc.get("function", {}).get("name", "")
+                    tool = self.registry.get(name)
+                    if name in self._granted_tools and tool and tool.requires_approval():
+                        gated.append((tc, tool))
+                if gated:
+                    summaries = []
+                    gated_ids = []
+                    for tc, tool in gated:
+                        fn = tc.get("function", {})
+                        args = self._parse_tool_arguments(tc)
+                        tc_id = tc.get("id", "")
+                        gated_ids.append(tc_id)
+                        summaries.append({
+                            "id": tc_id,
+                            "name": fn.get("name", ""),
+                            "arguments": args,
+                            "service_name": getattr(tool, "service_name", ""),
+                            "remote_tool_name": getattr(tool, "remote_tool_name", fn.get("name", "")),
+                        })
+                    step.tool_calls = [
+                        ToolCallRecord(tc.get("id", ""), tc.get("function", {}).get("name", ""), self._parse_tool_arguments(tc))
+                        for tc in tool_calls
+                    ]
+                    steps.append(step)
+                    checkpoint = {
+                        "query": query,
+                        "messages": messages,
+                        "steps": [item.to_checkpoint_dict() for item in steps],
+                        "next_iteration": iteration + 1,
+                        "previous_round_signature": [list(item) for item in previous_round_signature] if previous_round_signature else None,
+                        "repeated_rounds": repeated_rounds,
+                        "consecutive_failed_tool_rounds": consecutive_failed_tool_rounds,
+                        "final_content": content,
+                        "context": {
+                            "seen_chunks": sorted(context.get("seen_chunks", set())),
+                            "seen_wiki_slugs": sorted(context.get("seen_wiki_slugs", set())),
+                            "references": self._references.to_list(),
+                        },
+                        "pending_round": {"iteration": iteration, "content": content, "tool_calls": tool_calls},
+                        "gated_tool_call_ids": gated_ids,
+                    }
+                    return AgentResult(content, steps, iteration, int((time.monotonic() - start_time) * 1000), "awaiting_approval", pending_approval=summaries, checkpoint=checkpoint)
 
                 # ── 有工具调用 → 执行工具（支持并行）─────────────────
                 assistant_msg = {"role": "assistant", "content": content, "tool_calls": tool_calls}
