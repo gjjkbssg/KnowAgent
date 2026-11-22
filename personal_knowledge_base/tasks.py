@@ -13,7 +13,7 @@ from django.core.cache import cache
 from django.db import OperationalError, ProgrammingError, close_old_connections, connection, transaction
 from django.utils import timezone
 
-from .models import Knowledge, TaskRecord
+from .models import AgentToolApproval, Knowledge, TaskRecord
 
 
 logger = logging.getLogger(__name__)
@@ -127,9 +127,15 @@ def _run_task(task_id: str, fn):
     record = TaskRecord.objects.get(id=task_id)
     owned_task = _owned_task_records(task_id, worker_token)
     if record.task_type == RESUME_APPROVAL_TASK:
-        from chat.views import _resume_agent_generation
+        from services.chat_generation import _resume_agent_generation
+        from services.context import ServiceContext
 
-        fn = lambda: _resume_agent_generation(task_id, owned_task)
+        approval = AgentToolApproval.objects.filter(id=task_id).select_related("tenant").first()
+        if approval:
+            ctx = ServiceContext(tenant=approval.tenant, user=None)
+            fn = lambda: _resume_agent_generation(ctx, task_id, owned_task)
+        else:
+            fn = lambda: None
     cache.set(f"task:{task_id}", {"status": "running", "progress": 0.1}, timeout=86400)
 
     stop_event = threading.Event()
@@ -271,11 +277,15 @@ def _recover_approval_resumes(now, stale_before, counts):
             elif record.result == RESUME_FINISHED:
                 changed = stale.update(status="completed", progress=1, **values)
             else:
-                from chat.views import RESUME_INTERRUPTED, _persist_resume_error
+                from services.chat_generation import RESUME_INTERRUPTED, _persist_resume_error
+                from services.context import ServiceContext
 
                 changed = stale.update(status="failed", error_message=RESUME_INTERRUPTED, **values)
                 if changed:
-                    _persist_resume_error(record.id, RESUME_INTERRUPTED)
+                    approval = AgentToolApproval.objects.filter(id=record.id).select_related("tenant").first()
+                    if approval:
+                        ctx = ServiceContext(tenant=approval.tenant, user=None)
+                        _persist_resume_error(ctx, record.id, RESUME_INTERRUPTED)
                     counts["discarded"] += 1
         if changed:
             cache.delete(f"task:{record.id}")

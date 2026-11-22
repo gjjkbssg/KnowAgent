@@ -17,6 +17,7 @@ from personal_knowledge_base.models import AgentToolApproval, Message, Session, 
 from personal_knowledge_base.serializers import message_dict
 from personal_knowledge_base.stream_manager import stream_manager
 from personal_knowledge_base.test_stream_resume import parse_sse
+from services.context import ServiceContext
 
 
 class ToolApprovalTests(TransactionTestCase):
@@ -43,7 +44,7 @@ class ToolApprovalTests(TransactionTestCase):
 
     def test_decision_claims_once_and_duplicate_returns_current_status(self):
         approval, message, _ = self.create_pending()
-        with patch("chat.views.submit_approval_resume") as submit:
+        with patch("services.chat_generation.submit_approval_resume") as submit:
             response = self.client.post(
                 f"/api/v1/sessions/{self.session.id}/tool-approvals/{approval.id}",
                 data=json.dumps({"decision": "approve"}),
@@ -69,7 +70,7 @@ class ToolApprovalTests(TransactionTestCase):
 
     def test_rejection_queues_resume(self):
         approval, _, _ = self.create_pending()
-        with patch("chat.views.submit_approval_resume") as submit:
+        with patch("services.chat_generation.submit_approval_resume") as submit:
             response = self.client.post(
                 f"/api/v1/sessions/{self.session.id}/tool-approvals/{approval.id}",
                 data=json.dumps({"decision": "reject"}),
@@ -84,7 +85,7 @@ class ToolApprovalTests(TransactionTestCase):
 
     def test_decision_rolls_back_if_task_insertion_fails(self):
         approval, _, _ = self.create_pending()
-        with patch("chat.views.TaskRecord.objects.create", side_effect=IntegrityError), self.assertRaises(IntegrityError):
+        with patch("services.chat_generation.TaskRecord.objects.create", side_effect=IntegrityError), self.assertRaises(IntegrityError):
             self.client.post(
                 f"/api/v1/sessions/{self.session.id}/tool-approvals/{approval.id}",
                 data=json.dumps({"decision": "approve"}),
@@ -229,7 +230,7 @@ class ToolApprovalTests(TransactionTestCase):
             "query": "run this",
         }
         approval.save(update_fields=["checkpoint"])
-        with patch("chat.views.submit_approval_resume"):
+        with patch("services.chat_generation.submit_approval_resume"):
             response = self.client.post(
                 f"/api/v1/sessions/{self.session.id}/tool-approvals/{approval.id}",
                 data=json.dumps({"decision": decision}),
@@ -253,7 +254,7 @@ class ToolApprovalTests(TransactionTestCase):
             patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
                 "content": "finished", "tool_calls": None,
             }),
-            patch("chat.views.schedule_chat_maintenance"),
+            patch("services.chat_generation.schedule_chat_maintenance"),
         ):
             self.assertEqual(tasks.recover_incomplete_tasks()["recovered"], 1)
             self.assertEqual(tasks.recover_incomplete_tasks()["recovered"], 0)
@@ -285,7 +286,7 @@ class ToolApprovalTests(TransactionTestCase):
             patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
                 "content": "rejected", "tool_calls": None,
             }),
-            patch("chat.views.schedule_chat_maintenance"),
+            patch("services.chat_generation.schedule_chat_maintenance"),
         ):
             self.assertEqual(tasks.recover_incomplete_tasks()["recovered"], 1)
         client.call_tool.assert_not_called()
@@ -307,8 +308,8 @@ class ToolApprovalTests(TransactionTestCase):
             patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
                 "content": "finished", "tool_calls": None,
             }),
-            patch("chat.views.schedule_chat_maintenance"),
-            patch("chat.views.time.sleep", side_effect=lambda _: tasks.recover_incomplete_tasks()),
+            patch("services.chat_generation.schedule_chat_maintenance"),
+            patch("services.chat_generation.time.sleep", side_effect=lambda _: tasks.recover_incomplete_tasks()),
         ):
             frames = parse_sse(response)
         client.call_tool.assert_called_once()
@@ -351,7 +352,7 @@ class ToolApprovalTests(TransactionTestCase):
             patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
                 "content": "finished", "tool_calls": None,
             }),
-            patch("chat.views.schedule_chat_maintenance"),
+            patch("services.chat_generation.schedule_chat_maintenance"),
             ThreadPoolExecutor(max_workers=1, thread_name_prefix="owner") as owner,
             ThreadPoolExecutor(max_workers=1, thread_name_prefix="contender") as contender,
         ):
@@ -409,7 +410,7 @@ class ToolApprovalTests(TransactionTestCase):
             patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
                 "content": "finished", "tool_calls": None,
             }),
-            patch("chat.views.schedule_chat_maintenance"),
+            patch("services.chat_generation.schedule_chat_maintenance"),
         ):
             self.assertEqual(tasks.recover_incomplete_tasks()["stale_reset"], 1)
         client.call_tool.assert_called_once()
@@ -418,7 +419,7 @@ class ToolApprovalTests(TransactionTestCase):
         self.assertEqual(message.content, "finished")
 
     def test_stale_worker_that_may_have_called_the_tool_is_never_replayed(self):
-        from chat.views import RESUME_INTERRUPTED
+        from services.chat_generation import RESUME_INTERRUPTED
 
         approval, message, client, _ = self.queue_approval_without_dispatch()
         self.expire_resume_lease(approval.id, tasks.RESUME_STARTED)
@@ -465,7 +466,8 @@ class ToolApprovalTests(TransactionTestCase):
         self.assertEqual(frames[0][2]["approval"]["id"], pending.id)
 
     def test_approval_stream_event_is_terminal(self):
-        from chat.views import _persist_agent_result, stream_message_events
+        from chat.streaming import stream_message_events
+        from services.chat_generation import _persist_agent_result
 
         message = Message.objects.create(session=self.session, role="assistant", content="", is_completed=False)
         stream = stream_manager.create_stream(message.id, self.session.id)
@@ -478,12 +480,12 @@ class ToolApprovalTests(TransactionTestCase):
             pending_approval=[{"id": "c1", "name": "tool", "arguments": {}, "service_name": "srv", "remote_tool_name": "tool"}],
             checkpoint={"query": "q", "messages": [], "steps": [], "pending_round": {}},
         )
-        with patch("chat.views.schedule_chat_maintenance"):
+        with patch("services.chat_generation.schedule_chat_maintenance"):
             _persist_agent_result(
+                ServiceContext(tenant=self.tenant, user=None),
                 result,
                 assistant_msg_id=message.id,
                 stream=stream,
-                tenant=self.tenant,
                 user_id="",
                 user=None,
                 user_msg_id="",
