@@ -319,7 +319,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         body = json.dumps(data, ensure_ascii=False)
         if settings.LLM_CHAT_API_KEY:
             self.assertNotIn(settings.LLM_CHAT_API_KEY, body)
-        self.assertEqual(data["bailian"]["local_embedding_dimension"], 384)
+        self.assertEqual(data["bailian"]["local_embedding_dimension"], settings.APP_EMBEDDING_DIM)
         self.assertFalse(data["bailian"]["roles"]["embedding"]["enabled"])
 
     @patch("personal_knowledge_base.model_providers._env_text_completion", return_value="项目标题")

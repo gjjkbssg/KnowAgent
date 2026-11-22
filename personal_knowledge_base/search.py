@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 TOKEN_RE = re.compile(r"[\w一-鿿]+", re.UNICODE)
 IDENTIFIER_RE = re.compile(r"[A-Za-z]{1,12}(?:[-_]?\d+)+(?:[-_][A-Za-z0-9]+)*", re.I)
 CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]+")
+VECTOR_INDEX_DIM_RE = re.compile(r"\bembedding\s+float\s*\[\s*(\d+)\s*\]", re.I)
 HISTORICAL_INTENT_RE = re.compile(
     r"旧版|老版|旧规则|历史版本|历史规则|以前的版本|之前的版本|上一版|早期版本|废止|作废|"
     r"previous version|old version|deprecated|superseded|legacy",
@@ -102,6 +103,18 @@ def pack_embedding(vec: Iterable[float]) -> bytes:
     import sqlite_vec
 
     return sqlite_vec.serialize_float32(list(vec))
+
+
+def vector_index_dim() -> int | None:
+    if connection.vendor != "sqlite":
+        return None
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = %s", ["chunk_embeddings_vec"])
+        row = cursor.fetchone()
+    if not row or not row[0]:
+        return None
+    match = VECTOR_INDEX_DIM_RE.search(row[0])
+    return int(match.group(1)) if match else None
 
 
 def ensure_search_tables():

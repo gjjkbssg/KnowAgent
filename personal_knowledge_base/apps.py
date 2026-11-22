@@ -6,6 +6,7 @@ class PersonalKnowledgeBaseConfig(AppConfig):
     name = "personal_knowledge_base"
 
     def ready(self):
+        from . import checks
         from .startup import check_sqlite_capabilities
         from .tasks import schedule_startup_recovery, start_task_runner
 
