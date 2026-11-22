@@ -306,6 +306,11 @@ def tag_dict(tag: KnowledgeTag):
 
 def resource_dict(resource: GenericResource):
     data = dict(resource.data or {})
+    if resource.resource_type == "mcp_services":
+        api_key_set = bool(data.pop("api_key", ""))
+        data.pop("api_key_set", None)
+        if api_key_set:
+            data["api_key_set"] = True
     data.setdefault("id", resource.id)
     data.setdefault("tenant_id", resource.tenant_id)
     data.setdefault("name", resource.name)

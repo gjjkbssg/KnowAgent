@@ -7,25 +7,23 @@ Agent 工具系统
 - 内置工具：knowledge_search, grep_chunks, get_document_info, thinking
 """
 
-import ipaddress
 import json
 import logging
 import re
-import socket
 import time
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from dataclasses import dataclass, field
 from typing import Any
-from urllib.parse import urljoin, urlparse, urlunparse
+from urllib.parse import urljoin
 
 import requests
-from requests.adapters import HTTPAdapter
-from requests.utils import get_environ_proxies, select_proxy
 
 from django.conf import settings
 from django.db import connection
 from django.db.models import Q
+
+from .safe_http import _PinnedHostAdapter, prepare_public_url, resolve_public_address
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +103,13 @@ class ToolRegistry:
         """注册工具，首次注册优先（防劫持）。"""
         if tool.name() not in self._tools:
             self._tools[tool.name()] = tool
+
+    def with_tools(self, extra) -> "ToolRegistry":
+        registry = ToolRegistry()
+        registry._tools = dict(self._tools)
+        for tool in extra or []:
+            registry.register(tool)
+        return registry
 
     def get(self, name: str) -> Tool | None:
         return self._tools.get(name)
@@ -446,58 +451,15 @@ class WebSearchTool(Tool):
 MAX_FETCH_REDIRECTS = 3
 
 
-def resolve_public_address(hostname: str, port: int) -> str | None:
-    """
-    主机名的全部解析结果都是公网地址时返回其中一个 IP，否则返回 None。
-    回环、内网、链路本地（云元数据）等地址一律拒绝。
-    """
-    try:
-        infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
-        addresses = [info[4][0].split("%")[0] for info in infos]
-        if addresses and all(ipaddress.ip_address(address).is_global for address in addresses):
-            return addresses[0]
-    except (OSError, ValueError):
-        pass
-    return None
-
-
-class _PinnedHostAdapter(HTTPAdapter):
-    """连接到已校验的 IP，TLS 的 SNI 与证书校验仍使用原始主机名（直连和经代理都是）。"""
-
-    def __init__(self, hostname: str):
-        self._tls_hostname = {"server_hostname": hostname, "assert_hostname": hostname}
-        super().__init__()
-
-    def init_poolmanager(self, *args, **kwargs):
-        super().init_poolmanager(*args, **self._tls_hostname, **kwargs)
-
-    def proxy_manager_for(self, proxy, **kwargs):
-        return super().proxy_manager_for(proxy, **self._tls_hostname, **kwargs)
-
-
 def fetch_public_url(url: str, timeout: float = 15) -> requests.Response | None:
     """
     请求公网 URL，不跟随重定向；地址不允许访问时返回 None。
     连接直接发往校验过的 IP，避免校验之后主机名被重新解析到内网（DNS rebinding）。
     """
-    parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+    prepared = prepare_public_url(url)
+    if not prepared:
         return None
-    try:
-        # 中文等国际化域名转成 ASCII 形式，Host 头和 TLS 主机名才能正确发出
-        hostname = parsed.hostname.encode("idna").decode("ascii")
-        port = parsed.port
-    except ValueError:
-        return None
-    address = resolve_public_address(hostname, port or (443 if parsed.scheme == "https" else 80))
-    if not address:
-        return None
-    if parsed.scheme == "http" and select_proxy(url, get_environ_proxies(url)):
-        # 明文 HTTP 经正向代理时由代理自己解析主机名，无法钉住校验过的 IP，所以拒绝；HTTPS 走 CONNECT 到 IP，不受影响
-        return None
-    host = f"[{address}]" if ":" in address else address
-    pinned_url = urlunparse(parsed._replace(netloc=f"{host}:{port}" if port else host))
-    host_header = f"{hostname}:{port}" if port else hostname
+    pinned_url, hostname, host_header = prepared
     with requests.Session() as session:
         session.mount("https://", _PinnedHostAdapter(hostname))
         return session.get(pinned_url, headers={"User-Agent": "Mozilla/5.0", "Host": host_header}, timeout=timeout, allow_redirects=False)

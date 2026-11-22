@@ -198,14 +198,24 @@ class AgentEngine:
         self.session_id = session_id
         self.user_id = user_id
         self.config = agent_config or {}
-        self.registry = get_tool_registry()
+        extra_tools = self.config.get("extra_tools") or []
+        base_registry = get_tool_registry()
+        self.registry = base_registry.with_tools(extra_tools) if extra_tools else base_registry
 
         self.max_iterations = self.config.get("max_rounds", 20)  # 默认 20 轮，参考同类知识库系统
         self.temperature = self.config.get("temperature", 0.7)
         self.custom_system_prompt = self.config.get("system_prompt", "")
-        self.allowed_tools = self.config.get("allowed_tools", DEFAULT_ALLOWED_TOOLS)
+        allowed_tools = self.config.get("allowed_tools", DEFAULT_ALLOWED_TOOLS)
+        self.allowed_tools = list(allowed_tools) if allowed_tools is not None else None
+        if self.allowed_tools is not None:
+            for tool in extra_tools:
+                if tool.name() not in self.allowed_tools:
+                    self.allowed_tools.append(tool.name())
         if not self.config.get("allow_actor_tool", True):
-            self.allowed_tools = [tool for tool in self.allowed_tools if tool != "actor"]
+            if self.allowed_tools is None:
+                self.allowed_tools = [name for name in self.registry.list_names() if name != "actor"]
+            else:
+                self.allowed_tools = [tool for tool in self.allowed_tools if tool != "actor"]
         self._granted_tools = {tool["function"]["name"] for tool in self.registry.to_openai_tools(self.allowed_tools)}
         self.model_id = self.config.get("model_id", "")
         self.parallel_tools = self.config.get("parallel_tool_calls", True)

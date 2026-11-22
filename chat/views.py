@@ -88,6 +88,16 @@ def apply_multi_agent_defaults(agent_config: dict, data: dict, kb_ids: list, par
     return config
 
 
+def _append_mcp_service_errors(context: str, errors: list[dict]) -> str:
+    if not errors:
+        return context or ""
+    lines = [
+        f"以下 MCP 服务不可用：{error.get('service_name') or 'MCP service'}（{str(error.get('error') or '')[:120]}）"
+        for error in errors
+    ]
+    return "\n".join([part for part in [context or "", *lines] if part])
+
+
 def _persist_assistant_content_with_retry(assistant_id, content: str, max_attempts: int = 5) -> bool:
     """Persist streamed content without turning DB write failures into model fallbacks."""
     for attempt in range(max_attempts):
@@ -544,6 +554,7 @@ def _run_agent_generation(
     user=None,
     enable_chat_history: bool = True,
     enable_snapshot: bool = True,
+    mcp_service_ids: list | None = None,
 ):
     """
     在独立线程中运行 Agent 生成。
@@ -551,13 +562,20 @@ def _run_agent_generation(
     即使客户端断开，生成也会继续完成。
     """
     stream = stream_manager.get_stream(assistant_msg_id) or stream_manager.create_stream(assistant_msg_id, session_id)
+    toolset = None
 
     try:
+        from personal_knowledge_base.mcp_client import load_mcp_toolset
+
+        toolset = load_mcp_toolset(tenant, mcp_service_ids)
+        runtime_agent_config = dict(agent_config)
+        runtime_agent_config["extra_tools"] = toolset.tools
+        agent_context = _append_mcp_service_errors(agent_context, toolset.errors)
         engine = AgentEngine(
             tenant=tenant,
             session_id=session_id,
             user_id=user_id,
-            agent_config=agent_config,
+            agent_config=runtime_agent_config,
         )
 
         collected_content = []
@@ -642,6 +660,8 @@ def _run_agent_generation(
         except Exception:
             pass
     finally:
+        if toolset:
+            toolset.close()
         # 关闭数据库连接以释放锁
         from django.db import connection
         try:
@@ -814,6 +834,7 @@ def chat_endpoint(request, session_id, agent=False):
     is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
     if agent:
         refs = []
+        service_ids = [str(x) for x in (data.get("mcp_service_ids") or []) if x]
         skip_expensive_prefetch = should_skip_expensive_prefetch(query, data)
         agent_config = apply_multi_agent_defaults({}, data, kb_ids)
         history_msgs = build_agent_history_with_snapshot(
@@ -855,6 +876,7 @@ def chat_endpoint(request, session_id, agent=False):
                     "user": user,
                     "enable_chat_history": not skip_expensive_prefetch,
                     "enable_snapshot": not skip_expensive_prefetch,
+                    "mcp_service_ids": service_ids,
                 }
             # 先建流再起线程：SSE 生成器开始读取时流一定已经存在
             stream_manager.create_stream(assistant.id, str(session.id))
@@ -874,13 +896,22 @@ def chat_endpoint(request, session_id, agent=False):
         )
         agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
         _save_session_after_chat(session, data, kb_ids, query, tenant)
-        engine = AgentEngine(
-            tenant=tenant,
-            session_id=str(session.id),
-            user_id=str(user.id) if user else "",
-            agent_config=agent_config,
-        )
-        result = engine.execute(query, history=history_msgs, context_str=agent_context)
+        from personal_knowledge_base.mcp_client import load_mcp_toolset
+
+        toolset = load_mcp_toolset(tenant, service_ids)
+        try:
+            runtime_agent_config = dict(agent_config)
+            runtime_agent_config["extra_tools"] = toolset.tools
+            run_context = _append_mcp_service_errors(agent_context, toolset.errors)
+            engine = AgentEngine(
+                tenant=tenant,
+                session_id=str(session.id),
+                user_id=str(user.id) if user else "",
+                agent_config=runtime_agent_config,
+            )
+            result = engine.execute(query, history=history_msgs, context_str=run_context)
+        finally:
+            toolset.close()
         answer = result.content
         refs = result.references
         agent_steps_data = [s.to_dict() for s in result.steps]
