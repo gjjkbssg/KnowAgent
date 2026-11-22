@@ -11,6 +11,7 @@ from personal_knowledge_base.search import (
     _fts_search,
     apply_mmr,
     apply_rerank_threshold,
+    apply_version_aware_mmr,
     apply_version_policy,
     build_fts_query,
     cjk_bigram_text,
@@ -271,6 +272,16 @@ class SearchRankingTests(TestCase):
         self.assertEqual([item["chunk_id"] for item in neutral], [current.id, superseded.id])
         self.assertEqual([item["chunk_id"] for item in historical], [superseded.id, current.id])
         self.assertEqual(neutral[1]["lifecycle_status"], "superseded")
+
+    def test_version_aware_mmr_keeps_preferred_version_at_top_k(self):
+        superseded = {"id": "old", "score": 0.9, "content": "old rule", "lifecycle_status": "superseded"}
+        current = {"id": "current", "score": 0.6, "content": "current rule", "lifecycle_status": "current"}
+
+        current_first = apply_version_aware_mmr([superseded, current], "current rule", 1)
+        history_first = apply_version_aware_mmr([superseded, current], "旧版规则", 1)
+
+        self.assertEqual(current_first, [current])
+        self.assertEqual(history_first, [superseded])
 
     def test_relation_expansion_rows_receive_knowledge_lifecycle_status(self):
         current = self.add_chunk("current chiller valve setting with automatic controls", title="current")

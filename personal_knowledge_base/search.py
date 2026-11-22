@@ -328,6 +328,20 @@ def apply_version_policy(results: list[dict], query: str) -> list[dict]:
     return current + superseded
 
 
+def apply_version_aware_mmr(results: list[dict], query: str, k: int, lambda_param: float = 0.7) -> list[dict]:
+    prefer_superseded = query_wants_history(query)
+    preferred = []
+    remaining = []
+    for result in results:
+        is_superseded = result.get("lifecycle_status", "current") == "superseded"
+        (preferred if is_superseded == prefer_superseded else remaining).append(result)
+
+    selected = apply_mmr(preferred, k, lambda_param)
+    if len(selected) < k:
+        selected.extend(apply_mmr(remaining, k - len(selected), lambda_param))
+    return selected
+
+
 # ── 短 chunk 相邻扩展 ────────────────────────────────────────────────
 def expand_short_chunks(results: list[dict], min_chars: int = 350, max_chars: int = 850) -> list[dict]:
     """
@@ -695,10 +709,8 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
     # ── 知识条目级多样性 ────────────────────────────────────────────
     results = diversify_by_knowledge(results, max_per_knowledge=2)
 
-    # ── MMR：从至多 2×top_k 个候选里选出 top_k 个 ───────────────────
-    results = apply_mmr(results, k=max(1, top_k), lambda_param=0.7)
-    # MMR 按相关性分数重新挑选，会打乱版本排序，所以选完再排一次
-    results = apply_version_policy(results, query)
+    # ── MMR：先保留查询偏好的生命周期，再用其他结果补足 ─────────────
+    results = apply_version_aware_mmr(results, query, k=max(1, top_k), lambda_param=0.7)
 
     # ── 短 chunk 扩展 ──────────────────────────────────────────────
     return expand_short_chunks(results, min_chars=350, max_chars=850)
