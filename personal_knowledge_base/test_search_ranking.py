@@ -1,10 +1,26 @@
-from unittest.mock import patch
+import re
+from unittest.mock import Mock, patch
 
-from django.test import SimpleTestCase, TestCase
+from django.db import connection
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from personal_knowledge_base import search
+from personal_knowledge_base.model_providers import rerank
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
-from personal_knowledge_base.search import _fts_search, apply_mmr, deduplicate_results, hybrid_search, index_chunk, rrf_fuse, update_chunk_index_scope
+from personal_knowledge_base.search import (
+    _fts_search,
+    apply_mmr,
+    apply_rerank_threshold,
+    build_fts_query,
+    cjk_bigram_text,
+    deduplicate_results,
+    hybrid_search,
+    index_chunk,
+    retokenize_fts_rows,
+    rrf_channel_weights,
+    rrf_fuse,
+    update_chunk_index_scope,
+)
 
 
 class SearchRankingTests(TestCase):
@@ -59,6 +75,52 @@ class SearchRankingTests(TestCase):
 
         self.assertEqual(set(scores), {wanted.id})
 
+    def test_chinese_bigram_fts_finds_paraphrased_query(self):
+        chunk = self.add_chunk("冷水机组高压报警时应先检查冷却水流量", title="冷水机组")
+
+        scores = _fts_search(self.tenant.id, {self.kb.id}, "高压报警应该怎么处理", 10)
+
+        self.assertIn(chunk.id, scores)
+
+    def test_english_fts_search_still_finds_identifier_content(self):
+        chunk = self.add_chunk("The E-102 cooling pump alarm indicates low coolant pressure")
+
+        scores = _fts_search(self.tenant.id, {self.kb.id}, "cooling pump", 10)
+
+        self.assertIn(chunk.id, scores)
+
+    def test_identifier_fallback_matches_hyphenated_identifier(self):
+        chunk = self.add_chunk("E-102 motor code")
+
+        scores = _fts_search(self.tenant.id, {self.kb.id}, "E102 是什么故障", 10)
+
+        self.assertIn(chunk.id, scores)
+
+    def test_retokenize_fts_rows_rewrites_raw_text_idempotently(self):
+        search.ensure_search_tables()
+        chunk_id = "retokenize-test"
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM chunks_fts WHERE chunk_id = %s", [chunk_id])
+            cursor.execute(
+                """
+                INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                [chunk_id, self.tenant.id, self.kb.id, "knowledge", "冷水机组", "高压报警"],
+            )
+            with patch.object(cursor, "executemany", wraps=cursor.executemany) as batch_updates:
+                retokenize_fts_rows(cursor)
+                self.assertGreater(batch_updates.call_count, 0)
+            cursor.execute("SELECT title, content FROM chunks_fts WHERE chunk_id = %s", [chunk_id])
+            first = cursor.fetchone()
+            self.assertEqual(first, ("冷水 水机 机组", "高压 压报 报警"))
+
+            with patch.object(cursor, "executemany", wraps=cursor.executemany) as batch_updates:
+                retokenize_fts_rows(cursor)
+                batch_updates.assert_not_called()
+            cursor.execute("SELECT title, content FROM chunks_fts WHERE chunk_id = %s", [chunk_id])
+            self.assertEqual(cursor.fetchone(), first)
+
     def test_rrf_uses_ranks_not_raw_scores(self):
         fused = rrf_fuse([["a", "b", "c"], ["b", "a", "d"]])
 
@@ -66,6 +128,62 @@ class SearchRankingTests(TestCase):
         self.assertAlmostEqual(fused["a"], fused["b"])
         self.assertGreater(fused["a"], fused["c"])
         self.assertGreater(fused["c"], fused["d"] - 1e-9)
+
+    def test_rrf_defaults_to_equal_weights_and_supports_weighted_channels(self):
+        rankings = [["vector", "keyword"], ["keyword", "vector"]]
+
+        self.assertEqual(rrf_fuse(rankings), rrf_fuse(rankings, weights=[1.0, 1.0]))
+        weighted = rrf_fuse(rankings, weights=[0.7, 0.3])
+        self.assertGreater(weighted["vector"], weighted["keyword"])
+
+    def test_rrf_rejects_a_weight_count_mismatch(self):
+        with self.assertRaises(ValueError):
+            rrf_fuse([["a"], ["b"]], weights=[0.7])
+
+    def test_rrf_channel_weights_read_overridden_settings(self):
+        with override_settings(
+            RETRIEVAL_RRF_VECTOR_WEIGHT=0.7,
+            RETRIEVAL_RRF_KEYWORD_WEIGHT=0.3,
+            RETRIEVAL_RRF_GRAPH_WEIGHT=0.3,
+        ):
+            self.assertEqual(rrf_channel_weights(), {"vector": 0.7, "keyword": 0.3, "graph": 0.3})
+
+    def test_hybrid_search_applies_configured_rrf_channel_weights(self):
+        fts_chunk = self.add_chunk("fts result", title="fts")
+        vector_chunk = self.add_chunk("vector result", title="vector")
+
+        with (
+            override_settings(RETRIEVAL_RRF_VECTOR_WEIGHT=0.7, RETRIEVAL_RRF_KEYWORD_WEIGHT=0.3),
+            patch.object(search, "_fts_search", return_value={fts_chunk.id: 1.0}),
+            patch.object(search, "_vector_search", return_value={vector_chunk.id: 1.0}),
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+            patch("personal_knowledge_base.model_providers.rerank", side_effect=lambda query, results, top_k=None, tenant=None: results),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "test", 2)
+
+        self.assertEqual([item["chunk_id"] for item in results], [vector_chunk.id, fts_chunk.id])
+
+    def test_hybrid_search_drops_results_below_rerank_fallback_score(self):
+        chunk = self.add_chunk("retrieval result", title="candidate")
+
+        with (
+            override_settings(RETRIEVAL_RERANK_THRESHOLD=0.2, RETRIEVAL_RERANK_FALLBACK_MIN_SCORE=0.15),
+            patch.object(search, "_fts_search", return_value={chunk.id: 1.0}),
+            patch.object(search, "_vector_search", return_value={}),
+            patch.object(search, "expand_query", return_value=[]),
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+            patch(
+                "personal_knowledge_base.model_providers.rerank",
+                side_effect=lambda query, results, top_k=None, tenant=None: [
+                    {**item, "rerank_score": 0.1} for item in results
+                ],
+            ),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "retrieval", 5)
+
+        self.assertEqual(results, [])
 
     def test_mmr_drops_near_duplicate_when_k_is_smaller_than_candidates(self):
         results = [
@@ -111,6 +229,104 @@ class SearchRankingTests(TestCase):
             results = hybrid_search(self.tenant.id, [self.kb.id], "guava", 3)
 
         self.assertEqual(len(results), 3)
+
+
+class CJKTextTests(SimpleTestCase):
+    def test_cjk_runs_are_replaced_with_overlapping_bigrams(self):
+        self.assertEqual(cjk_bigram_text("中文检索系统"), "中文 文检 检索 索系 系统")
+        self.assertEqual(cjk_bigram_text("E-102报警"), "E-102 报警")
+        self.assertEqual(cjk_bigram_text("中"), "中")
+
+    def test_bigram_text_is_idempotent_and_preserves_english(self):
+        for text in ("中文检索系统", "E-102报警", "A中文B"):
+            transformed = cjk_bigram_text(text)
+            self.assertEqual(cjk_bigram_text(transformed), transformed)
+        self.assertEqual(cjk_bigram_text("English query E-102"), "English query E-102")
+
+    def test_build_fts_query_removes_stopwords_and_prefixes_single_cjk(self):
+        query = build_fts_query("什么是冷水机组")
+
+        self.assertNotIn('"什么"', query)
+        self.assertIn('"冷水"', query)
+        self.assertEqual(build_fts_query("中"), '"中"*')
+
+    def test_build_fts_query_escapes_quotes_and_skips_empty_queries(self):
+        with patch.object(search, "TOKEN_RE", re.compile(r'a"b')):
+            self.assertEqual(build_fts_query('a"b'), '"a""b"')
+        self.assertEqual(build_fts_query(""), "")
+        self.assertEqual(build_fts_query("什么 是 怎么"), "")
+
+
+class RerankThresholdTests(SimpleTestCase):
+    def test_keeps_items_meeting_threshold_in_order(self):
+        results = [
+            {"id": "first", "rerank_score": 0.8},
+            {"id": "below", "rerank_score": 0.19},
+            {"id": "second", "rerank_score": 0.4},
+        ]
+
+        self.assertEqual(
+            [item["id"] for item in apply_rerank_threshold(results, 0.2, 0.15)],
+            ["first", "second"],
+        )
+
+    def test_degrades_threshold_once_for_high_thresholds(self):
+        results = [{"id": "degraded", "rerank_score": 0.4}, {"id": "low", "rerank_score": 0.2}]
+
+        self.assertEqual(
+            [item["id"] for item in apply_rerank_threshold(results, 0.5, 0.15)],
+            ["degraded"],
+        )
+
+    def test_keeps_the_best_item_when_it_meets_fallback_score(self):
+        results = [{"id": "best", "rerank_score": 0.16}, {"id": "lower", "rerank_score": 0.14}]
+
+        self.assertEqual(apply_rerank_threshold(results, 0.5, 0.15), [results[0]])
+
+    def test_returns_empty_when_all_scores_are_below_fallback(self):
+        results = [{"id": "first", "rerank_score": 0.14}, {"id": "second", "rerank_score": 0.1}]
+
+        self.assertEqual(apply_rerank_threshold(results, 0.5, 0.15), [])
+
+    def test_unscored_results_are_returned_unchanged(self):
+        results = [{"id": "first"}, {"id": "second"}]
+
+        self.assertIs(apply_rerank_threshold(results, 0.2, 0.15), results)
+
+    def test_missing_scores_are_below_threshold_and_input_is_not_mutated(self):
+        results = [{"id": "unscored"}, {"id": "scored", "rerank_score": 0.8}]
+        before = [dict(item) for item in results]
+
+        filtered = apply_rerank_threshold(results, 0.2, 0.15)
+
+        self.assertEqual([item["id"] for item in filtered], ["scored"])
+        self.assertEqual(results, before)
+
+
+class RerankProviderTests(SimpleTestCase):
+    def test_rerank_preserves_input_metadata_and_records_rerank_score(self):
+        metadata = {"source": "test"}
+        results = [{"content": "relevant passage", "metadata": metadata, "score": 0.2}]
+        response = Mock()
+        response.json.return_value = {"results": [{"index": 0, "relevance_score": 0.87}]}
+        cfg = {"enabled": True, "configured": True, "base_url": "https://rerank.example/v1", "model": "test-rerank"}
+
+        with (
+            patch("personal_knowledge_base.model_providers._role_config", return_value=cfg),
+            patch("personal_knowledge_base.model_providers.requests.post", return_value=response),
+            patch(
+                "personal_knowledge_base.model_providers.usage_from_response",
+                return_value={"prompt_tokens": 1, "completion_tokens": 0, "total_tokens": 1},
+            ),
+            patch("personal_knowledge_base.model_providers.record_model_usage"),
+        ):
+            ranked = rerank("query", results)
+
+        self.assertEqual(results[0]["metadata"], {"source": "test"})
+        self.assertIs(results[0]["metadata"], metadata)
+        self.assertEqual(ranked[0]["metadata"], {"source": "test", "rerank_model": "test-rerank"})
+        self.assertIsNot(ranked[0]["metadata"], metadata)
+        self.assertEqual(ranked[0]["rerank_score"], 0.87)
 
 
 class DeduplicateResultsTests(SimpleTestCase):

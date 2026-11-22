@@ -30,6 +30,16 @@ def env_bool(name, default=False):
     return raw.lower() in {"1", "true", "yes", "on"}
 
 
+def env_float(name, default=0.0):
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
 # ── 安全配置 ─────────────────────────────────────────────────────
 # SECRET_KEY: 生产环境必须从环境变量读取
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
@@ -201,6 +211,11 @@ LLM_BASE_URL = LLM_CHAT_BASE_URL
 APP_EMBEDDING_DIM = int(os.environ.get("APP_EMBEDDING_DIM", "384"))
 APP_TASK_WORKERS = 4
 APP_TASKS_SYNC = "test" in sys.argv
+RETRIEVAL_RRF_VECTOR_WEIGHT = env_float("RETRIEVAL_RRF_VECTOR_WEIGHT", 0.7)
+RETRIEVAL_RRF_KEYWORD_WEIGHT = env_float("RETRIEVAL_RRF_KEYWORD_WEIGHT", 0.3)
+RETRIEVAL_RRF_GRAPH_WEIGHT = env_float("RETRIEVAL_RRF_GRAPH_WEIGHT", 0.3)
+RETRIEVAL_RERANK_THRESHOLD = env_float("RETRIEVAL_RERANK_THRESHOLD", 0.2)
+RETRIEVAL_RERANK_FALLBACK_MIN_SCORE = env_float("RETRIEVAL_RERANK_FALLBACK_MIN_SCORE", 0.15)
 LLM_CHAT_MODEL_TIMEOUT = int(os.environ.get("LLM_CHAT_MODEL_TIMEOUT", "60"))
 
 NEO4J_ENABLE = env_bool("NEO4J_ENABLE", False)

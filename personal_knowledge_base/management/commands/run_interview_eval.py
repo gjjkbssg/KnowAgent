@@ -3,13 +3,22 @@ import json
 import time
 from pathlib import Path
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from personal_knowledge_base.eval_metrics import DEFAULT_KS, gold_hits, gold_size, ranking_metrics, summarize
 from personal_knowledge_base.model_providers import rerank
 from personal_knowledge_base.models import Chunk, KnowledgeBase, Tenant
 from personal_knowledge_base.rag_eval import run_rag_evaluation
-from personal_knowledge_base.search import _fts_search, _ranked_ids, _vector_search, hybrid_search, rrf_fuse
+from personal_knowledge_base.search import (
+    _fts_search,
+    _ranked_ids,
+    _vector_search,
+    apply_rerank_threshold,
+    hybrid_search,
+    rrf_channel_weights,
+    rrf_fuse,
+)
 
 from .prepare_interview_demo import DEMO_KB_NAME
 
@@ -59,9 +68,13 @@ def _metrics(question, rows):
         if "knowledge_source" not in row:
             chunk = Chunk.objects.filter(id=row.get("chunk_id") or row.get("id")).select_related("knowledge").first()
             row["knowledge_source"] = chunk.knowledge.source if chunk else ""
+    hits_by_rank = [gold_hits(row, question) for row in rows[:TOP_K]]
     return {
         "titles": [str(row.get("knowledge_title") or "") for row in rows],
-        **ranking_metrics([gold_hits(row, question) for row in rows[:TOP_K]], gold_size(question)),
+        "result_count": len(rows),
+        "scores": [round(row["score"], 4) for row in rows[:TOP_K]],
+        "gold_flags": [bool(hits) for hits in hits_by_rank],
+        **ranking_metrics(hits_by_rank, gold_size(question)),
     }
 
 
@@ -98,25 +111,36 @@ class Command(BaseCommand):
                 raise CommandError(f"Knowledge base does not exist: {name}")
             kb_ids.append(noise.id)
 
-        variants = ["fts_only", "vector_only", "hybrid_raw", "hybrid_rerank", "full_pipeline"]
+        variants = ["fts_only", "vector_only", "hybrid_raw", "hybrid_rerank", "hybrid_rerank_threshold", "full_pipeline"]
         details = []
         for question in questions:
             query = question["question"]
             fts, fts_ms = _measure(lambda: _fts_search(tenant.id, set(kb_ids), query, TOP_K))
             vector, vector_ms = _measure(lambda: _vector_search(tenant.id, set(kb_ids), query, TOP_K))
-            combined = rrf_fuse([_ranked_ids(fts), _ranked_ids(vector)])
+            weights = rrf_channel_weights()
+            combined = rrf_fuse(
+                [_ranked_ids(fts), _ranked_ids(vector)],
+                weights=[weights["keyword"], weights["vector"]],
+            )
 
             fts_rows = _chunk_rows(_rank_scores(fts), fts)
             vector_rows = _chunk_rows(_rank_scores(vector), vector)
             raw_rows = _chunk_rows(_rank_scores(combined), combined)
             reranked_rows, rerank_ms = _measure(lambda: rerank(query, _chunk_rows(_rank_scores(combined, 20), combined), TOP_K, tenant))
+            threshold_rows = apply_rerank_threshold(
+                reranked_rows,
+                settings.RETRIEVAL_RERANK_THRESHOLD,
+                settings.RETRIEVAL_RERANK_FALLBACK_MIN_SCORE,
+            )
+            rerank_latency = round(fts_ms + vector_ms + rerank_ms, 2)
             full_rows, full_ms = _measure(lambda: hybrid_search(tenant.id, kb_ids, query, TOP_K))
 
             variant_rows = {
                 "fts_only": (fts_rows, fts_ms),
                 "vector_only": (vector_rows, vector_ms),
                 "hybrid_raw": (raw_rows, round(fts_ms + vector_ms, 2)),
-                "hybrid_rerank": (reranked_rows, round(fts_ms + vector_ms + rerank_ms, 2)),
+                "hybrid_rerank": (reranked_rows, rerank_latency),
+                "hybrid_rerank_threshold": (threshold_rows, rerank_latency),
                 "full_pipeline": (full_rows, full_ms),
             }
             for variant, (rows, latency_ms) in variant_rows.items():
@@ -155,6 +179,11 @@ class Command(BaseCommand):
             "question_count": len(questions),
             "chunk_count": Chunk.objects.filter(knowledge_base_id__in=kb_ids).count(),
             "noise_knowledge_bases": options["noise_kb_name"],
+            "rrf_weights": rrf_channel_weights(),
+            "rerank_threshold": {
+                "threshold": settings.RETRIEVAL_RERANK_THRESHOLD,
+                "fallback_min_score": settings.RETRIEVAL_RERANK_FALLBACK_MIN_SCORE,
+            },
             "metric_definition": {
                 "hit_at_k": "At least one gold item appears in the top k results.",
                 "recall_at_k": "Fraction of distinct gold items found in the top k results.",
