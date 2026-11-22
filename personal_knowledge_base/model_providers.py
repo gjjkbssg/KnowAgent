@@ -722,12 +722,12 @@ def openai_compatible_embedding(base_url: str, api_key: str, model_name: str, te
 def _fit_vectors(vectors: list[list[float]], dim: int) -> list[list[float]]:
     fitted = []
     for vec in vectors:
-        if len(vec) == dim:
-            fitted.append(vec)
-        elif len(vec) > dim:
-            fitted.append(vec[:dim])
+        if len(vec) >= dim:
+            fitted_vector = vec[:dim]
         else:
-            fitted.append(vec + [0.0] * (dim - len(vec)))
+            fitted_vector = vec + [0.0] * (dim - len(vec))
+        norm = math.sqrt(sum(value * value for value in fitted_vector))
+        fitted.append([value / norm for value in fitted_vector] if norm else fitted_vector)
     return fitted
 
 
