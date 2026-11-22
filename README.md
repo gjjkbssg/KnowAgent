@@ -316,6 +316,22 @@ DuRetrieval 子集（5,489 个 Chunk）：
 
 1024 维向量约 4 KB，384 维约 1.5 KB，存储开销约为 2.7 倍。已有数据库需运行 `python manage.py rebuild_vector_index`；该命令会通过 API 为每个 Chunk 重新计算向量，我们的 5,514 个 Chunk 用时约 100 分钟。
 
+### Agent 评测：RAG vs 单 Agent vs 多 Agent（WeKnora 指标）
+
+指标照搬 Tencent WeKnora 的评测实现：检索看 Precision、Recall、NDCG@3/10、MRR、MAP，生成看 BLEU-1/2/4、ROUGE-1/2/L。代码移植在 `personal_knowledge_base/eval_metrics.py`，WeKnora 的 Go 单元测试用例全部搬了过来，数值一致。WeKnora 没有 Agent 指标，另外补了答案正确率、工具调用次数、耗时和 token。
+
+31 道题（单跳 6、多跳 11、版本冲突 3、汇总 4、根因 3、无法回答 4），真实模型，每种方案跑 1 次，正确率按人工核对计：
+
+| 方案 | 正确率 | 多跳题 | 检索 MRR | 平均 token | 平均耗时 |
+|---|---:|---:|---:|---:|---:|
+| 普通 RAG | 83.9% | 7/11 | 0.858 | 6.9k | 23.9 s |
+| 单 Agent | 93.5% | 10/11 | 0.920 | 21.3k | 30.7 s |
+| 多 Agent | 96.8% | 11/11 | 0.781 | 75.3k | 73.3 s |
+
+差距集中在多跳题：第二跳的查询词要等第一跳检索完才知道，单次检索拿不到。代价是单 Agent 约 3 倍 token，多 Agent 约 11 倍。评测还发现了 Agent 循环的两个缺陷（达到最大轮数时不作答、把工具标签当成答案），已照 WeKnora 的做法修复。限制：题目自己写，每种方案只跑 1 次，正确率差异只看趋势。详见 [Agent 与 RAG 全流程讲解](interview_materials/08_Agent与RAG全流程讲解.md) 第 5 节。
+
+复现：`python manage.py run_agent_eval --output-dir interview_materials/results/agent_eval/baseline`（需先准备领域集、人物多跳库和 DuRetrieval 子集）。
+
 ## 快速开始
 
 ### 1. 环境要求
@@ -454,7 +470,7 @@ KnowAgent/
 - SQLite 适合个人和小团队部署，更高并发应使用 PostgreSQL、独立向量库与任务队列。
 - 中文 FTS5 用的是二元组切分，不是词典分词：召回好，但“检索”和“索引”这类共享单字的词会互相命中，排序靠向量和 Rerank 修正。
 - GraphRAG 的实体消歧、别名归一和增量一致性仍需完善。
-- 评测只覆盖检索，不覆盖答案质量和引用正确率；领域困难集只有 46 道题，公开基准子集只有单段落事实题。
+- 答案评测只有 31 道自写题，每种方案跑 1 次；关键词自动打分有误判，正确率以人工核对为准。领域困难集只有 46 道题，公开基准子集只有单段落事实题。
 
 ## License
 
