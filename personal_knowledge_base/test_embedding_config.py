@@ -194,7 +194,7 @@ class EmbeddingOutageTests(TestCase):
             client.delete(url, **headers)
             return chunk_vector(chunk)
 
-        with patch("knowledge.views.chunk_vector", side_effect=embed_while_chunk_is_deleted):
+        with patch("services.chunks.chunk_vector", side_effect=embed_while_chunk_is_deleted):
             response = client.put(url, data=json.dumps({"content": "edited"}), content_type="application/json", **headers)
 
         self.assertEqual(response.status_code, 404)
