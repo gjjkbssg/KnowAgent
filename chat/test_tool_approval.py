@@ -1,17 +1,23 @@
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from django.test import Client, TestCase
+from django.db import IntegrityError, connections
+from django.test import Client, TransactionTestCase
 from django.utils import timezone
 
-from personal_knowledge_base.models import AgentToolApproval, Message, Session, Tenant
+from personal_knowledge_base import tasks
+from personal_knowledge_base.agent_engine import AgentEngine
+from personal_knowledge_base.mcp_client import MCPTool
+from personal_knowledge_base.models import AgentToolApproval, Message, Session, TaskRecord, Tenant
 from personal_knowledge_base.serializers import message_dict
 from personal_knowledge_base.stream_manager import stream_manager
 
 
-class ToolApprovalTests(TestCase):
+class ToolApprovalTests(TransactionTestCase):
     def setUp(self):
         self.client = Client()
         auth = self.client.post("/api/v1/auth/auto-setup", content_type="application/json")
@@ -23,6 +29,7 @@ class ToolApprovalTests(TestCase):
         session = session or self.session
         user_message = Message.objects.create(session=session, role="user", content="run this")
         message = Message.objects.create(session=session, role="assistant", content="Thinking", is_completed=False)
+        self.addCleanup(stream_manager.remove_stream, message.id)
         return AgentToolApproval.objects.create(
             tenant=session.tenant,
             session=session,
@@ -34,9 +41,7 @@ class ToolApprovalTests(TestCase):
 
     def test_decision_claims_once_and_duplicate_returns_current_status(self):
         approval, message, _ = self.create_pending()
-        with patch("chat.views.run_database_background", side_effect=lambda callback: callback()), patch(
-            "chat.views._resume_agent_generation"
-        ) as resume:
+        with patch("chat.views.submit_approval_resume") as submit:
             response = self.client.post(
                 f"/api/v1/sessions/{self.session.id}/tool-approvals/{approval.id}",
                 data=json.dumps({"decision": "approve"}),
@@ -56,14 +61,13 @@ class ToolApprovalTests(TestCase):
         self.assertEqual(response.json()["data"]["message_id"], message.id)
         self.assertEqual(duplicate.status_code, 409)
         self.assertEqual(duplicate.json()["error"]["details"]["status"], "approved")
-        resume.assert_called_once_with(approval.id)
+        submit.assert_called_once_with(approval.id)
+        self.assertEqual(TaskRecord.objects.get(id=approval.id).status, "pending")
         self.assertFalse(message.is_completed)
 
-    def test_rejection_is_claimed_and_resumed_as_rejection(self):
+    def test_rejection_queues_resume(self):
         approval, _, _ = self.create_pending()
-        with patch("chat.views.run_database_background", side_effect=lambda callback: callback()), patch(
-            "chat.views._resume_agent_generation"
-        ) as resume:
+        with patch("chat.views.submit_approval_resume") as submit:
             response = self.client.post(
                 f"/api/v1/sessions/{self.session.id}/tool-approvals/{approval.id}",
                 data=json.dumps({"decision": "reject"}),
@@ -73,7 +77,21 @@ class ToolApprovalTests(TestCase):
         approval.refresh_from_db()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(approval.status, "rejected")
-        resume.assert_called_once_with(approval.id)
+        submit.assert_called_once_with(approval.id)
+        self.assertEqual(TaskRecord.objects.get(id=approval.id).task_type, tasks.RESUME_APPROVAL_TASK)
+
+    def test_decision_rolls_back_if_task_insertion_fails(self):
+        approval, _, _ = self.create_pending()
+        with patch("chat.views.TaskRecord.objects.create", side_effect=IntegrityError), self.assertRaises(IntegrityError):
+            self.client.post(
+                f"/api/v1/sessions/{self.session.id}/tool-approvals/{approval.id}",
+                data=json.dumps({"decision": "approve"}),
+                content_type="application/json",
+                **self.headers,
+            )
+        approval.refresh_from_db()
+        self.assertEqual(approval.status, "pending")
+        self.assertFalse(TaskRecord.objects.filter(id=approval.id).exists())
 
     def test_invalid_decision_and_foreign_session_are_rejected(self):
         approval, _, _ = self.create_pending()
@@ -117,6 +135,7 @@ class ToolApprovalTests(TestCase):
         self.assertEqual(approval.status, "expired")
         self.assertTrue(message.is_completed)
         self.assertEqual(message.content, "等待确认超时，未执行该操作。")
+        self.assertFalse(TaskRecord.objects.filter(id=approval.id).exists())
 
     def test_message_serialization_exposes_only_live_pending_approval(self):
         approval, message, _ = self.create_pending()
@@ -173,39 +192,219 @@ class ToolApprovalTests(TestCase):
         self.assertTrue(message.is_completed)
         self.assertTrue(stream.is_complete)
 
-    def test_resume_reloads_checkpoint_without_stream_manager_state(self):
-        from chat.views import _resume_agent_generation
-
+    def queue_approval_without_dispatch(self, decision="approve"):
+        client = Mock()
+        client.call_tool.return_value = ("written", False)
+        tool = MCPTool("service", "Server", "write", "write", {}, {}, client, name="mcp_server_write")
         approval, message, _ = self.create_pending()
-        approval.status = "approved"
+        engine = AgentEngine(
+            self.tenant, self.session.id, agent_config={"allowed_tools": [], "extra_tools": [tool]},
+        )
+        with patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
+            "content": "Thinking",
+            "tool_calls": [{"id": "c1", "type": "function", "function": {
+                "name": tool.name(), "arguments": '{"x": 1}',
+            }}],
+        }):
+            suspended = engine.execute("run this")
+        self.assertEqual(suspended.stopped_reason, "awaiting_approval")
+        client.call_tool.assert_not_called()
+        approval.checkpoint = suspended.checkpoint
         approval.checkpoint["chat"] = {
             "agent_config": {"allowed_tools": []},
-            "mcp_service_ids": [],
-            "user_id": "",
-            "user_message_id": "",
-            "enable_memory": False,
-            "enable_chat_history": False,
-            "enable_snapshot": False,
             "query": "run this",
-            "session_id": str(self.session.id),
         }
-        approval.save()
-        stream_manager.remove_stream(message.id)
-        toolset = SimpleNamespace(tools=[], close=lambda: None)
-        result = SimpleNamespace(content="finished", references=[], steps=[], duration_ms=5)
+        approval.save(update_fields=["checkpoint"])
+        with patch("chat.views.submit_approval_resume"):
+            response = self.client.post(
+                f"/api/v1/sessions/{self.session.id}/tool-approvals/{approval.id}",
+                data=json.dumps({"decision": decision}),
+                content_type="application/json",
+                **self.headers,
+            )
+        self.assertEqual(response.status_code, 200)
+        return approval, message, client, SimpleNamespace(tools=[tool], close=lambda: None)
+
+    def test_crash_after_decision_is_recovered_once_and_saved_message_can_be_streamed(self):
+        approval, message, client, toolset = self.queue_approval_without_dispatch()
+        self.assertEqual(TaskRecord.objects.get(id=approval.id).status, "pending")
+        # Open the reconnect before recovery, then consume it without the worker's stream.
+        response = self.client.get(
+            f"/api/v1/sessions/continue-stream/{self.session.id}?message_id={message.id}",
+            **self.headers,
+        )
         with (
             patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
-            patch("chat.views.AgentEngine") as engine,
+            patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
+                "content": "finished", "tool_calls": None,
+            }),
             patch("chat.views.schedule_chat_maintenance"),
         ):
-            engine.return_value.resume.return_value = result
-            _resume_agent_generation(approval.id)
+            self.assertEqual(tasks.recover_incomplete_tasks()["recovered"], 1)
+            self.assertEqual(tasks.recover_incomplete_tasks()["recovered"], 0)
 
-        engine.return_value.resume.assert_called_once()
-        self.assertIsNotNone(stream_manager.get_stream(message.id))
+        client.call_tool.assert_called_once()
+        self.assertEqual(TaskRecord.objects.get(id=approval.id).status, "completed")
         message.refresh_from_db()
         self.assertTrue(message.is_completed)
         self.assertEqual(message.content, "finished")
+        stream_manager.remove_stream(message.id)
+        body = b"".join(response.streaming_content).decode()
+        self.assertIn("finished", body)
+        self.assertIn("event: done", body)
+
+    def test_recovered_rejection_completes_without_calling_the_tool(self):
+        approval, message, client, toolset = self.queue_approval_without_dispatch("reject")
+        with (
+            patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
+            patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
+                "content": "rejected", "tool_calls": None,
+            }),
+            patch("chat.views.schedule_chat_maintenance"),
+        ):
+            self.assertEqual(tasks.recover_incomplete_tasks()["recovered"], 1)
+        client.call_tool.assert_not_called()
+        self.assertEqual(TaskRecord.objects.get(id=approval.id).status, "completed")
+        message.refresh_from_db()
+        self.assertTrue(message.is_completed)
+        self.assertEqual(message.content, "rejected")
+
+    def test_two_recovery_workers_claim_the_same_pending_resume_once(self):
+        approval, message, client, toolset = self.queue_approval_without_dispatch()
+        both_read_pending = threading.Barrier(2, timeout=5)
+        first_worker_in_tool = threading.Event()
+        second_worker_done = threading.Event()
+        original_clean_payload = tasks._payload_without_worker_token
+
+        def clean_payload(payload):
+            both_read_pending.wait()
+            if threading.current_thread().name == "contender_0":
+                self.assertTrue(first_worker_in_tool.wait(5))
+            return original_clean_payload(payload)
+
+        def run_tool(*args, **kwargs):
+            first_worker_in_tool.set()
+            self.assertTrue(second_worker_done.wait(5))
+            return "written", False
+
+        def recover(*, contender=False):
+            try:
+                return tasks.recover_incomplete_tasks()
+            finally:
+                if contender:
+                    second_worker_done.set()
+                connections.close_all()
+
+        client.call_tool.side_effect = run_tool
+        with (
+            patch.object(tasks, "_payload_without_worker_token", side_effect=clean_payload),
+            patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
+            patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
+                "content": "finished", "tool_calls": None,
+            }),
+            patch("chat.views.schedule_chat_maintenance"),
+            ThreadPoolExecutor(max_workers=1, thread_name_prefix="owner") as owner,
+            ThreadPoolExecutor(max_workers=1, thread_name_prefix="contender") as contender,
+        ):
+            first = owner.submit(recover)
+            second = contender.submit(recover, contender=True)
+            self.assertEqual(first.result(timeout=10)["recovered"], 1)
+            self.assertEqual(second.result(timeout=10)["recovered"], 1)
+
+        client.call_tool.assert_called_once()
+        self.assertEqual(TaskRecord.objects.get(id=approval.id).status, "completed")
+        message.refresh_from_db()
+        self.assertTrue(message.is_completed)
+        self.assertEqual(message.content, "finished")
+
+    def test_stop_after_decision_prevents_queued_tool_execution(self):
+        approval, message, client, _ = self.queue_approval_without_dispatch()
+        response = self.client.post(
+            f"/api/v1/sessions/{self.session.id}/stop",
+            data=json.dumps({"message_id": message.id}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        with patch("personal_knowledge_base.mcp_client.load_mcp_toolset") as load_tools:
+            tasks.recover_incomplete_tasks()
+        load_tools.assert_not_called()
+        client.call_tool.assert_not_called()
+        message.refresh_from_db()
+        self.assertTrue(message.is_completed)
+        self.assertEqual(message.content, "Thinking")
+        self.assertEqual(TaskRecord.objects.get(id=approval.id).status, "completed")
+
+    def test_expired_and_cancelled_approval_records_are_skipped_even_if_queued(self):
+        for status in ("expired", "cancelled"):
+            approval, _, _ = self.create_pending()
+            AgentToolApproval.objects.filter(id=approval.id).update(status=status)
+            TaskRecord.objects.create(id=approval.id, task_type=tasks.RESUME_APPROVAL_TASK)
+        with patch("personal_knowledge_base.mcp_client.load_mcp_toolset") as load_tools:
+            self.assertEqual(tasks.recover_incomplete_tasks()["recovered"], 2)
+        load_tools.assert_not_called()
+
+    def expire_resume_lease(self, approval_id, result=None):
+        TaskRecord.objects.filter(id=approval_id).update(
+            status="running",
+            payload={tasks.WORKER_TOKEN_KEY: "crashed-owner"},
+            result=result,
+            updated_at=timezone.now() - timedelta(seconds=tasks.STALE_LEASE_SECONDS + 1),
+        )
+
+    def test_stale_lease_before_tool_execution_can_be_reclaimed(self):
+        approval, message, client, toolset = self.queue_approval_without_dispatch()
+        self.expire_resume_lease(approval.id)
+        with (
+            patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
+            patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
+                "content": "finished", "tool_calls": None,
+            }),
+            patch("chat.views.schedule_chat_maintenance"),
+        ):
+            self.assertEqual(tasks.recover_incomplete_tasks()["stale_reset"], 1)
+        client.call_tool.assert_called_once()
+        message.refresh_from_db()
+        self.assertTrue(message.is_completed)
+        self.assertEqual(message.content, "finished")
+
+    def test_stale_worker_that_may_have_called_the_tool_is_never_replayed(self):
+        from chat.views import RESUME_INTERRUPTED
+
+        approval, message, client, _ = self.queue_approval_without_dispatch()
+        self.expire_resume_lease(approval.id, tasks.RESUME_STARTED)
+        with patch("personal_knowledge_base.mcp_client.load_mcp_toolset") as load_tools:
+            self.assertEqual(tasks.recover_incomplete_tasks()["discarded"], 1)
+            self.assertEqual(tasks.recover_incomplete_tasks()["recovered"], 0)
+        load_tools.assert_not_called()
+        client.call_tool.assert_not_called()
+        self.assertEqual(TaskRecord.objects.get(id=approval.id).status, "failed")
+        message.refresh_from_db()
+        self.assertTrue(message.is_completed)
+        self.assertEqual(message.content, RESUME_INTERRUPTED)
+
+    def test_recovery_preserves_next_approval_after_result_was_committed(self):
+        approval, message, client, toolset = self.queue_approval_without_dispatch()
+        with (
+            patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
+            patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
+                "content": "Second approval",
+                "tool_calls": [{"id": "c2", "type": "function", "function": {
+                    "name": "mcp_server_write", "arguments": '{"x": 2}',
+                }}],
+            }),
+        ):
+            self.assertEqual(tasks.recover_incomplete_tasks()["recovered"], 1)
+        self.expire_resume_lease(approval.id, tasks.RESUME_FINISHED)
+        with patch("personal_knowledge_base.mcp_client.load_mcp_toolset") as load_tools:
+            self.assertEqual(tasks.recover_incomplete_tasks()["recovered"], 0)
+        load_tools.assert_not_called()
+        client.call_tool.assert_called_once()
+        self.assertEqual(TaskRecord.objects.get(id=approval.id).status, "completed")
+        message.refresh_from_db()
+        self.assertFalse(message.is_completed)
+        self.assertEqual(message.content, "Second approval")
+        self.assertEqual(message.tool_approvals.filter(status="pending").count(), 1)
 
     def test_approval_stream_event_is_terminal(self):
         from chat.views import _persist_agent_result, stream_message_events
