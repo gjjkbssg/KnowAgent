@@ -263,8 +263,17 @@ class ToolApprovalTests(TransactionTestCase):
         message.refresh_from_db()
         self.assertTrue(message.is_completed)
         self.assertEqual(message.content, "finished")
+        # The recovered stream also lacks the old round's IDs. Reconnect through saved state.
+        replay = self.client.get(
+            f"/api/v1/sessions/continue-stream/{self.session.id}?message_id={message.id}",
+            HTTP_LAST_EVENT_ID="9",
+            **self.headers,
+        )
+        recovered_frames = parse_sse(replay)
+        self.assertEqual([frame_id for frame_id, _, _ in recovered_frames], [10, 11, 12])
         stream_manager.remove_stream(message.id)
         frames = parse_sse(response)
+        self.assertEqual(frames, recovered_frames)
         self.assertEqual([frame_id for frame_id, _, _ in frames], [10, 11, 12])
         self.assertEqual(frames[0][2]["content"], "finished")
         self.assertEqual(frames[-1][1], "done")

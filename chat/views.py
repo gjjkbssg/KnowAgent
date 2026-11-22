@@ -392,7 +392,7 @@ def _numbered_frames(frames, first_id: int):
 def stream_terminal_event(message_id: str) -> StreamEvent | None:
     """内存流里第一个终止事件；流不存在或还没结束时返回 None。"""
     stream = stream_manager.get_stream(message_id)
-    if not stream:
+    if not stream or stream.first_event_frame_id is None:
         return None
     for event in stream.get_events():
         if event.event_type in TERMINAL_STREAM_EVENTS:
@@ -435,9 +435,15 @@ def stream_message_events(
             offset = 0
             next_id = max(next_id, last_event_id + 1)
         stream = current_stream
-        if stream and offset == 0:
+        if stream and stream.first_event_frame_id is None:
+            # After a restart the earlier frame positions are unknown. Use saved state.
+            wait_for_resume = True
+            events = []
+        elif stream:
             next_id = max(next_id, stream.first_event_frame_id)
-        events = stream.get_events(offset) if stream else []
+            events = stream.get_events(offset)
+        else:
+            events = []
         for event in events:
             frames = _stream_event_frames(msg_id, event)
             if wait_for_resume and event.event_type == "approval_required" and not AgentToolApproval.objects.filter(
@@ -957,8 +963,8 @@ def _resume_agent_generation(approval_id: str, resume_task):
         ):
             return
         previous_stream = stream_manager.get_stream(message_id)
-        first_frame_id = 2
-        if previous_stream:
+        first_frame_id = None
+        if previous_stream and previous_stream.first_event_frame_id is not None:
             first_frame_id = previous_stream.first_event_frame_id + sum(
                 len(_stream_event_frames(message_id, event)) for event in previous_stream.get_events()
             )
