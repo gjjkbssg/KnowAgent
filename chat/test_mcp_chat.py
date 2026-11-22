@@ -38,11 +38,11 @@ class MCPChatTests(TestCase):
 
     def patch_chat(self):
         return (
-            patch("chat.views.build_agent_history_with_snapshot", return_value=[]),
-            patch("chat.views._build_agent_prefetch_context", return_value=("", "")),
-            patch("chat.views.build_agent_context_if_needed", return_value="base context"),
-            patch("chat.views.schedule_chat_maintenance"),
-            patch("chat.views.AgentEngine"),
+            patch("services.chat_generation.build_agent_history_with_snapshot", return_value=[]),
+            patch("services.chat_generation._build_agent_prefetch_context", return_value=("", "")),
+            patch("services.chat_generation.build_agent_context_if_needed", return_value="base context"),
+            patch("services.chat_generation.schedule_chat_maintenance"),
+            patch("services.chat_generation.AgentEngine"),
         )
 
     def test_cross_tenant_service_id_is_not_loaded(self):
@@ -111,7 +111,7 @@ class MCPChatTests(TestCase):
             maintenance,
             engine as engine_class,
             patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
-            patch("chat.views.run_database_background", side_effect=lambda callback: callback()),
+            patch("services.chat_generation.run_database_background", side_effect=lambda callback: callback()),
         ):
             engine_class.return_value.execute.return_value = self.approval_result()
             response = self.post_agent_chat({"query": "question", "stream": True, "mcp_service_ids": []})
@@ -130,7 +130,7 @@ class MCPChatTests(TestCase):
             maintenance,
             engine as engine_class,
             patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
-            patch("chat.views.run_database_background", side_effect=lambda callback: callback()),
+            patch("services.chat_generation.run_database_background", side_effect=lambda callback: callback()),
         ):
             engine_class.return_value.execute.return_value = self.result()
             response = self.post_agent_chat({"query": "question", "stream": True, "mcp_service_ids": ["offline-id"]})

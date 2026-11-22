@@ -336,7 +336,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["data"]["title"], "项目标题")
 
-    @patch("chat.views.delete_session_memory")
+    @patch("services.chat_sessions.delete_session_memory")
     def test_session_delete_matches_reference_contract(self, delete_session_memory):
         response = self.client.post("/api/v1/sessions", data=json.dumps({"title": "待删除对话"}), content_type="application/json", **self.headers)
         self.assertEqual(response.status_code, 201)
@@ -348,7 +348,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         ids = {item["id"] for item in response.json()["data"]["items"]}
         self.assertNotIn(session_id, ids)
 
-    @patch("chat.views.delete_session_memory")
+    @patch("services.chat_sessions.delete_session_memory")
     def test_session_batch_delete_cleans_neo4j_memory(self, delete_session_memory):
         first = self.client.post("/api/v1/sessions", data=json.dumps({"title": "批量删除一"}), content_type="application/json", **self.headers).json()["data"]
         second = self.client.post("/api/v1/sessions", data=json.dumps({"title": "批量删除二"}), content_type="application/json", **self.headers).json()["data"]
@@ -363,7 +363,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual({call.args[0] for call in delete_session_memory.call_args_list}, {first["id"], second["id"]})
 
-    @patch("chat.views.delete_session_memory")
+    @patch("services.chat_sessions.delete_session_memory")
     def test_session_delete_all_cleans_neo4j_memory_for_tenant_sessions(self, delete_session_memory):
         first = self.client.post("/api/v1/sessions", data=json.dumps({"title": "全部删除一"}), content_type="application/json", **self.headers).json()["data"]
         second = self.client.post("/api/v1/sessions", data=json.dumps({"title": "全部删除二"}), content_type="application/json", **self.headers).json()["data"]
@@ -379,7 +379,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         cleaned_ids = {call.args[0] for call in delete_session_memory.call_args_list}
         self.assertTrue({first["id"], second["id"]}.issubset(cleaned_ids))
 
-    @patch("chat.views.delete_session_memory")
+    @patch("services.chat_sessions.delete_session_memory")
     def test_session_messages_clear_cleans_neo4j_memory(self, delete_session_memory):
         session = Session.objects.create(tenant=Tenant.objects.first(), title="清空消息")
 

@@ -122,7 +122,7 @@ class StreamResumeTests(TestCase):
         self.assertEqual(durable[0][2]["approval"]["id"], approval.id)
 
     def test_idle_timeout_frames_do_not_move_the_resume_point(self):
-        from chat.views import stream_message_events
+        from chat.streaming import stream_message_events
 
         message = Message.objects.create(session=self.session, request_id="r3", role="assistant", content="", is_completed=False)
         stream = stream_manager.create_stream(message.id, self.session.id)

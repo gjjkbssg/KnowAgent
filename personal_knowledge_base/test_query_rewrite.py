@@ -82,7 +82,7 @@ class QueryRewriteHistoryTests(TestCase):
 
     def test_rag_context_marks_superseded_titles_and_prompt_explains_policy(self):
         refs = [{"knowledge_title": "旧版说明", "lifecycle_status": "superseded", "content": "旧版内容"}]
-        with patch("chat.views._build_document_header", return_value=""):
+        with patch("services.chat_generation._build_document_header", return_value=""):
             context = _build_context_with_memory(refs, "", "")
 
         self.assertIn("旧版说明（已废止）", context)

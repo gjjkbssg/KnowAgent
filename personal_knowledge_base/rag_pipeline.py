@@ -304,7 +304,7 @@ def _merge_context_parts(*parts: str) -> str:
 
 def _build_context_with_memory(refs: list, memory_context: str, kb_names: str) -> str:
     """构建包含记忆的上下文"""
-    from chat.views import _build_document_header
+    from services.chat_generation import _build_document_header
 
     parts = []
     if kb_names:
