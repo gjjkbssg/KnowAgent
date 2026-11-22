@@ -1,0 +1,1734 @@
+{
+  "knowledge_bases": [
+    {
+      "id": "4480fc07-5b1f-4917-ac43-fdbe94a494dd",
+      "name": "[评测] 智能楼宇领域集"
+    },
+    {
+      "id": "fa7b74ef-8ad7-4ad5-a6b6-8e3a0757104f",
+      "name": "[A/B演示] 人物多跳检索"
+    },
+    {
+      "id": "6ad17fba-4e6a-43fc-9bda-8f137979fefc",
+      "name": "[评测] DuRetrieval 子集"
+    }
+  ],
+  "task_count": 31,
+  "configs": [
+    "agent"
+  ],
+  "results": [
+    {
+      "task_id": "s-xh100-e42",
+      "category": "单跳事实",
+      "config": "agent",
+      "question": "XH-100 报 E42 应该按什么顺序排查？",
+      "answer": "根据知识库中的《XH-100 网关手册（固件 v2.4）》，**E42 表示 XH-100 无法连接云端**。以下是标准排查顺序：\n\n---\n\n## 🔍 E42 排查步骤\n\n| 步骤 | 检查内容 | 操作说明 |\n|:---:|:---|:---|\n| **①** | **2.4 GHz 网络是否开启** | XH-100 **不支持 5 GHz**，仅支持 2.4 GHz Wi-Fi。如果路由器只开启了 5 GHz 频段，会导致无法连接。 |\n| **②** | **Wi-Fi 密码是否正确** | 如果 Wi-Fi 密码已修改，需要**重新配置 XH-100 的 Wi-Fi 连接**。 |\n| **③** | **DNS 和出口网络** | 如果前两步都没问题，检查 DNS 是否能解析云端地址，以及出口网络是否正常。 |\n\n---\n\n## 💡 补充说明\n\n- **指示灯状态**：E42 发生时，XH-100 会显示**橙灯快闪**，同时上报错误码。\n- **固件版本影响**：根据《网关固件升级记录》，**v2.4.2（10 月）** 版本增加了 DNS 解析失败时自动回退到备用 DNS 的功能，使 E42 发生率下降约 **60%**。如果当前固件版本较低，建议升级到最新版本。\n\n---\n\n> 📖 **参考来源**：《01_XH-100网关手册（固件 v2.4）》、《12_网关固件升级记录》",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        0,
+        -3,
+        -4,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "c40c426f-6eda-4e2e-8e75-25ae63ad31a7",
+        "315cd578-c24f-44d2-9536-44c36878ce86",
+        "a79d1eb8-abe3-467c-b3fc-8e11f863fa80",
+        "b5e23a8c-8605-4651-af6b-286516101337",
+        "4a9ac3b3-6b96-49f4-9fff-ea7bc0591e49"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.2,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.07166123778501629,
+        "bleu2": 0.05926892755715518,
+        "bleu4": 0.04035475256185535,
+        "rouge1": 0.287769781222504,
+        "rouge2": 0.12875536282414488,
+        "rougel": 0.2733812920138709
+      },
+      "latency_ms": 19803.42,
+      "total_tokens": 12535,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "s-xh110-e42",
+      "category": "单跳事实",
+      "config": "agent",
+      "question": "XH-110 出现 E42 怎么处理？",
+      "answer": "根据搜索结果，我找到了 XH-110 设备 E42 错误代码的详细处理方案。\n\n---\n\n## XH-110 E42 错误处理指南\n\n### 📋 错误含义\n\n**E42：证书校验失败**\n\nXH-110 的 E42 表示**与云端建立 TLS 连接时证书校验失败**，注意这不是网络不通的问题。\n\n### 🔍 最常见原因\n\n**网关系统时间错误**，导致证书被判断为：\n- 尚未生效\n- 已过期\n\n### 🛠️ 处理步骤（按顺序执行）\n\n| 步骤 | 操作 | 说明 |\n|------|------|------|\n| **第一步** | 同步网关系统时间 | 在管理端操作，NTP 服务器地址：`ntp.internal.example` |\n| **第二步** | 重启网关 | 时间同步完成后重启设备 |\n| **第三步** | 重新下发设备证书 | 如果前两步仍无法解决，在管理端重新下发证书 |\n\n### 💡 版本修复提示\n\n根据固件升级记录，**XH-110 v1.2.0 版本**（10月发布）已针对此问题进行优化：\n- 开机时强制执行一次 NTP 校时\n- 可有效解决因系统时间错误导致的 E42 问题\n\n建议确认当前网关固件版本，如低于 v1.2.0 可考虑升级。\n\n---\n\n**参考文档**：《02_XH-110网关手册（固件 v1.2）》、《12_网关固件升级记录》",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        0,
+        -4,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "b5e23a8c-8605-4651-af6b-286516101337",
+        "a79d1eb8-abe3-467c-b3fc-8e11f863fa80",
+        "4a9ac3b3-6b96-49f4-9fff-ea7bc0591e49",
+        "c40c426f-6eda-4e2e-8e75-25ae63ad31a7",
+        "315cd578-c24f-44d2-9536-44c36878ce86"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.2,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.08571428571428572,
+        "bleu2": 0.06788442333021309,
+        "bleu4": 0.0383115347879187,
+        "rouge1": 0.28187919174992115,
+        "rouge2": 0.12711864197644357,
+        "rougel": 0.22818791658213597
+      },
+      "latency_ms": 19002.32,
+      "total_tokens": 12600,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "s-ap55-filter",
+      "category": "单跳事实",
+      "config": "agent",
+      "question": "AP-55 的滤芯能用多久？",
+      "answer": "根据知识库中的信息，**AP-55 的滤芯寿命为 3000 小时**。\n\n### 滤芯使用相关说明\n\n| 项目 | 说明 |\n|------|------|\n| **滤芯寿命** | 3000 小时 |\n| **到期提示** | 滤芯到期后，管理端会提示更换 |\n| **到期后影响** | 滤芯到期后设备仍可继续运行，但**强效模式的风量会下降约 30%** |\n\n### 对比参考\n\n作为对比，同系列的 AP-50 滤芯寿命为 **2000 小时**，AP-55 的滤芯寿命比 AP-50 长了 50%。\n\n---\n> 📄 信息来源：《05_AP系列空气净化器说明》",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        -4
+      ],
+      "retrieved_chunk_ids": [
+        "e7e5ff09-0a9f-4cca-a331-d6c5af2ed236",
+        "271e9b65-c4d3-4d6c-b647-027c9b18455a",
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "e4a12093-8e78-42a4-8940-d4722e5447d3"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.06293706293706294,
+        "bleu2": 0.05954620075725457,
+        "bleu4": 0.052408600686395246,
+        "rouge1": 0.26865671409222547,
+        "rouge2": 0.15533980439249695,
+        "rougel": 0.26865671409222547
+      },
+      "latency_ms": 12590.56,
+      "total_tokens": 11447,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "s-dns",
+      "category": "单跳事实",
+      "config": "agent",
+      "question": "IoT 设备的备用 DNS 地址是多少？",
+      "answer": "根据知识库中的信息，**IoT 设备的备用 DNS 地址是 `10.30.0.54`**。\n\n## 详细配置\n\n| 配置项 | 地址 |\n|--------|------|\n| 主 DNS | `10.30.0.53` |\n| 备用 DNS | `10.30.0.54` |\n\n## 相关说明\n\n- **适用范围**：该 DNS 配置应用于 **VLAN 30（IoT VLAN）**，服务于 IoT 设备（如 XH-100、XH-110 和会议屏）。\n- **故障恢复机制**：根据网关固件升级记录，XH-100 在 v2.4.2 版本（10月）中新增了 **DNS 解析失败时自动回退到备用 DNS** 的功能，使 E42 错误的发生率下降了约 60%。\n\n> **信息来源**：Wiki 页面《IoT DNS 配置》、文档《园区网络规划》、《网关固件升级记录》",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        -4
+      ],
+      "retrieved_chunk_ids": [
+        "65d6216b-9212-464f-a754-875ad8f178d6",
+        "a79d1eb8-abe3-467c-b3fc-8e11f863fa80",
+        "a9e570be-b99f-4d5f-80ec-27a96484d448",
+        "944c22ea-f708-4f2b-bceb-f126edf46285"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.04945054945054945,
+        "bleu2": 0.04048758739623028,
+        "bleu4": 0.0197655943874168,
+        "rouge1": 0.19565217197542537,
+        "rouge2": 0.08219177966504035,
+        "rougel": 0.19565217197542537
+      },
+      "latency_ms": 14895.72,
+      "total_tokens": 11636,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "s-e51",
+      "category": "单跳事实",
+      "config": "agent",
+      "question": "网关日志快满了会影响自动化吗？",
+      "answer": "根据知识库中的信息，**网关日志快满不会影响自动化控制**。\n\n## 分析依据\n\n### 1. E51 存储告警属于 P3 级别\n\n根据《11_运维值班手册》的告警分级：\n\n| 告警等级 | 定义 | 响应时限 | 示例 |\n|---------|------|---------|------|\n| **P1** | 影响空气质量或安全 | 15 分钟 | E17 持续超过 10 分钟、PM2.5 超过 115 |\n| **P2** | 单个设备离线或功能降级 | 2 小时 | E43、E60 |\n| **P3** | **不影响使用的提示** | 下一个工作日 | **E51**、滤芯到期 |\n\n**E51 存储告警**（XH-100 v2.4.0 版本新增）被归类为 **P3 告警**，属于不影响设备使用的提示性告警。\n\n### 2. 建议处理方式\n\n根据运维手册的例行检查要求：\n- **每月第一个周五**导出网关日志并归档\n\n### 3. 结论\n\n网关日志快满时会产生 **E51 存储告警**，但这：\n- ✅ **不会中断**自动化规则执行\n- ✅ **不会影响**设备控制指令下发\n- ✅ 可在**下一个工作日**处理\n\n**建议操作**：按例行检查计划导出并归档日志即可释放存储空间。",
+      "correct": true,
+      "retrieval_ids": [
+        -1,
+        0,
+        -3,
+        -4,
+        -5,
+        -6,
+        -7
+      ],
+      "retrieved_chunk_ids": [
+        "e4a12093-8e78-42a4-8940-d4722e5447d3",
+        "315cd578-c24f-44d2-9536-44c36878ce86",
+        "cb48b365-df0c-4d4a-9093-514d6a1d3e29",
+        "ef1750df-f4e9-4225-908e-095cbf1bafbc",
+        "37af8719-8a84-47de-96f0-802d2b133bf8",
+        "a79d1eb8-abe3-467c-b3fc-8e11f863fa80",
+        "8010dfbc-3745-4da2-9200-ce0420846197"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.14285714285714285,
+        "recall": 1.0,
+        "ndcg3": 0.6309297535714575,
+        "ndcg10": 0.6309297535714575,
+        "mrr": 0.5,
+        "map": 0.5
+      },
+      "generation_metrics": {
+        "bleu1": 0.040293040293040296,
+        "bleu2": 0.02434224127297585,
+        "bleu4": 0.0,
+        "rouge1": 0.16923076707218937,
+        "rouge2": 0.04040403900367314,
+        "rougel": 0.16923076707218937
+      },
+      "latency_ms": 42356.34,
+      "total_tokens": 46445,
+      "request_count": 13,
+      "tool_calls": 8,
+      "tool_name_histogram": {
+        "grep_chunks": 1,
+        "knowledge_search": 4,
+        "wiki_search": 3
+      },
+      "iterations": 5,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "s-upgrade",
+      "category": "单跳事实",
+      "config": "agent",
+      "question": "网关固件一般什么时候升级，每批多少台？",
+      "answer": "## 网关固件升级策略\n\n根据知识库中的《网关固件升级记录》，网关固件升级的策略如下：\n\n| 项目 | 规定 |\n|------|------|\n| **升级时间** | **工作日 22:00 之后** |\n| **每批数量** | **不超过 20 台网关** |\n| **失败处理** | 升级失败的网关**自动回滚**到上一个版本 |\n\n### 补充说明\n\n- **分批进行**：固件升级采用分批方式执行，以降低风险。\n- **回滚机制**：如果升级失败，系统会自动回滚到上一个版本，确保网关能够正常运行。\n\n### 历史升级实例参考\n\n以两个型号的升级历史为例：\n\n- **XH-100**：经历了 v2.4.0（6月）→ v2.4.1（8月）→ v2.4.2（10月）三个版本迭代\n- **XH-110**：从 v1.1.0（8月，首个量产版本）升级到 v1.2.0（10月）\n\n> 📌 来源：Wiki 页面《网关固件升级策略》、文档《12_网关固件升级记录》",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2
+      ],
+      "retrieved_chunk_ids": [
+        "a79d1eb8-abe3-467c-b3fc-8e11f863fa80",
+        "cb48b365-df0c-4d4a-9093-514d6a1d3e29"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.06382978723404255,
+        "bleu2": 0.04954787398762882,
+        "bleu4": 0.03231129364265468,
+        "rouge1": 0.2803738292322474,
+        "rouge2": 0.1052631562942444,
+        "rougel": 0.26168224044720073
+      },
+      "latency_ms": 13458.28,
+      "total_tokens": 11860,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "h-b205-e42",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "B205 会议室的网关报 E42，第一步该做什么？",
+      "answer": "## B205 会议室网关 E42 故障处理\n\n### 首先确认网关型号\n\nB205 位于 **B 栋**，B 栋使用的是 **XH-110 中枢网关**（有线以太网连接，非 XH-100）。\n\n> ⚠️ XH-100 和 XH-110 的 E42 含义完全不同，排查前必须先确认型号！\n\n---\n\n### E42 在 XH-110 上的含义\n\n| 项目 | 说明 |\n|------|------|\n| **错误码** | E42 |\n| **含义** | **证书校验失败**（TLS 连接时证书校验不通过） |\n| **注意** | **不是网络不通**，而是证书问题 |\n| **最常见原因** | **网关系统时间错误**，导致证书被判断为\"尚未生效\"或\"已过期\" |\n\n---\n\n### ✅ 第一步该做什么？\n\n> **在管理端同步网关的系统时间**（NTP 服务器地址：`ntp.internal.example`），然后重启网关。\n\n这是官方手册明确给出的处理顺序：\n\n1. **第一步**：在管理端同步网关系统时间（NTP → `ntp.internal.example`）\n2. **第二步**：重启网关\n3. **第三步**：如果仍然失败，在管理端重新下发设备证书\n\n---\n\n### 📌 补充说明\n\n根据固件升级记录，XH-110 的 **v1.2.0 版本**（10 月）已经增加了\"开机时强制进行一次 NTP 校时\"的功能，正是为了解决因系统时间错误导致的 E42 问题。如果 B205 的网关尚未升级到 v1.2.0，建议同步安排固件升级以从根本上减少此类故障。\n\n> 📖 信息来源：《02_XH-110网关手册（固件 v1.2）》、《12_网关固件升级记录》",
+      "correct": true,
+      "retrieval_ids": [
+        1,
+        -2,
+        -3,
+        1,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "b5e23a8c-8605-4651-af6b-286516101337",
+        "a79d1eb8-abe3-467c-b3fc-8e11f863fa80",
+        "c40c426f-6eda-4e2e-8e75-25ae63ad31a7",
+        "4a9ac3b3-6b96-49f4-9fff-ea7bc0591e49",
+        "315cd578-c24f-44d2-9536-44c36878ce86"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.2,
+        "recall": 0.5,
+        "ndcg3": 0.6131471927654584,
+        "ndcg10": 0.6131471927654584,
+        "mrr": 1.0,
+        "map": 0.5
+      },
+      "generation_metrics": {
+        "bleu1": 0.061281337047353765,
+        "bleu2": 0.047173085002434646,
+        "bleu4": 0.02735930623450498,
+        "rouge1": 0.24539877067108287,
+        "rouge2": 0.09219858006211962,
+        "rougel": 0.2331288320207761
+      },
+      "latency_ms": 21545.87,
+      "total_tokens": 17310,
+      "request_count": 5,
+      "tool_calls": 4,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 3
+      },
+      "iterations": 3,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "h-c102-e17",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "C102 的环境传感器多久没上报会产生 E17？",
+      "answer": "## 答案\n\n根据文档信息，**C102 的环境传感器连续 300 秒（5 分钟）未上报数据时，会产生 E17（环境数据过期）告警**。\n\n---\n\n### 详细分析\n\n| 信息项 | 详情 |\n|--------|------|\n| **会议室** | C102 |\n| **环境传感器型号** | ES-21 |\n| **E17 触发时间** | 连续 **300 秒（5 分钟）** 未上报 |\n| **E17 告警级别** | 若持续超过 10 分钟，升级为 **P1 告警** |\n\n### 依据说明\n\n1. **C102 使用 ES-21 传感器**（来源：`08_会议室设备清单`）\n   - C102 是 A、C 栋中唯一安装 ES-21 的会议室，用于试点 PM2.5 监测。\n\n2. **ES-21 的 E17 触发阈值为 300 秒**（来源：`04_ES-21环境传感器规格`）\n   - ES-21 每 60 秒向网关上报一次读数\n   - 因上报间隔较长，网关在 ES-21 连续 **300 秒** 没有上报时才产生 E17\n\n> ⚠️ **对比**：ES-20 传感器（每 30 秒上报）的 E17 触发阈值为 **120 秒**，比 ES-21 更短。\n\n### E17 期间的影响\n\n根据 `07_自动化规则手册v2.4`：\n- 依赖环境传感器读数的自动化规则（如 AQ-3、AQ-4）**必须暂停**\n- 不能继续使用最后一次读数来控制设备",
+      "correct": true,
+      "retrieval_ids": [
+        -1,
+        -2,
+        1,
+        0,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "ef1750df-f4e9-4225-908e-095cbf1bafbc",
+        "cb48b365-df0c-4d4a-9093-514d6a1d3e29",
+        "ed7cc19d-1cb1-4d01-a3e0-30e59855f8ce",
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "4ee9b9e0-9a2b-4c38-8f48-f2b3b25c8906"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.4,
+        "recall": 1.0,
+        "ndcg3": 0.3065735963827292,
+        "ndcg10": 0.5706417189553201,
+        "mrr": 0.3333333333333333,
+        "map": 0.41666666666666663
+      },
+      "generation_metrics": {
+        "bleu1": 0.05573770491803278,
+        "bleu2": 0.03829858624504675,
+        "bleu4": 0.0,
+        "rouge1": 0.27199999764992006,
+        "rouge2": 0.07142857010204084,
+        "rougel": 0.25599999764992004
+      },
+      "latency_ms": 23391.55,
+      "total_tokens": 17236,
+      "request_count": 5,
+      "tool_calls": 4,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_read_page": 1,
+        "wiki_search": 2
+      },
+      "iterations": 3,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "h-a305-aq4",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "A305 会议室会启用 AQ-4 吗？",
+      "answer": "根据我检索到的信息，可以明确回答您的问题：\n\n## A305 会议室**不会**启用 AQ-4 规则\n\n### 原因分析\n\n| 项目 | 详情 |\n|------|------|\n| **A305 环境传感器** | ES-20 |\n| **AQ-4 启用条件** | 只在安装了 **ES-21** 的会议室启用 |\n\n### 依据说明\n\n根据《07_自动化规则手册 v2.4》（现行版本，9月1日起生效）的规定：\n\n> **AQ-4 只在安装了 ES-21 的会议室启用**\n\nAQ-4 是颗粒物规则，用于监控 PM2.5 浓度并控制空气净化器。由于 ES-20 传感器不具备 PM2.5 监测功能，因此无法支持 AQ-4 规则运行。\n\n### 目前启用 AQ-4 的会议室\n\n根据《08_会议室设备清单》，安装 ES-21 的会议室包括：\n\n| 会议室 | 环境传感器 | 是否启用 AQ-4 |\n|--------|-----------|--------------|\n| B205 | ES-21 | ✅ 是 |\n| B210 | ES-21 | ✅ 是 |\n| C102 | ES-21 | ✅ 是（试点） |\n| **A305** | **ES-20** | ❌ **否** |\n\n> **备注**：C102 是 A、C 栋中唯一安装 ES-21 的会议室，用于试点 PM2.5 监测。A305 没有会议屏，LT-2 只控制灯组。\n\n### 结论\n\nA305 会议室目前安装的是 ES-20 传感器，**不具备 PM2.5 监测能力**，因此不会启用 AQ-4 规则。如果需要在 A305 启用 AQ-4，需要先将传感器升级为 ES-21。",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        1,
+        1,
+        -4,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "4ee9b9e0-9a2b-4c38-8f48-f2b3b25c8906",
+        "0fc1e931-7d2f-4fb2-b939-ccb8df8e1a02",
+        "37af8719-8a84-47de-96f0-802d2b133bf8",
+        "e4a12093-8e78-42a4-8940-d4722e5447d3"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.4,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.06285714285714286,
+        "bleu2": 0.05533361772847496,
+        "bleu4": 0.047154810714506674,
+        "rouge1": 0.2741935460210718,
+        "rouge2": 0.14414414250466684,
+        "rougel": 0.2741935460210718
+      },
+      "latency_ms": 19837.62,
+      "total_tokens": 12843,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "h-b210-battery",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "每周一的电量检查需要覆盖 B210 的传感器吗？",
+      "answer": "## 不需要\n\n根据知识库中的信息，**B210 的传感器不需要纳入每周一的电量检查**。原因如下：\n\n### 1. 每周一电量检查的适用范围\n\n根据《运维值班手册》和例行检查规范：\n\n> 每周一检查**电池供电传感器**的电量。\n\n该检查仅针对使用电池供电的传感器（如 **ES-20**，使用 CR123A 锂电池）。\n\n---\n\n### 2. B210 使用的是 ES-21 传感器\n\n根据《会议室设备清单》：\n\n| 会议室 | 环境传感器 |\n|--------|-----------|\n| **B210** | **ES-21** |\n\n---\n\n### 3. ES-21 无需检查电量\n\n根据《ES-21 环境传感器规格》：\n\n> ES-21 使用 **USB-C 常电供电，没有电池**，因此**不会产生低电量告警**。\n\n---\n\n### 结论\n\n| 传感器型号 | 供电方式 | 是否需要每周检查电量 |\n|-----------|---------|-------------------|\n| ES-20 | CR123A 锂电池 | ✅ 需要 |\n| ES-21 | USB-C 常电 | ❌ 不需要 |\n\nB210 配备的是 ES-21 传感器，采用 USB-C 有线供电，没有电池，因此**不在每周一电量检查的范围内**。\n\n---\n\n**参考文档**：\n- 《运维值班手册》— 例行检查章节\n- 《ES-21 环境传感器规格》— 上报与供电章节\n- 《会议室设备清单》— B210 设备配置",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        1,
+        2,
+        -6,
+        -7
+      ],
+      "retrieved_chunk_ids": [
+        "cb48b365-df0c-4d4a-9093-514d6a1d3e29",
+        "37af8719-8a84-47de-96f0-802d2b133bf8",
+        "be85366f-ebc3-412f-8f79-5f149903667d",
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "ed7cc19d-1cb1-4d01-a3e0-30e59855f8ce",
+        "ef1750df-f4e9-4225-908e-095cbf1bafbc",
+        "4ee9b9e0-9a2b-4c38-8f48-f2b3b25c8906"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.42857142857142855,
+        "recall": 1.0,
+        "ndcg3": 0.46927872602275644,
+        "ndcg10": 0.8529278650606567,
+        "mrr": 1.0,
+        "map": 0.7000000000000001
+      },
+      "generation_metrics": {
+        "bleu1": 0.07142857142857141,
+        "bleu2": 0.06020575948760833,
+        "bleu4": 0.04205708351305786,
+        "rouge1": 0.3725490162245291,
+        "rouge2": 0.17346938545397755,
+        "rougel": 0.3725490162245291
+      },
+      "latency_ms": 41492.16,
+      "total_tokens": 38745,
+      "request_count": 12,
+      "tool_calls": 7,
+      "tool_name_histogram": {
+        "knowledge_search": 4,
+        "wiki_read_page": 1,
+        "wiki_search": 2
+      },
+      "iterations": 4,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "h-c102-vlan",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "C102 的会议屏要放在哪个 VLAN 才能无线投屏？",
+      "answer": "## C102 会议屏的 VLAN 配置\n\nC102 的会议屏需要放在 **VLAN 30（IoT VLAN）** 才能实现无线投屏。\n\n---\n\n### 📋 原因说明\n\n根据《园区网络规划》和《无线投屏》Wiki 页面的说明：\n\n| 设备 | 所在 VLAN |\n|---|---|\n| 员工笔记本（办公电脑） | VLAN 10 |\n| 会议屏 + 投屏网关 | **VLAN 30（IoT VLAN）** |\n\n### 🔑 关键规则\n\n> **会议屏和网关必须处于同一 VLAN 才能使用无线投屏。**\n\nC102 配备的网关是 **XH-100**，会议屏是 **DS-65**，二者都需要接入 **VLAN 30**。\n\n---\n\n### 📡 投屏工作原理\n\n虽然会议屏在 VLAN 30、员工笔记本在 VLAN 10，但无线投屏仍然可以正常工作，流程如下：\n\n1. 员工在笔记本上输入会议屏上显示的 **投屏码**\n2. 请求通过投屏 **网关跨 VLAN 转发**\n3. 画面最终投射到会议屏上\n\n因此，**VLAN 30** 是正确答案，同时需要确保 IoT VLAN 的 DNS 配置正确（主 DNS：`10.30.0.53`，备用 DNS：`10.30.0.54`），以保障服务发现正常工作。",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3
+      ],
+      "retrieved_chunk_ids": [
+        "65d6216b-9212-464f-a754-875ad8f178d6",
+        "0fc1e931-7d2f-4fb2-b939-ccb8df8e1a02",
+        "f27a1fa9-f305-434d-8608-959ca9856b59"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.3333333333333333,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.06024096385542167,
+        "bleu2": 0.0412352978192439,
+        "bleu4": 0.0,
+        "rouge1": 0.2456140326746692,
+        "rouge2": 0.06999999852800004,
+        "rougel": 0.19298245372730072
+      },
+      "latency_ms": 25867.32,
+      "total_tokens": 16974,
+      "request_count": 5,
+      "tool_calls": 3,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_read_page": 1,
+        "wiki_search": 1
+      },
+      "iterations": 3,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "h-b-wifi",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "B 栋会议室的网关配网时应该连哪个 Wi-Fi？",
+      "answer": "根据知识库的信息，我可以明确回答您的问题：\n\n## B栋会议室网关**不需要连接 Wi-Fi**\n\n### 原因说明\n\n| 项目 | B栋会议室 | A/C栋会议室 |\n|------|-----------|-------------|\n| **网关型号** | XH-110 | XH-100 |\n| **连接方式** | 有线以太网（PoE供电） | 2.4GHz Wi-Fi |\n| **配网方式** | 无需配网，插上网线即可 | 需连接 KA-IoT 无线网络 |\n\n### 依据文档\n\n1. **《02_XH-110网关手册》** 明确说明：\n   > \"XH-110 是 B 栋会议室使用的新一代中枢网关，使用**有线以太网**连接云端，支持 PoE 供电，**不依赖 Wi-Fi**。\"\n\n2. **《13_园区网络规划》** 也指出：\n   > \"B 栋改造后 IoT 设备全部走有线，**不再提供 IoT 无线网络**。\"\n\n### 总结\n\nB栋会议室在8月完成改造后，统一换成了有线网关 XH-110，通过网线直接连接云端，**无需进行 Wi-Fi 配网操作**。如果您需要配网的是 A栋或 C栋的 XH-100 网关，则需要连接 **KA-IoT** 无线网络的 **2.4GHz 频段**。",
+      "correct": true,
+      "retrieval_ids": [
+        -1,
+        0,
+        -3,
+        1,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "b5e23a8c-8605-4651-af6b-286516101337",
+        "c40c426f-6eda-4e2e-8e75-25ae63ad31a7",
+        "65d6216b-9212-464f-a754-875ad8f178d6",
+        "95a3bc84-4ee5-4bb2-9a06-95d825f0484e"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.4,
+        "recall": 1.0,
+        "ndcg3": 0.38685280723454163,
+        "ndcg10": 0.6509209298071326,
+        "mrr": 0.5,
+        "map": 0.5
+      },
+      "generation_metrics": {
+        "bleu1": 0.07958477508650517,
+        "bleu2": 0.06219890951200745,
+        "bleu4": 0.03154163679680539,
+        "rouge1": 0.3166666638888889,
+        "rouge2": 0.1262135903251956,
+        "rougel": 0.28333333055555565
+      },
+      "latency_ms": 21314.14,
+      "total_tokens": 17251,
+      "request_count": 5,
+      "tool_calls": 4,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_read_page": 2,
+        "wiki_search": 1
+      },
+      "iterations": 3,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "h-a305-lt2",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "A305 没人开会 10 分钟后，LT-2 会关掉哪些设备？",
+      "answer": "根据已检索到的信息，我可以回答这个问题：\n\n## 回答：10 分钟后 LT-2 不会关闭任何设备\n\n### 原因分析\n\n**1. 时间条件不满足**\n\n根据自动化规则手册，LT-2 照明规则中关于\"无会议\"场景的触发条件是：\n- **无会议持续 15 分钟后**才会关闭设备\n\n用户问的是 **10 分钟后**，尚未达到 15 分钟的触发阈值，因此 LT-2 不会执行任何关闭操作。\n\n---\n\n**2. A305 的设备限制**\n\n即使达到 15 分钟，根据《会议室设备清单》：\n\n| 设备类型 | A305 配置 |\n|---|---|\n| 网关 | XH-100 |\n| 环境传感器 | ES-20 |\n| 净化器 | AP-50 |\n| **会议屏** | **无** |\n\nA305 **没有会议屏**，因此 LT-2 只能控制**灯组**，无法关闭会议屏。\n\n---\n\n### 总结\n\n| 时间点 | LT-2 动作 |\n|---|---|\n| 10 分钟 | **不执行任何关闭操作**（未达到 15 分钟阈值） |\n| 15 分钟后 | 关闭**灯组**（A305 无会议屏可关） |\n\n---\n\n**信息来源**：\n- 《08_会议室设备清单》- A305 设备配置\n- 《07_自动化规则手册 v2.4》（现行版本）- LT-2 照明规则\n- 《06_自动化规则手册 v2.3》（已废止）- 供参考的历史规则",
+      "correct": true,
+      "retrieval_ids": [
+        1,
+        0,
+        -3,
+        1,
+        -5,
+        -6
+      ],
+      "retrieved_chunk_ids": [
+        "0fc1e931-7d2f-4fb2-b939-ccb8df8e1a02",
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "351467c7-95b1-4faa-9efa-0640560e5f93",
+        "4ee9b9e0-9a2b-4c38-8f48-f2b3b25c8906",
+        "fcc14e28-c820-4176-bdcc-76498268ddec",
+        "f9b8688e-a446-4ab2-bc7e-0ea595e91ac9"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.3333333333333333,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.04000000000000001,
+        "bleu2": 0.025863030005593576,
+        "bleu4": 0.012270911874553498,
+        "rouge1": 0.19642856951530616,
+        "rouge2": 0.04716981016954435,
+        "rougel": 0.19642856951530616
+      },
+      "latency_ms": 79779.76,
+      "total_tokens": 65704,
+      "request_count": 15,
+      "tool_calls": 12,
+      "tool_name_histogram": {
+        "grep_chunks": 2,
+        "knowledge_search": 3,
+        "wiki_read_page": 2,
+        "wiki_read_source_doc": 1,
+        "wiki_search": 4
+      },
+      "iterations": 8,
+      "stopped_reason": "max_iterations",
+      "error": null
+    },
+    {
+      "task_id": "h-person",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "谁把北辰项目端侧推理 P95 从 180ms 降到 70ms？这个人后来负责哪个项目，他的导师是谁？",
+      "answer": "我已经找到了所有需要的信息。\n\n## 回答\n\n### 谁把北辰项目端侧推理 P95 从 180ms 降到 70ms？\n\n**林晓** 是北辰项目端侧推理性能优化的负责人。\n\n根据《01_端侧推理性能复盘》文档：\n- 林晓在 **2024 年第三季度** 对\"北辰\"端侧推理模块进行专项优化\n- 主要技术方案：**重新设计 KV Cache 复用与算子融合方案**\n- 性能成果：\n  | 指标 | 优化前 | 优化后 | 提升幅度 |\n  |------|--------|--------|----------|\n  | P95 推理延迟 | 180 ms | 70 ms | **↓ 61%** |\n  | 峰值内存 | 1.4 GB | 820 MB | ↓ 41% |\n\n- 主要收益来源：**静态形状预编译** 和 **重复张量缓存**\n\n---\n\n### 林晓后来负责哪个项目？\n\n根据《02_林晓人物访谈》文档：\n\n- **2025 年** 转入边缘智能小组\n- 担任 **\"萤火\" 离线语音助手** 项目负责人\n- 项目目标：在完全离线环境完成唤醒、识别和指令执行\n\n---\n\n### 林晓的导师是谁？\n\n林晓职业早期的导师是 **周宁**。\n\n周宁帮助林晓建立了核心工程方法论：\n> **\"先测量 → 再优化 → 最后用消融验证\"**\n\n---\n\n### 信息来源\n\n| 信息 | 来源文档 |\n|------|----------|\n| 性能优化细节 | 《01_端侧推理性能复盘》 |\n| 后续任职 & 导师 | 《02_林晓人物访谈》 |",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        1,
+        -3,
+        -4,
+        -5,
+        -6
+      ],
+      "retrieved_chunk_ids": [
+        "441055cd-84ad-49f3-ae0c-c9b5165e3c2b",
+        "44095408-a3bb-401f-b44f-9b9b7b91347c",
+        "cf122020-2af0-4d23-98d6-832949e03de0",
+        "c3ad0300-5f55-4cd4-9dcb-47376360569b",
+        "686534f5-683e-4f06-8832-f91b5d4c5d75",
+        "698bca56-be36-4fe0-918f-1474391066f3"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.3333333333333333,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.04587155963302752,
+        "bleu2": 0.033551191409281894,
+        "bleu4": 0.018082017304744086,
+        "rouge1": 0.18791946106571777,
+        "rouge2": 0.06986899425869074,
+        "rougel": 0.18791946106571777
+      },
+      "latency_ms": 27557.27,
+      "total_tokens": 16955,
+      "request_count": 7,
+      "tool_calls": 4,
+      "tool_name_histogram": {
+        "knowledge_search": 2,
+        "wiki_search": 2
+      },
+      "iterations": 3,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "h-b205-filter",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "B205 会议室的净化器滤芯寿命是多少小时？",
+      "answer": "根据知识库中的信息，B205 会议室的净化器滤芯寿命为 **3000 小时**。\n\n具体依据如下：\n\n| 信息项 | 详情 |\n|---|---|\n| **会议室** | B205 |\n| **净化器型号** | AP-55 |\n| **滤芯寿命** | 3000 小时 |\n| **来源文档** | 《08\\_会议室设备清单》、《05\\_AP系列空气净化器说明》 |\n\n**补充说明**：根据《05\\_AP系列空气净化器说明》，AP-55 是在 AP-50（滤芯寿命 2000 小时）基础上升级的型号，额外增加了**睡眠模式**。两款净化器在滤芯到期后仍可继续运行，但强效模式的风量会下降约 30%，届时管理端会提示更换滤芯。",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        1,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "e4a12093-8e78-42a4-8940-d4722e5447d3",
+        "9a7ccf4f-2890-42d4-9506-50af44bdc0e8",
+        "e7e5ff09-0a9f-4cca-a331-d6c5af2ed236",
+        "271e9b65-c4d3-4d6c-b647-027c9b18455a"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.4,
+        "recall": 1.0,
+        "ndcg3": 0.6131471927654584,
+        "ndcg10": 0.8772153153380493,
+        "mrr": 1.0,
+        "map": 0.75
+      },
+      "generation_metrics": {
+        "bleu1": 0.06493506493506493,
+        "bleu2": 0.04606583273523184,
+        "bleu4": 0.0,
+        "rouge1": 0.2325581373039481,
+        "rouge2": 0.0769230755029586,
+        "rougel": 0.2325581373039481
+      },
+      "latency_ms": 14713.79,
+      "total_tokens": 12480,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "h-a301-sleep",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "A301 会议室的净化器能设成睡眠模式吗？",
+      "answer": "## 回答\n\n**A301 会议室的净化器不能设置睡眠模式。**\n\n根据知识库中的信息：\n\n| 信息 | 详情 |\n|------|------|\n| A301 净化器型号 | **AP-50** |\n| AP-50 支持的模式 | 静音、自动、强效（共3种） |\n| 是否支持睡眠模式 | ❌ **不支持** |\n\n### 详细说明\n\n根据《AP 系列空气净化器说明》文档：\n- **AP-50** 仅支持**静音、自动、强效**三种模式，**没有睡眠模式**\n- **AP-55** 才在 AP-50 的基础上增加了睡眠模式\n\n### 哪些会议室的净化器支持睡眠模式？\n\n根据《会议室设备清单》，配备 **AP-55**（支持睡眠模式）的会议室是：\n- **B205**\n- **C102**\n\n> ⚠️ 需要注意的是，根据 B205 的 PM2.5 超标事件复盘，AP-55 的睡眠模式会**忽略自动化指令**，只接受人工操作或定时结束，使用时请留意。\n\n如果您需要在会议期间降低噪音，A301 的 AP-50 可以切换到**静音模式**作为替代方案。",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        1,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "37af8719-8a84-47de-96f0-802d2b133bf8",
+        "e4a12093-8e78-42a4-8940-d4722e5447d3",
+        "e7e5ff09-0a9f-4cca-a331-d6c5af2ed236",
+        "fcc14e28-c820-4176-bdcc-76498268ddec"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.4,
+        "recall": 1.0,
+        "ndcg3": 0.6131471927654584,
+        "ndcg10": 0.8772153153380493,
+        "mrr": 1.0,
+        "map": 0.75
+      },
+      "generation_metrics": {
+        "bleu1": 0.09677419354838708,
+        "bleu2": 0.06259379797127759,
+        "bleu4": 0.0,
+        "rouge1": 0.35087718986765165,
+        "rouge2": 0.09473683989806099,
+        "rougel": 0.2982456109202832
+      },
+      "latency_ms": 16628.5,
+      "total_tokens": 12858,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "h-c102-e17-4min",
+      "category": "多跳推理",
+      "config": "agent",
+      "question": "C102 的环境传感器停止上报 4 分钟，网关会报 E17 吗？",
+      "answer": "# 结论：不会报 E17\n\n根据知识库中的信息，C102 的环境传感器停止上报 4 分钟时，**网关不会报 E17**。以下是详细分析：\n\n## 关键信息链\n\n### 1. C102 的传感器型号\n\n根据《08\\_会议室设备清单》：\n\n| 会议室 | 网关 | 环境传感器 |\n|--------|------|------------|\n| C102 | XH-100 | **ES-21** |\n\n> C102 是 A、C 栋中**唯一安装 ES-21** 的会议室，用于试点 PM2.5 监测。\n\n### 2. ES-21 的 E17 触发阈值\n\n根据《04\\_ES-21环境传感器规格》：\n\n| 参数 | 值 |\n|------|-----|\n| 上报间隔 | 每 **60 秒**一次 |\n| E17 触发阈值 | 连续 **300 秒（5 分钟）**未上报 |\n\n### 3. 判断\n\n- 停止上报时间：**4 分钟（240 秒）**\n- E17 触发阈值：**300 秒**\n- 240 秒 < 300 秒 → **未达到阈值，不触发 E17**\n\n## 对比参考\n\n如果 C102 安装的是 ES-20（如 A301、A305 等），则 E17 阈值为 **120 秒（2 分钟）**，4 分钟早已超限，就会报 E17。\n\n| 传感器型号 | 上报间隔 | E17 阈值 | 停止上报 4 分钟是否触发 |\n|-----------|---------|----------|----------------------|\n| ES-20 | 30 秒 | 120 秒（2 分钟） | ✅ 会触发 |\n| **ES-21（C102）** | 60 秒 | **300 秒（5 分钟）** | ❌ **不会触发** |\n\n> 📌 **来源**：《08\\_会议室设备清单》、《04\\_ES-21环境传感器规格》、《03\\_ES-20环境传感器规格》",
+      "correct": true,
+      "retrieval_ids": [
+        -1,
+        1,
+        -3,
+        -4,
+        -5,
+        0,
+        -7
+      ],
+      "retrieved_chunk_ids": [
+        "ef1750df-f4e9-4225-908e-095cbf1bafbc",
+        "ed7cc19d-1cb1-4d01-a3e0-30e59855f8ce",
+        "37af8719-8a84-47de-96f0-802d2b133bf8",
+        "cb48b365-df0c-4d4a-9093-514d6a1d3e29",
+        "4ee9b9e0-9a2b-4c38-8f48-f2b3b25c8906",
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "507b850a-c96e-479f-9a29-63e4b2de0700"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.2857142857142857,
+        "recall": 1.0,
+        "ndcg3": 0.38685280723454163,
+        "ndcg10": 0.6052602440527057,
+        "mrr": 0.5,
+        "map": 0.41666666666666663
+      },
+      "generation_metrics": {
+        "bleu1": 0.05072463768115943,
+        "bleu2": 0.03995821939814023,
+        "bleu4": 0.027425598680971826,
+        "rouge1": 0.31666666346666666,
+        "rouge2": 0.1120689635943074,
+        "rougel": 0.2999999968
+      },
+      "latency_ms": 36445.1,
+      "total_tokens": 33655,
+      "request_count": 9,
+      "tool_calls": 7,
+      "tool_name_histogram": {
+        "knowledge_search": 2,
+        "wiki_read_page": 1,
+        "wiki_search": 4
+      },
+      "iterations": 5,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "v-aq3",
+      "category": "版本冲突",
+      "config": "agent",
+      "question": "现在二氧化碳超过多少会让净化器进入强效模式？",
+      "answer": "## 二氧化碳触发净化器强效模式的阈值\n\n根据 **现行版本** 的《自动化规则手册 v2.4》（自9月1日起生效），空气质量规则 **AQ-3** 的规定如下：\n\n| 条件 | 阈值 | 动作 |\n|------|------|------|\n| 二氧化碳浓度连续 **3次** 高于 | **1000 ppm** | 将净化器切换到 **强效模式**，并向管理员发送通风提醒 |\n| 浓度连续 **5分钟** 低于 | **800 ppm** | 恢复自动模式 |\n\n---\n\n### 📌 注意事项\n\n1. **版本变更**：在旧版 v2.3 中，触发阈值为 **1200 ppm**，现已下调至 **1000 ppm**，标准更加严格。\n\n2. **E17 故障保护**：当传感器出现 E17 故障（如电量不足停止上报）时，AQ-3 规则必须 **暂停执行**，不能使用过期数据控制净化器。\n\n3. **睡眠模式冲突**：如果净化器被人工设置为睡眠模式（如 AP-55），设备会忽略自动化指令，可能导致强效模式无法生效。\n\n---\n\n**来源**：《07_自动化规则手册v2.4》",
+      "correct": true,
+      "retrieval_ids": [
+        -1,
+        0,
+        -3,
+        -4,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "351467c7-95b1-4faa-9efa-0640560e5f93",
+        "4ee9b9e0-9a2b-4c38-8f48-f2b3b25c8906",
+        "37af8719-8a84-47de-96f0-802d2b133bf8",
+        "e4a12093-8e78-42a4-8940-d4722e5447d3",
+        "e7e5ff09-0a9f-4cca-a331-d6c5af2ed236"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.2,
+        "recall": 1.0,
+        "ndcg3": 0.6309297535714575,
+        "ndcg10": 0.6309297535714575,
+        "mrr": 0.5,
+        "map": 0.5
+      },
+      "generation_metrics": {
+        "bleu1": 0.06666666666666667,
+        "bleu2": 0.042863391620441664,
+        "bleu4": 0.0,
+        "rouge1": 0.2698412673922903,
+        "rouge2": 0.07216494685460732,
+        "rougel": 0.2539682515192744
+      },
+      "latency_ms": 14695.31,
+      "total_tokens": 12770,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "v-manual",
+      "category": "版本冲突",
+      "config": "agent",
+      "question": "人工调整设备后多久恢复自动控制？",
+      "answer": "## 人工调整设备后恢复自动控制时间\n\n根据**现行版本**《自动化规则手册 v2.4》（自9月1日起生效）：\n\n> **人工操作优先于自动化规则，人工干预 30 分钟后恢复自动控制。**\n\n---\n\n### 📋 版本对比\n\n| 版本 | 恢复时间 | 状态 |\n|------|---------|------|\n| **v2.4**（现行） | **30 分钟** | ✅ 现行有效 |\n| v2.3（已废止） | 60 分钟 | ❌ 已于9月1日废止 |\n\n---\n\n### ⚠️ 特殊情况说明\n\n根据 B205 PM2.5 超标事件复盘，存在一个例外情况：\n\n**设备睡眠模式**：当设备（如 AP-55 空气净化器）处于**睡眠模式**时，30分钟恢复自动控制的规则**不生效**，因为睡眠模式由设备自身锁定，会忽略自动化指令。\n\n> 案例：B205 会议室参会人员手动将净化器设为睡眠模式以降低噪音，导致 AQ-4 规则下发的强效模式指令未能执行，PM2.5 峰值达到 132 微克/立方米。\n\n---\n\n### 📌 总结\n\n- **一般情况**：人工调整后 **30 分钟** 恢复自动控制\n- **例外情况**：设备处于睡眠模式时，需人工退出睡眠模式才能恢复自动控制",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        -4,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "0fc1e931-7d2f-4fb2-b939-ccb8df8e1a02",
+        "e4a12093-8e78-42a4-8940-d4722e5447d3",
+        "351467c7-95b1-4faa-9efa-0640560e5f93",
+        "9bfc0e57-07e3-4d2e-b1a0-3cbe74c53ab2",
+        "3d4a8bbf-c0fd-49ce-868e-c02aadcdb6a8"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.2,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.0588235294117647,
+        "bleu2": 0.048863799847462586,
+        "bleu4": 0.03544254639479522,
+        "rouge1": 0.24793388176490677,
+        "rouge2": 0.10576922918823967,
+        "rougel": 0.24793388176490677
+      },
+      "latency_ms": 14628.49,
+      "total_tokens": 12573,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "v-lt2",
+      "category": "版本冲突",
+      "config": "agent",
+      "question": "按现行规则，会议室没人开会多久后关灯？",
+      "answer": "根据检索到的信息：\n\n[wiki_search] [concept/食堂新风系统] 食堂新风系统\n  食堂安装的独立空气调节系统，不接入会议室的自动化控制规则。\n\n[concept/班车乘坐规则] 班车乘坐规则\n  规定班车在满员后将不再允许乘客上车。\n\n[entity/a栋食堂] A栋食堂\n  位于A栋一层的员工就餐场所，提供午餐和晚餐服务，并安装了独立的新风系统。\n\n[summary/7d2d2d42-0851-40d0-91d8-89e62524d7ae] 16_食堂与班车说明\n  A栋食堂午餐11:30-13:30，晚餐17:30-19:30；B栋无食堂，可用三层微波炉。早班车8:00、8:30从地铁站发车，晚班车18:30、20:00从A栋门口发车，满员即止。食堂配备独立新风系统，不接入会议室自动化规则，空气问题请联系行政部。注：此为评测用合成数据。\n\n[concept/交通报销规则] 交通报销规则\n  规定800公里以内优先乘坐高铁二等座，以及夜间22:00后到达可报销出租车费用的规则。\n\n[knowledge_search] [1] 07_自动化规则手册v2.4 (score: 0.77)\n# 自动化规则手册 v2.4（现行版本）\n\n> 说明：评测用合成数据。v2.4 自 9 月 1 日起生效，取代 v2.3。\n\n## 空气质量规则 AQ-3\n\nAQ-3 依赖环境传感器的二氧化碳读数和空气净化器：\n\n- 当二氧化碳浓度连续 3 次高于 1000 ppm 时，将净化器切换到强效模式，并向管理员发送通风提醒。\n- 当浓度连续 5 分钟低于 800 ppm 时，恢复自动模式。\n- 出现 E17 时，AQ-3 必须暂停，不能根据旧数据控制净化器。\n\n## 颗粒物规则 AQ-4\n\nAQ-4 只在安装了 ES-21 的会议室启用：\n\n- PM2.5 连续 2 次高于 75 微克每立方米时，将净化器切换到强效模式。\n- PM2.5 低于 35 微克每立方米持续 10 分钟后恢复自动模式。\n- PM2.5 读数被标记为无效时，AQ-4 跳过本次判断。\n\n## 照明规则 LT-2\nM2.5 低于 35 微克每立方米持续 10 分钟后恢复自动模式。\n- PM2.5 读数被标记为无效时，AQ-4 跳过本次判断。\n\n## 照明规则\n\n[knowledge_search] [1] 06_自动化规则手册v2.3（已废止） (score: 0.95)\n<note>(content omitted, already returned in a previous knowledge_search call this session)</note>\n\n[2] 07_自动化规则手册v2.4 (score: 0.92)\n<note>(content omitted, already returned in a previous knowledge_search call this session)</note>\n\n[3] 08_会议室设备清单 (score: 0.79)\n# 会议室设备清单\n\n> 说明：评测用合成数据。\n\n| 会议室 | 网关 | 环境传感器 | 净化器 | 会议屏 |\n|---|---|---|---|---|\n| A301 | XH-100 | ES-20 | AP-50 | DS-65 |\n| A305 | XH-100 | ES-20 | AP-50 | 无 |\n| B205 | XH-110 | ES-21 | AP-55 | DS-75 |\n\n[grep_chunks] No chunks found matching: LT-2|无会议|关灯|关闭灯\n\n[knowledge_search] [1] 07_自动化规则手册v2.4 (score: 0.96)\n<note>(content omitted, already returned in a previous knowledge_search call this session)</note>\n\n[2] 06_自动化规则手册v2.3（已废止） (score: 0.95)\n<note>(content omitted, already returned in a previous knowledge_search call this session)</note>\n\n[3] 08_会议室设备清单 (score: 0.77)\n<note>(content omitted, already returned in a previous knowledge_search call this session)</note>\n\n[4] 07_自动化规则手册v2.4 (score: 0.54)\n<note>(content omitted, already returned in a previous knowledge_searc\n\n以上是与您的问题相关的内容。",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        -4,
+        0,
+        -6,
+        -7,
+        -8,
+        -9,
+        -10
+      ],
+      "retrieved_chunk_ids": [
+        "0fc1e931-7d2f-4fb2-b939-ccb8df8e1a02",
+        "351467c7-95b1-4faa-9efa-0640560e5f93",
+        "fcc14e28-c820-4176-bdcc-76498268ddec",
+        "69af9506-b486-4475-8a32-68c3d424cc32",
+        "4ee9b9e0-9a2b-4c38-8f48-f2b3b25c8906",
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "4162938c-bc38-4993-9a73-b78b61c6d0bd",
+        "c40c426f-6eda-4e2e-8e75-25ae63ad31a7",
+        "8ff70d49-4be5-46bf-897d-5adce6e51ec6",
+        "f9b8688e-a446-4ab2-bc7e-0ea595e91ac9"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.1,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.018617021276595744,
+        "bleu2": 0.012195812932122735,
+        "bleu4": 0.004797081597053017,
+        "rouge1": 0.1003860992948823,
+        "rouge2": 0.02643171742271344,
+        "rougel": 0.09266409157287459
+      },
+      "latency_ms": 68130.57,
+      "total_tokens": 73484,
+      "request_count": 19,
+      "tool_calls": 13,
+      "tool_name_histogram": {
+        "get_document_info": 1,
+        "grep_chunks": 1,
+        "knowledge_search": 5,
+        "list_knowledge_docs": 1,
+        "wiki_read_page": 1,
+        "wiki_read_source_doc": 1,
+        "wiki_search": 3
+      },
+      "iterations": 8,
+      "stopped_reason": "max_iterations",
+      "error": null
+    },
+    {
+      "task_id": "a-es21-rooms",
+      "category": "汇总对比",
+      "config": "agent",
+      "question": "哪些会议室装了 ES-21？",
+      "answer": "根据知识库中的《会议室设备清单》文档，安装了 **ES-21 环境传感器** 的会议室如下：\n\n---\n\n## 安装 ES-21 的会议室\n\n| 会议室 | 网关 | 环境传感器 | 净化器 | 会议屏 |\n|---|---|---|---|---|\n| **B205** | XH-110 | ES-21 | AP-55 | DS-75 |\n| **B210** | XH-110 | ES-21 | AP-50 | DS-75 |\n| **C102** | XH-100 | ES-21 | AP-55 | DS-65 |\n\n共 **3 间**会议室安装了 ES-21。\n\n---\n\n### 补充说明\n\n- **B205、B210**：属于 B 栋会议室，8 月完成改造后统一换成了有线网关 XH-110。\n- **C102**：是 A、C 栋中**唯一**安装 ES-21 的会议室，用于 **PM2.5 监测试点**。\n- 其余会议室（A301、A305）安装的是上一代 **ES-20** 传感器，不支持 PM2.5 测量。\n\n### ES-21 与 ES-20 的区别\n\nES-21 相比 ES-20 新增了 **PM2.5 测量**功能，支持自动化规则 **AQ-4**（颗粒物规则），当 PM2.5 连续 2 次高于 75 μg/m³ 时会自动触发净化器强效模式。",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        -4
+      ],
+      "retrieved_chunk_ids": [
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "4ee9b9e0-9a2b-4c38-8f48-f2b3b25c8906",
+        "e4a12093-8e78-42a4-8940-d4722e5447d3",
+        "ed7cc19d-1cb1-4d01-a3e0-30e59855f8ce"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.03202846975088968,
+        "bleu2": 0.026197792880408435,
+        "bleu4": 0.016311451122950266,
+        "rouge1": 0.1651376130123727,
+        "rouge2": 0.06521739037393669,
+        "rougel": 0.1651376130123727
+      },
+      "latency_ms": 16405.51,
+      "total_tokens": 12741,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "a-ap55-rooms",
+      "category": "汇总对比",
+      "config": "agent",
+      "question": "哪些会议室用的是 AP-55？",
+      "answer": "根据会议室设备清单，使用 **AP-55** 空气净化器的会议室有以下两间：\n\n| 会议室 | 网关 | 环境传感器 | 净化器 | 会议屏 |\n|--------|------|------------|--------|--------|\n| **B205** | XH-110 | ES-21 | **AP-55** | DS-75 |\n| **C102** | XH-100 | ES-21 | **AP-55** | DS-65 |\n\n---\n\n### 💡 补充说明\n\nAP-55 与 AP-50 的主要区别在于 AP-55 多了一个**睡眠模式**。根据《AP 系列空气净化器说明》，睡眠模式下设备会锁定风量并**忽略自动化指令**，只接受人工操作或定时结束。\n\n这一特性曾在 **B205 的 PM2.5 超标事件**中暴露出问题——10 月 9 日，参会人员手动将净化器设为睡眠模式，导致规则引擎下发的强效模式指令被忽略，室内 PM2.5 峰值达到 132 微克/立方米。",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        -4
+      ],
+      "retrieved_chunk_ids": [
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "e4a12093-8e78-42a4-8940-d4722e5447d3",
+        "e7e5ff09-0a9f-4cca-a331-d6c5af2ed236",
+        "37af8719-8a84-47de-96f0-802d2b133bf8"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.026200873362445417,
+        "bleu2": 0.015160218417872202,
+        "bleu4": 0.0,
+        "rouge1": 0.11428571304126985,
+        "rouge2": 0.026490065462041162,
+        "rougel": 0.0952380939936508
+      },
+      "latency_ms": 16769.7,
+      "total_tokens": 16596,
+      "request_count": 5,
+      "tool_calls": 3,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "thinking": 1,
+        "wiki_search": 1
+      },
+      "iterations": 3,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "a-e42-diff",
+      "category": "汇总对比",
+      "config": "agent",
+      "question": "XH-100 和 XH-110 的 E42 含义有什么不同？",
+      "answer": "根据知识库中的文档，**XH-100** 和 **XH-110** 虽然使用相同的错误码编号体系，但 **E42 的含义完全不同**。以下是详细对比：\n\n---\n\n## 📊 核心差异对比表\n\n| 对比项 | XH-100（A栋/C栋） | XH-110（B栋） |\n|--------|-------------------|---------------|\n| **E42 含义** | 无法连接云端 | 证书校验失败 |\n| **本质问题** | **网络连通性问题** | **TLS 证书验证问题** |\n| **连接方式** | 2.4 GHz Wi-Fi | 有线以太网 |\n| **常见原因** | ① 路由器只开了5GHz频段<br>② Wi-Fi密码已修改<br>③ DNS无法解析云端地址 | ① 网关系统时间错误（导致证书被判断为未生效或已过期）<br>② 设备证书问题 |\n\n---\n\n## 🔵 XH-100 的 E42：无法连接云端\n\n> 📄 来源：《01_XH-100网关手册（固件 v2.4）》\n\nXH-100 通过 Wi-Fi 连接云端，E42 表示**网络层面无法建立连接**。\n\n**排查处理顺序：**\n1. 确认 2.4 GHz 网络已开启（XH-100 **不支持 5 GHz**）\n2. 重新配置 XH-100 的 Wi-Fi 连接\n3. 检查 DNS 和出口网络\n\n---\n\n## 🟢 XH-110 的 E42：证书校验失败\n\n> 📄 来源：《02_XH-110网关手册（固件 v1.2）》\n\nXH-110 通过有线以太网连接云端，E42 表示**与云端建立 TLS 连接时证书校验失败**，网络本身是通的。\n\n**排查处理顺序：**\n1. 在管理端同步网关系统时间（NTP 服务器：`ntp.internal.example`）\n2. 重启网关\n3. 若仍失败，在管理端**重新下发设备证书**\n\n---\n\n## 📌 补充说明\n\n根据《网关固件升级记录》，XH-110 在 **v1.2.0 版本**（10月）中新增了**开机时强制 NTP 校时**功能，专门解决了因系统时间错误导致的 E42 问题。这说明\"系统时间错误\"曾是 XH-110 E42 的高频触发原因。\n\n> ⚠️ **重要提示**：排查 E42 错误时，**必须先确认网关型号**，因为两者的故障本质和排查方向完全不同。",
+      "correct": true,
+      "retrieval_ids": [
+        1,
+        -2,
+        0,
+        -4,
+        1
+      ],
+      "retrieved_chunk_ids": [
+        "b5e23a8c-8605-4651-af6b-286516101337",
+        "a79d1eb8-abe3-467c-b3fc-8e11f863fa80",
+        "c40c426f-6eda-4e2e-8e75-25ae63ad31a7",
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "4a9ac3b3-6b96-49f4-9fff-ea7bc0591e49"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.4,
+        "recall": 1.0,
+        "ndcg3": 0.9197207891481876,
+        "ndcg10": 0.9197207891481876,
+        "mrr": 1.0,
+        "map": 0.8333333333333333
+      },
+      "generation_metrics": {
+        "bleu1": 0.03968253968253969,
+        "bleu2": 0.03440023161065908,
+        "bleu4": 0.019698484593734106,
+        "rouge1": 0.16759776355419617,
+        "rouge2": 0.07058823423892734,
+        "rougel": 0.16759776355419617
+      },
+      "latency_ms": 30126.44,
+      "total_tokens": 13546,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "a-b205-devices",
+      "category": "汇总对比",
+      "config": "agent",
+      "question": "B205 会议室有哪些设备，分别是什么型号？",
+      "answer": "根据知识库中的 **《08_会议室设备清单》** 文档，B205 会议室配备以下设备：\n\n| 设备类型 | 型号 |\n|---------|------|\n| 网关 | XH-110 |\n| 环境传感器 | ES-21 |\n| 净化器 | AP-55 |\n| 会议屏 | DS-75 |\n\n---\n\n### 📌 补充说明\n\n- **网关 XH-110**：B 栋会议室在 8 月完成改造后，统一换成了有线网关 XH-110。\n- **环境传感器 ES-21**：支持 PM2.5 监测功能。\n- **净化器 AP-55**：需注意该型号在**睡眠模式下会忽略自动化指令**。根据《10_B205_PM25事件复盘》记录，曾发生过因手动切换为睡眠模式导致自动化指令无法执行的故障，建议使用时注意避免此问题。\n- **会议屏 DS-75**：用于会议信息显示和系统提示。",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3
+      ],
+      "retrieved_chunk_ids": [
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "e4a12093-8e78-42a4-8940-d4722e5447d3",
+        "fcc14e28-c820-4176-bdcc-76498268ddec"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.3333333333333333,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.12021857923497266,
+        "bleu2": 0.07710301419097577,
+        "bleu4": 0.0,
+        "rouge1": 0.31192660262604166,
+        "rouge2": 0.11538461269312958,
+        "rougel": 0.29357797877283065
+      },
+      "latency_ms": 12997.36,
+      "total_tokens": 12348,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "r-b205",
+      "category": "根因分析",
+      "config": "agent",
+      "question": "B205 那次 PM2.5 超标时净化器为什么没有切到强效？",
+      "answer": "根据知识库中的 **《B205 PM2.5 超标事件复盘》** 文档，以下是该事件的详细分析：\n\n---\n\n## 📋 事件经过\n\n| 时间 | 事件 |\n|------|------|\n| **10月9日 10:20** | B205 外墙施工，ES-21 传感器检测到 PM2.5 连续两次高于 75 μg/m³ |\n| 10:20 | 规则 **AQ-4** 触发，向净化器 **AP-55** 下发强效模式指令 |\n| 10:20 | 网关日志显示指令已送达，AP-55 返回了确认（未产生 E43 错误） |\n| **10:50** | 室内 PM2.5 峰值飙升至 **132 μg/m³** |\n\n---\n\n## 🔍 根因分析\n\n净化器**没有切换到强效模式**的根本原因是：\n\n> **AP-55 当时处于「睡眠模式」，而睡眠模式会忽略所有自动化指令。**\n\n具体链条如下：\n\n1. **人工操作**：会议开始前，参会人员为了降低噪音，**手动将 AP-55 设为睡眠模式**。\n2. **规则引擎盲区**：AQ-4 下发指令后，AP-55 返回了确认信号，规则引擎认为指令已执行成功——但实际上睡眠模式**静默忽略了模式切换请求**。\n3. **恢复机制失效**：按自动化规则，人工操作 30 分钟后应恢复自动控制。但**睡眠模式由设备自身锁定**，这条恢复规则对睡眠模式不生效。\n\n简而言之：**规则引擎以为指令执行成功了，但设备实际上在\"装睡\"。**\n\n---\n\n## 🛠️ 改进措施\n\n事件复盘后提出了三项改进：\n\n| # | 改进内容 | 目的 |\n|---|---------|------|\n| 1 | 规则引擎下发指令后**读取设备实际模式**，不一致时触发告警 | 解决\"假确认\"问题 |\n| 2 | PM2.5 高于 **115 μg/m³** 时，视为安全规则，向会议室屏幕**提示退出睡眠模式** | 解决睡眠模式锁定问题 |\n| 3 | 在设备清单中**标注哪些会议室使用 AP-55** | 便于识别风险设备（B205、C102） |\n\n---\n\n## 📌 补充说明\n\n根据现行 **《自动化规则手册 v2.4》**，AQ-4 规则本身逻辑是正确的（PM2.5 连续 2 次 >75 即切强效），问题不在规则设计，而在于**规则引擎与设备状态之间的反馈闭环缺失**——这是系统设计层面的缺陷，已通过上述改进措施修复。",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        -4,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "e4a12093-8e78-42a4-8940-d4722e5447d3",
+        "4ee9b9e0-9a2b-4c38-8f48-f2b3b25c8906",
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "a68dec5e-a25e-4675-8da4-7e4efbc5f9bb",
+        "351467c7-95b1-4faa-9efa-0640560e5f93"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.2,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.026315789473684213,
+        "bleu2": 0.021119430154775583,
+        "bleu4": 0.012428852306886229,
+        "rouge1": 0.1132075461018156,
+        "rouge2": 0.04155844095449486,
+        "rougel": 0.1132075461018156
+      },
+      "latency_ms": 20226.14,
+      "total_tokens": 13030,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "r-a301",
+      "category": "根因分析",
+      "config": "agent",
+      "question": "A301 事件的触发因素和系统性原因分别是什么？",
+      "answer": "根据知识库中的故障复盘文档 **《09_A301_E17故障复盘》**，A301 事件的触发因素和系统性原因如下：\n\n---\n\n## 一、事件背景\n\n> 7月15日 14:02，A301 会议室的环境传感器 **ES-20** 因电量不足停止上报。14:04，网关产生 **E17** 告警，但当时运行的规则引擎没有暂停空气质量控制策略 **AQ-3**，空气净化器 **AP-50** 继续依据最后一次读数保持静音模式。会议期间二氧化碳浓度升高，但空气净化器没有切换到强效模式，直到 14:18 收到人工投诉后才发现异常。\n\n---\n\n## 二、触发因素 vs 系统性原因\n\n| 类别 | 内容 | 说明 |\n|---|---|---|\n| **触发因素** | ES-20 传感器**电量不足** | 直接导致传感器停止上报数据，网关产生 E17 告警 |\n| **系统性原因** | 规则引擎**缺少失效保护**（fail-safe） | 规则引擎没有将**传感器数据新鲜度**作为 AQ-3 控制策略的前置条件，导致在数据过期的情况下仍使用旧数据驱动设备 |\n\n> 文档原文指出：\"**根因不是 AP-50 故障，而是规则引擎没有把传感器数据新鲜度作为 AQ-3 的前置条件。ES-20 电量不足是触发因素，缺少失效保护才是系统性原因。**\"\n\n---\n\n## 三、因果链梳理\n\n```\nES-20 电量不足（触发因素）\n    → 14:02 传感器停止上报\n    → 14:04 网关产生 E17 告警\n    → 规则引擎未暂停 AQ-3（系统性原因：缺少失效保护）\n    → AP-50 依据旧数据继续静音模式\n    → 会议期间 CO₂ 浓度升高，无人察觉\n    → 14:18 人工投诉后才发现异常\n```\n\n---\n\n## 四、改进措施\n\n文档中列出了三项改进措施：\n\n1. **E17 激活期间暂停 AQ-3**，禁止使用旧数据驱动设备（已写入规则手册 v2.4）\n2. 在管理端展示**数据时间戳**和**规则暂停原因**\n3. **每周检查传感器电量**，低于 20% 时提前更换电池\n\n---\n\n**总结**：A301 事件表面上是传感器没电引起的，但根本问题在于系统缺乏\"数据不可信时应停止自动控制\"的失效保护机制。触发因素是**偶发的硬件问题**，而系统性原因是**软件逻辑的设计缺陷**。",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        -4
+      ],
+      "retrieved_chunk_ids": [
+        "37af8719-8a84-47de-96f0-802d2b133bf8",
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "31b335fa-21e2-4df2-91ff-2c9d8b378124",
+        "fcc14e28-c820-4176-bdcc-76498268ddec"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.03200000000000001,
+        "bleu2": 0.031014897189824617,
+        "bleu4": 0.02900057354669332,
+        "rouge1": 0.15228426255250074,
+        "rouge2": 0.08450704144415792,
+        "rougel": 0.15228426255250074
+      },
+      "latency_ms": 23715.11,
+      "total_tokens": 11957,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "r-b205-fix",
+      "category": "根因分析",
+      "config": "agent",
+      "question": "B205 事件之后规则引擎做了什么改进？",
+      "answer": "根据搜索结果，我找到了关于 **B205 PM2.5 超标事件**的详细复盘文档。以下是事件后规则引擎所做的改进：\n\n---\n\n## 📋 B205 事件背景\n\n| 项目 | 详情 |\n|------|------|\n| **时间** | 10月9日 10:20 |\n| **地点** | B205 会议室 |\n| **原因** | 外墙施工导致 PM2.5 超标，但规则引擎下发的强效模式指令被睡眠模式忽略 |\n| **核心问题** | AP-55 净化器处于人工设定的睡眠模式，会锁定风量并忽略自动化指令 |\n\n---\n\n## 🔧 规则引擎改进措施\n\n根据《B205 PM2.5 事件复盘》文档，规则引擎进行了以下三项改进：\n\n### 1. 增加指令执行状态校验\n> **改进内容**：规则引擎在下发指令后，**读取设备实际模式**，如果与预期不一致则触发告警。\n\n**改进前**：AQ-4 下发强效模式指令后，AP-55 返回确认即认为执行成功，未校验设备是否真正切换模式。\n\n**改进后**：增加了\"指令-状态一致性校验\"机制，防止因设备锁定状态（如睡眠模式）导致指令\"假成功\"。\n\n---\n\n### 2. 高污染时屏幕提示退出睡眠模式\n> **改进内容**：当 PM2.5 浓度**高于 115 微克/立方米**时，视为安全规则，向会议室屏幕提示用户退出睡眠模式。\n\n**改进前**：睡眠模式由设备自身锁定，人工操作 30 分钟后恢复自动控制的规则对睡眠模式不生效。\n\n**改进后**：通过屏幕主动提示，引导人工干预解除睡眠锁定。\n\n---\n\n### 3. 设备清单标注 AP-55 部署位置\n> **改进内容**：在设备清单中**标注哪些会议室使用 AP-55**，便于运维人员快速识别存在睡眠模式风险的设备。\n\n**背景**：AP-55 相比 AP-50 增加了睡眠模式，该模式下会忽略自动化指令。标注后有助于针对性处理。\n\n---\n\n## 📊 改进前后对比\n\n| 维度 | 改进前 | 改进后 |\n|------|--------|--------|\n| **指令确认** | 仅依赖设备返回确认 | 读取实际模式进行二次校验 |\n| **异常告警** | 无 | 状态不一致时触发告警 |\n| **人工干预** | 无提示机制 | 高污染时屏幕主动提示 |\n| **设备管理** | 未区分型号风险 | 标注 AP-55 部署位置 |\n\n---\n\n**信息来源**：《10_B205_PM25事件复盘》、《AP 系列空气净化器说明》",
+      "correct": true,
+      "retrieval_ids": [
+        0,
+        -2,
+        -3,
+        -4,
+        -5,
+        -6,
+        -7
+      ],
+      "retrieved_chunk_ids": [
+        "e4a12093-8e78-42a4-8940-d4722e5447d3",
+        "fcc14e28-c820-4176-bdcc-76498268ddec",
+        "37af8719-8a84-47de-96f0-802d2b133bf8",
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "a091da02-3dfa-4138-b308-e2dd220bc1ac",
+        "e7e5ff09-0a9f-4cca-a331-d6c5af2ed236",
+        "e03576db-ee2f-413b-8796-9bd8f0fa8415"
+      ],
+      "retrieval_metrics": {
+        "precision": 0.14285714285714285,
+        "recall": 1.0,
+        "ndcg3": 1.0,
+        "ndcg10": 1.0,
+        "mrr": 1.0,
+        "map": 1.0
+      },
+      "generation_metrics": {
+        "bleu1": 0.027726432532347505,
+        "bleu2": 0.023765472848925287,
+        "bleu4": 0.01528164045555053,
+        "rouge1": 0.15228426255250074,
+        "rouge2": 0.05929919064842598,
+        "rougel": 0.15228426255250074
+      },
+      "latency_ms": 30642.85,
+      "total_tokens": 26755,
+      "request_count": 7,
+      "tool_calls": 4,
+      "tool_name_histogram": {
+        "knowledge_search": 2,
+        "wiki_search": 2
+      },
+      "iterations": 3,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "u-fw130",
+      "category": "无法回答",
+      "config": "agent",
+      "question": "XH-110 的固件 v1.3.0 修复了什么问题？",
+      "answer": "根据我对知识库的全面检索，**目前知识库中没有关于 XH-110 固件 v1.3.0 的记录**。\n\n---\n\n## 📋 当前知识库中 XH-110 的固件版本记录\n\n根据《网关固件升级记录》文档，XH-110 目前记录的固件版本如下：\n\n| 版本 | 发布时间 | 内容 |\n|------|----------|------|\n| **v1.1.0** | 8 月 | 首个量产版本 |\n| **v1.2.0** | 10 月 | 开机时强制进行一次 NTP 校时，解决因系统时间错误导致的 E42 问题 |\n\n---\n\n## 🔍 检索说明\n\n- ✅ 已搜索 Wiki 页面 — 无 v1.3.0 相关内容\n- ✅ 已搜索知识库文档 — 无 v1.3.0 相关记录\n- ✅ 已使用关键词 `v1.3` 和 `1.3.0` 进行精确匹配 — 无结果\n\n---\n\n## 💡 建议\n\n如果您确认 v1.3.0 版本已发布，可能存在以下情况：\n\n1. **固件升级记录尚未更新** — 建议联系文档维护人员补充 v1.3.0 的升级内容\n2. **版本号有误** — 请确认是否为 XH-110 的其他型号（如 XH-100）或其他版本号\n\n如需进一步了解 XH-110 的其他信息（如错误码处理、配置方法等），我可以继续协助。",
+      "correct": true,
+      "retrieval_ids": [
+        -1,
+        -2,
+        -3,
+        -4,
+        -5
+      ],
+      "retrieved_chunk_ids": [
+        "a79d1eb8-abe3-467c-b3fc-8e11f863fa80",
+        "b5e23a8c-8605-4651-af6b-286516101337",
+        "4a9ac3b3-6b96-49f4-9fff-ea7bc0591e49",
+        "84453e90-fef1-44c1-b56a-5de1c5c1770f",
+        "215d51d4-b5a9-456f-824f-ccdd803b8edb"
+      ],
+      "retrieval_metrics": null,
+      "generation_metrics": {
+        "bleu1": 0.018867924528301883,
+        "bleu2": 0.011955702496470258,
+        "bleu4": 0.0,
+        "rouge1": 0.08849557437544053,
+        "rouge2": 0.021164020749699065,
+        "rougel": 0.08849557437544053
+      },
+      "latency_ms": 24540.2,
+      "total_tokens": 16366,
+      "request_count": 5,
+      "tool_calls": 4,
+      "tool_name_histogram": {
+        "grep_chunks": 1,
+        "knowledge_search": 1,
+        "wiki_search": 2
+      },
+      "iterations": 3,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "u-ds65",
+      "category": "无法回答",
+      "config": "agent",
+      "question": "DS-65 会议屏的分辨率是多少？",
+      "answer": "抱歉，根据当前知识库的检索结果，**未能找到 DS-65 会议屏的具体分辨率参数**。\n\n### 已检索到的信息\n\n从《08_会议室设备清单》中，我可以确认：\n- **DS-65** 是一种会议屏型号，部署在 **A301** 和 **C102** 会议室\n- 另一种型号是 **DS-75**，部署在 **B205** 和 **B210** 会议室\n\n但该清单仅列出了设备型号，并未包含各设备的详细技术规格（如分辨率、尺寸、接口等）。\n\n### 建议\n\n如果您需要了解 DS-65 会议屏的详细技术参数，建议：\n1. 查阅设备采购时的技术规格书或产品手册\n2. 联系 IT 部门或设备管理部门获取设备档案\n3. 查看设备背面的铭牌信息",
+      "correct": true,
+      "retrieval_ids": [
+        -1,
+        -2,
+        -3,
+        -4,
+        -5,
+        -6,
+        -7,
+        -8,
+        -9
+      ],
+      "retrieved_chunk_ids": [
+        "f27a1fa9-f305-434d-8608-959ca9856b59",
+        "8716a5af-c3dc-47f1-812b-d45335822903",
+        "99552f6a-dea8-4c96-89dc-455ecbfa9e05",
+        "be85366f-ebc3-412f-8f79-5f149903667d",
+        "d48def54-2c16-4f2a-8c62-b265560288db",
+        "626998f3-0f87-4848-b81e-d8901c962816",
+        "65d6216b-9212-464f-a754-875ad8f178d6",
+        "58ae501a-9f18-4f2c-9089-5c2941f7125f",
+        "db90b9e1-d7b9-4042-9834-8cca414ad94a"
+      ],
+      "retrieval_metrics": null,
+      "generation_metrics": {
+        "bleu1": 0.01724137931034483,
+        "bleu2": 0.0,
+        "bleu4": 0.0,
+        "rouge1": 0.0631578937396122,
+        "rouge2": 0.0,
+        "rougel": 0.04210526216066485
+      },
+      "latency_ms": 31987.73,
+      "total_tokens": 34692,
+      "request_count": 11,
+      "tool_calls": 7,
+      "tool_name_histogram": {
+        "grep_chunks": 1,
+        "knowledge_search": 3,
+        "thinking": 1,
+        "wiki_search": 2
+      },
+      "iterations": 5,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "u-zhouning",
+      "category": "无法回答",
+      "config": "agent",
+      "question": "林晓的导师周宁后来负责什么项目？",
+      "answer": "抱歉，根据当前知识库中的资料，**没有找到关于周宁后来负责什么项目的信息**。\n\n## 现有资料中关于周宁的记录\n\n在《人物访谈：林晓》中，仅提到以下关于周宁的信息：\n\n> 林晓提到职业早期的导师是周宁。周宁帮助其建立了\"**先测量、再优化、最后用消融验证**\"的工程方法。\n\n除此之外，知识库中没有关于周宁后续负责项目的更多记录。\n\n---\n\n如果您想了解其他人物（如林晓本人、或许言、唐可、沈佳等）负责的项目，我可以帮您查询。",
+      "correct": true,
+      "retrieval_ids": [
+        -1,
+        -2,
+        -3,
+        -4,
+        -5,
+        -6
+      ],
+      "retrieved_chunk_ids": [
+        "44095408-a3bb-401f-b44f-9b9b7b91347c",
+        "c3ad0300-5f55-4cd4-9dcb-47376360569b",
+        "686534f5-683e-4f06-8832-f91b5d4c5d75",
+        "dcc3012a-43f6-46b0-9a5c-261c49009049",
+        "86d8a423-e0a7-46b0-bf4c-0c5528c22af3",
+        "a834b116-557e-48c3-b951-192db9ae1807"
+      ],
+      "retrieval_metrics": null,
+      "generation_metrics": {
+        "bleu1": 0.03174603174603174,
+        "bleu2": 0.02253744679276044,
+        "bleu4": 0.0,
+        "rouge1": 0.09999999882812502,
+        "rouge2": 0.034188033527649944,
+        "rougel": 0.09999999882812502
+      },
+      "latency_ms": 21759.0,
+      "total_tokens": 14619,
+      "request_count": 7,
+      "tool_calls": 4,
+      "tool_name_histogram": {
+        "grep_chunks": 1,
+        "knowledge_search": 2,
+        "wiki_search": 1
+      },
+      "iterations": 3,
+      "stopped_reason": "completed",
+      "error": null
+    },
+    {
+      "task_id": "u-c-canteen",
+      "category": "无法回答",
+      "config": "agent",
+      "question": "C 栋食堂几点开饭？",
+      "answer": "抱歉，根据知识库中的信息，**没有找到关于C栋食堂的相关说明**。\n\n知识库中只记录了以下食堂信息：\n\n| 位置 | 说明 |\n|------|------|\n| **A栋一层食堂** | 午餐：11:30 - 13:30<br>晚餐：17:30 - 19:30 |\n| **B栋** | 没有食堂，可使用B栋三层的微波炉 |\n\n建议您通过以下方式获取C栋食堂的营业时间：\n1. 联系**行政部**咨询\n2. 查看C栋现场的公告栏或食堂门口告示",
+      "correct": true,
+      "retrieval_ids": [
+        -1
+      ],
+      "retrieved_chunk_ids": [
+        "bb572d43-5b78-4cec-b9f8-e9e70ec45895"
+      ],
+      "retrieval_metrics": null,
+      "generation_metrics": {
+        "bleu1": 0.042735042735042736,
+        "bleu2": 0.019193893321036614,
+        "bleu4": 0.0,
+        "rouge1": 0.16666666513888892,
+        "rouge2": 0.02173912960302461,
+        "rougel": 0.16666666513888892
+      },
+      "latency_ms": 12469.08,
+      "total_tokens": 9761,
+      "request_count": 4,
+      "tool_calls": 2,
+      "tool_name_histogram": {
+        "knowledge_search": 1,
+        "wiki_search": 1
+      },
+      "iterations": 2,
+      "stopped_reason": "completed",
+      "error": null
+    }
+  ],
+  "summary": [
+    {
+      "scope": "overall",
+      "config": "agent",
+      "category": "",
+      "questions": 31,
+      "accuracy": 1.0,
+      "retrieval_precision": 0.2883,
+      "retrieval_recall": 0.9815,
+      "retrieval_ndcg3": 0.8359,
+      "retrieval_ndcg10": 0.8974,
+      "retrieval_mrr": 0.9012,
+      "retrieval_map": 0.8469,
+      "generation_bleu1": 0.0523,
+      "generation_bleu2": 0.0387,
+      "generation_bleu4": 0.0168,
+      "generation_rouge1": 0.2164,
+      "generation_rouge2": 0.0794,
+      "generation_rougel": 0.205,
+      "mean_latency_ms": 25476.56,
+      "median_latency_ms": 21314.14,
+      "mean_tokens": 20960.39,
+      "mean_request_count": 6.26,
+      "mean_tool_calls": 3.87,
+      "stopped_reason_counts": {
+        "completed": 29,
+        "max_iterations": 2
+      }
+    },
+    {
+      "scope": "category",
+      "config": "agent",
+      "category": "单跳事实",
+      "questions": 6,
+      "accuracy": 1.0,
+      "retrieval_precision": 0.2571,
+      "retrieval_recall": 1.0,
+      "retrieval_ndcg3": 0.9385,
+      "retrieval_ndcg10": 0.9385,
+      "retrieval_mrr": 0.9167,
+      "retrieval_map": 0.9167,
+      "generation_bleu1": 0.0623,
+      "generation_bleu2": 0.0502,
+      "generation_bleu4": 0.0305,
+      "generation_rouge1": 0.2473,
+      "generation_rouge2": 0.1065,
+      "generation_rougel": 0.2328,
+      "mean_latency_ms": 20351.11,
+      "median_latency_ms": 16949.02,
+      "mean_tokens": 17753.83,
+      "mean_request_count": 5.5,
+      "mean_tool_calls": 3,
+      "stopped_reason_counts": {
+        "completed": 6
+      }
+    },
+    {
+      "scope": "category",
+      "config": "agent",
+      "category": "多跳推理",
+      "questions": 11,
+      "accuracy": 1.0,
+      "retrieval_precision": 0.3558,
+      "retrieval_recall": 0.9545,
+      "retrieval_ndcg3": 0.6717,
+      "retrieval_ndcg10": 0.8225,
+      "retrieval_mrr": 0.8485,
+      "retrieval_map": 0.7303,
+      "generation_bleu1": 0.0627,
+      "generation_bleu2": 0.0466,
+      "generation_bleu4": 0.0187,
+      "generation_rouge1": 0.2737,
+      "generation_rouge2": 0.098,
+      "generation_rougel": 0.257,
+      "mean_latency_ms": 29870.28,
+      "median_latency_ms": 23391.55,
+      "mean_tokens": 23819.18,
+      "mean_request_count": 6.82,
+      "mean_tool_calls": 4.64,
+      "stopped_reason_counts": {
+        "completed": 10,
+        "max_iterations": 1
+      }
+    },
+    {
+      "scope": "category",
+      "config": "agent",
+      "category": "版本冲突",
+      "questions": 3,
+      "accuracy": 1.0,
+      "retrieval_precision": 0.1667,
+      "retrieval_recall": 1.0,
+      "retrieval_ndcg3": 0.877,
+      "retrieval_ndcg10": 0.877,
+      "retrieval_mrr": 0.8333,
+      "retrieval_map": 0.8333,
+      "generation_bleu1": 0.048,
+      "generation_bleu2": 0.0346,
+      "generation_bleu4": 0.0134,
+      "generation_rouge1": 0.2061,
+      "generation_rouge2": 0.0681,
+      "generation_rougel": 0.1982,
+      "mean_latency_ms": 32484.79,
+      "median_latency_ms": 14695.31,
+      "mean_tokens": 32942.33,
+      "mean_request_count": 9,
+      "mean_tool_calls": 5.67,
+      "stopped_reason_counts": {
+        "completed": 2,
+        "max_iterations": 1
+      }
+    },
+    {
+      "scope": "category",
+      "config": "agent",
+      "category": "汇总对比",
+      "questions": 4,
+      "accuracy": 1.0,
+      "retrieval_precision": 0.3083,
+      "retrieval_recall": 1.0,
+      "retrieval_ndcg3": 0.9799,
+      "retrieval_ndcg10": 0.9799,
+      "retrieval_mrr": 1.0,
+      "retrieval_map": 0.9583,
+      "generation_bleu1": 0.0545,
+      "generation_bleu2": 0.0382,
+      "generation_bleu4": 0.009,
+      "generation_rouge1": 0.1897,
+      "generation_rouge2": 0.0694,
+      "generation_rougel": 0.1804,
+      "mean_latency_ms": 19074.75,
+      "median_latency_ms": 16587.6,
+      "mean_tokens": 13807.75,
+      "mean_request_count": 4.25,
+      "mean_tool_calls": 2.25,
+      "stopped_reason_counts": {
+        "completed": 4
+      }
+    },
+    {
+      "scope": "category",
+      "config": "agent",
+      "category": "根因分析",
+      "questions": 3,
+      "accuracy": 1.0,
+      "retrieval_precision": 0.1976,
+      "retrieval_recall": 1.0,
+      "retrieval_ndcg3": 1.0,
+      "retrieval_ndcg10": 1.0,
+      "retrieval_mrr": 1.0,
+      "retrieval_map": 1.0,
+      "generation_bleu1": 0.0287,
+      "generation_bleu2": 0.0253,
+      "generation_bleu4": 0.0189,
+      "generation_rouge1": 0.1393,
+      "generation_rouge2": 0.0618,
+      "generation_rougel": 0.1393,
+      "mean_latency_ms": 24861.37,
+      "median_latency_ms": 23715.11,
+      "mean_tokens": 17247.33,
+      "mean_request_count": 5,
+      "mean_tool_calls": 2.67,
+      "stopped_reason_counts": {
+        "completed": 3
+      }
+    },
+    {
+      "scope": "category",
+      "config": "agent",
+      "category": "无法回答",
+      "questions": 4,
+      "accuracy": 1.0,
+      "retrieval_precision": null,
+      "retrieval_recall": null,
+      "retrieval_ndcg3": null,
+      "retrieval_ndcg10": null,
+      "retrieval_mrr": null,
+      "retrieval_map": null,
+      "generation_bleu1": 0.0276,
+      "generation_bleu2": 0.0134,
+      "generation_bleu4": 0.0,
+      "generation_rouge1": 0.1046,
+      "generation_rouge2": 0.0193,
+      "generation_rougel": 0.0993,
+      "mean_latency_ms": 22689.0,
+      "median_latency_ms": 23149.6,
+      "mean_tokens": 18859.5,
+      "mean_request_count": 6.75,
+      "mean_tool_calls": 4.25,
+      "stopped_reason_counts": {
+        "completed": 4
+      }
+    }
+  ]
+}

@@ -434,6 +434,8 @@ class AgentEngine:
         """强制模型停止调用工具并基于已有信息作答。"""
         if reason == "tool_failures":
             nudge_content = "工具调用连续失败。请停止调用工具，基于已有信息直接给出最终回答；信息不足的部分请明确说明。"
+        elif reason == "max_iterations":
+            nudge_content = "已达到最大推理轮数。请停止调用工具，基于已获得的信息直接给出最终回答；信息不足的部分请明确说明。"
         else:
             nudge_content = "你在重复调用相同的工具且没有新信息。请停止调用工具，基于已获得的信息直接给出最终回答；信息不足的部分请明确说明。"
         nudge = {"role": "user", "content": nudge_content}
@@ -669,8 +671,9 @@ class AgentEngine:
                 # ── 无工具调用 → 最终回答 ─────────────────────────────
                 if not tool_calls:
                     # 空内容重试（参考同类知识库系统的 emptyContent 检测）
-                    if not content.strip() and iteration < self.max_iterations:
-                        logger.warning(f"[Agent] Empty content at iteration {iteration}, retrying with nudge")
+                    visible = re.sub(r"</?[a-zA-Z_][\w:-]*[^>]*>", "", content or "").strip()
+                    if not visible and iteration < self.max_iterations:
+                        logger.warning(f"[Agent] Empty or markup-only content at iteration {iteration}, retrying with nudge")
                         messages.append({"role": "user", "content": "请提供你的完整回答。"})
                         continue
 
@@ -819,4 +822,13 @@ class AgentEngine:
                     )
 
         # 达到最大迭代次数
-        return AgentResult(content=final_content or "已达到最大推理轮数，基于当前信息给出回答。", steps=steps, total_iterations=self.max_iterations, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="max_iterations")
+        final_content = self._answer_without_tools(messages, steps, reason="max_iterations")
+        if not final_content:
+            final_content = _synthesize_from_tool_results(steps, query)
+        return AgentResult(
+            content=final_content or "已达到最大推理轮数，基于当前信息给出回答。",
+            steps=steps,
+            total_iterations=self.max_iterations,
+            duration_ms=int((time.monotonic() - start_time) * 1000),
+            stopped_reason="max_iterations",
+        )
