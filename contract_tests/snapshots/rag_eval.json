@@ -1,0 +1,37 @@
+{
+  "rag_eval_add_question": {
+    "body": {
+      "data": {
+        "message": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "rag_eval_history": {
+    "body": {
+      "data": {
+        "history": []
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "rag_eval_questions": {
+    "body": {
+      "data": {
+        "questions": [
+          {
+            "ground_truth": "str",
+            "question": "str"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  }
+}

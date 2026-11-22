@@ -1,0 +1,674 @@
+{
+  "check_parser_engine": {
+    "body": {
+      "data": {
+        "available": "bool",
+        "capabilities": [
+          "str"
+        ],
+        "dependencies": [
+          "str"
+        ],
+        "dependency_status": {
+          "CairoSVG": "bool",
+          "Pillow": "bool",
+          "PyMuPDF": "bool",
+          "python-docx": "bool",
+          "python-pptx": "bool"
+        },
+        "display_name": "str",
+        "enabled": "bool",
+        "formats": [
+          "str"
+        ],
+        "name": "str",
+        "status": "str",
+        "vlm_available": "bool"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "check_storage_engine": {
+    "body": {
+      "data": {
+        "available": "bool",
+        "status": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_mcp_service": {
+    "body": {
+      "data": {
+        "created_at": "str",
+        "id": "str",
+        "name": "str",
+        "status": "str",
+        "tenant_id": "number",
+        "updated_at": "str",
+        "url": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "create_model": {
+    "body": {
+      "data": {
+        "created_at": "str",
+        "credentials_configured": "bool",
+        "description": "str",
+        "display_name": "str",
+        "id": "str",
+        "is_builtin": "bool",
+        "is_default": "bool",
+        "managed_by": "str",
+        "name": "str",
+        "parameters": {},
+        "raw_type": "str",
+        "source": "str",
+        "status": "str",
+        "tenant_id": "number",
+        "type": "str",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_mcp_service": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_model": {
+    "body": {
+      "data": {},
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "delete_model_credential": {
+    "body": {
+      "data": {
+        "created_at": "str",
+        "credentials_configured": "bool",
+        "description": "str",
+        "display_name": "str",
+        "id": "str",
+        "is_builtin": "bool",
+        "is_default": "bool",
+        "managed_by": "str",
+        "name": "str",
+        "parameters": {},
+        "raw_type": "str",
+        "source": "str",
+        "status": "str",
+        "tenant_id": "number",
+        "type": "str",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "get_tenant_kv": {
+    "body": {
+      "data": {
+        "configured": "bool",
+        "field": "str",
+        "key": "str",
+        "value": {}
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "list_mcp_services": {
+    "body": {
+      "data": {
+        "data": [
+          {
+            "created_at": "str",
+            "id": "str",
+            "name": "str",
+            "status": "str",
+            "tenant_id": "number",
+            "updated_at": "str",
+            "url": "str"
+          }
+        ],
+        "items": [
+          {
+            "created_at": "str",
+            "id": "str",
+            "name": "str",
+            "status": "str",
+            "tenant_id": "number",
+            "updated_at": "str",
+            "url": "str"
+          }
+        ],
+        "page": "number",
+        "page_size": "number",
+        "total": "number"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "list_models": {
+    "body": {
+      "data": {
+        "bailian": {
+          "api_key_configured": "bool",
+          "base_url": "str",
+          "chat_model": "str",
+          "configured": "bool",
+          "embedding_dimension": "number",
+          "enabled": "bool",
+          "local_embedding_dimension": "number",
+          "roles": {
+            "chat": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "embedding": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "dimension": "number",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "extract": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "question": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "rerank": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "summary": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "title": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "vlm": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            }
+          }
+        },
+        "counts_by_type": {
+          "chat": "number",
+          "embedding": "number",
+          "rerank": "number",
+          "vlm": "number"
+        },
+        "items": [
+          {
+            "description": "str",
+            "display_name": "str",
+            "id": "str",
+            "is_builtin": "bool",
+            "is_default": "bool",
+            "managed_by": "str",
+            "name": "str",
+            "parameters": {
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "model": "str"
+            },
+            "raw_type": "str",
+            "role": "str",
+            "roles": [
+              {
+                "configured": "bool",
+                "description": "str",
+                "enabled": "bool",
+                "key": "str"
+              }
+            ],
+            "source": "str",
+            "status": "str",
+            "tenant_id": "number",
+            "type": "str"
+          }
+        ],
+        "models": [
+          {
+            "description": "str",
+            "display_name": "str",
+            "id": "str",
+            "is_builtin": "bool",
+            "is_default": "bool",
+            "managed_by": "str",
+            "name": "str",
+            "parameters": {
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "model": "str"
+            },
+            "raw_type": "str",
+            "role": "str",
+            "roles": [
+              {
+                "configured": "bool",
+                "description": "str",
+                "enabled": "bool",
+                "key": "str"
+              }
+            ],
+            "source": "str",
+            "status": "str",
+            "tenant_id": "number",
+            "type": "str"
+          }
+        ],
+        "total": "number"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "model_usage": {
+    "body": {
+      "data": {
+        "by_model": [],
+        "by_scenario": [],
+        "by_type": [],
+        "cache": {
+          "cached_tokens": "number",
+          "prompt_rate": "number",
+          "prompt_tokens": "number",
+          "total_rate": "number",
+          "total_tokens": "number"
+        },
+        "cache_series": {
+          "buckets": [
+            {
+              "bucket": "str",
+              "label": "str"
+            }
+          ],
+          "granularity": "str",
+          "models": []
+        },
+        "daily": [
+          {
+            "calls": "number",
+            "date": "str",
+            "total_tokens": "number"
+          }
+        ],
+        "range_days": "number",
+        "since": "str",
+        "total": {
+          "cached_tokens": "number",
+          "calls": "number",
+          "completion_tokens": "number",
+          "duration_ms": "number",
+          "failed": "number",
+          "prompt_tokens": "number",
+          "records": "number",
+          "success": "number",
+          "success_rate": "number",
+          "total_tokens": "number"
+        }
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "parser_engines": {
+    "body": {
+      "data": {
+        "items": [
+          {
+            "available": "bool",
+            "capabilities": [
+              "str"
+            ],
+            "dependencies": [
+              "str"
+            ],
+            "dependency_status": {
+              "CairoSVG": "bool",
+              "Pillow": "bool",
+              "PyMuPDF": "bool",
+              "python-docx": "bool",
+              "python-pptx": "bool"
+            },
+            "display_name": "str",
+            "enabled": "bool",
+            "formats": [
+              "str"
+            ],
+            "name": "str",
+            "vlm_available": "bool"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "storage_status": {
+    "body": {
+      "data": {
+        "provider": "str",
+        "status": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "system_info": {
+    "body": {
+      "data": {
+        "bailian": {
+          "api_key_configured": "bool",
+          "base_url": "str",
+          "chat_model": "str",
+          "configured": "bool",
+          "embedding_dimension": "number",
+          "enabled": "bool",
+          "local_embedding_dimension": "number",
+          "roles": {
+            "chat": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "embedding": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "dimension": "number",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "extract": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "question": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "rerank": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "summary": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "title": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            },
+            "vlm": {
+              "api_key": "str",
+              "api_key_configured": "bool",
+              "base_url": "str",
+              "configured": "bool",
+              "description": "str",
+              "enabled": "bool",
+              "model": "str",
+              "role": "str",
+              "type": "str"
+            }
+          }
+        },
+        "cache": "str",
+        "edition": "str",
+        "graph_database_engine": "str",
+        "graph_rag_enabled": "bool",
+        "name": "str",
+        "neo4j_configured": "bool",
+        "storage": "str",
+        "vector": "str",
+        "version": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "update_mcp_service": {
+    "body": {
+      "data": {
+        "created_at": "str",
+        "id": "str",
+        "name": "str",
+        "status": "str",
+        "tenant_id": "number",
+        "updated_at": "str",
+        "url": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "update_model": {
+    "body": {
+      "data": {
+        "created_at": "str",
+        "credentials_configured": "bool",
+        "description": "str",
+        "display_name": "str",
+        "id": "str",
+        "is_builtin": "bool",
+        "is_default": "bool",
+        "managed_by": "str",
+        "name": "str",
+        "parameters": {},
+        "raw_type": "str",
+        "source": "str",
+        "status": "str",
+        "tenant_id": "number",
+        "type": "str",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "update_model_credentials": {
+    "body": {
+      "data": {
+        "created_at": "str",
+        "credentials_configured": "bool",
+        "description": "str",
+        "display_name": "str",
+        "id": "str",
+        "is_builtin": "bool",
+        "is_default": "bool",
+        "managed_by": "str",
+        "name": "str",
+        "parameters": {
+          "api_key": "str"
+        },
+        "raw_type": "str",
+        "source": "str",
+        "status": "str",
+        "tenant_id": "number",
+        "type": "str",
+        "updated_at": "str"
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "update_tenant_kv": {
+    "body": {
+      "data": {
+        "field": "str",
+        "key": "str",
+        "value": {
+          "contract_fixture": "bool"
+        }
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "vector_store_types": {
+    "body": {
+      "data": {
+        "items": [
+          {
+            "builtin": "bool",
+            "name": "str",
+            "type": "str"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  },
+  "web_search_provider_types": {
+    "body": {
+      "data": {
+        "items": [
+          {
+            "provider": "str"
+          }
+        ]
+      },
+      "message": "str",
+      "success": "bool"
+    },
+    "status": "number"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "agent": {
+    "chat": [
+      0,
+      1,
+      1,
+      1
+    ],
+    "continue_stream": []
+  },
+  "knowledge": {
+    "chat": [
+      0,
+      1,
+      2,
+      3,
+      3,
+      3
+    ],
+    "continue_stream": []
+  }
+}
