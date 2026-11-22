@@ -392,6 +392,15 @@ def mcp_tool_name(service_id: str, service_name: str, tool_name: str, used: set[
     return base
 
 
+def mcp_tool_requires_approval(approval_mode: str, annotations: dict) -> bool:
+    if approval_mode == "never":
+        return False
+    if approval_mode == "read_only_auto":
+        # Remote annotations are untrusted hints, so only the exact read-only flag opts out.
+        return (annotations or {}).get("readOnlyHint") is not True
+    return True
+
+
 class MCPTool(Tool):
     hard_timeout = True
 
@@ -405,6 +414,7 @@ class MCPTool(Tool):
         annotations: dict,
         client: MCPClient,
         name: str | None = None,
+        approval_mode: str = "always",
     ):
         self.service_id = str(service_id)
         self.service_name = service_name
@@ -412,6 +422,7 @@ class MCPTool(Tool):
         self.schema = input_schema or {"type": "object", "properties": {}}
         self.annotations = annotations or {}
         self.client = client
+        self.approval_mode = approval_mode
         self._name = name or mcp_tool_name(self.service_id, service_name, remote_tool_name)
         self._description = f"[MCP: {service_name}] {description or ''}"
 
@@ -423,6 +434,9 @@ class MCPTool(Tool):
 
     def parameters(self) -> dict:
         return self.schema
+
+    def requires_approval(self) -> bool:
+        return mcp_tool_requires_approval(self.approval_mode, self.annotations)
 
     def execute(self, args: dict, context: dict) -> ToolResult:
         try:
@@ -518,6 +532,7 @@ def load_mcp_toolset(tenant, service_ids) -> MCPToolset:
                     annotations=definition.get("annotations") or {},
                     client=client,
                     name=tool_name,
+                    approval_mode=data.get("approval_mode", "always"),
                 )
             )
     return toolset

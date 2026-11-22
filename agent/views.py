@@ -90,7 +90,7 @@ def generic_action(request, resource_type, action="", item_id=None, sub_id=None,
             deleted_at__isnull=True,
         )
         data = service.data or {}
-        from personal_knowledge_base.mcp_client import MCPClient
+        from personal_knowledge_base.mcp_client import MCPClient, mcp_tool_requires_approval
 
         client = MCPClient(data.get("url") or "", api_key=data.get("api_key") or "", timeout=10)
         try:
@@ -113,6 +113,10 @@ def generic_action(request, resource_type, action="", item_id=None, sub_id=None,
                             "description": tool["description"],
                             "input_schema": tool["inputSchema"],
                             "annotations": tool["annotations"],
+                            "requires_approval": mcp_tool_requires_approval(
+                                data.get("approval_mode", "always"),
+                                tool["annotations"],
+                            ),
                         }
                         for tool in tools
                     ]
@@ -218,6 +222,8 @@ def default_resource_payload(resource_type, data):
         payload.setdefault("temperature", 0.3)
         payload.setdefault("max_rounds", 8)
         payload.setdefault("status", "active")
+    elif resource_type == "mcp_services":
+        payload.setdefault("approval_mode", "always")
     elif resource_type == "embed_channels":
         payload.setdefault("name", "网页嵌入")
         payload.setdefault("enabled", True)

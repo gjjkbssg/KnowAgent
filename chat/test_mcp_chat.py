@@ -20,6 +20,14 @@ class MCPChatTests(TestCase):
     def result():
         return SimpleNamespace(content="Agent answer", references=[], steps=[], duration_ms=1)
 
+    @staticmethod
+    def approval_result():
+        result = MCPChatTests.result()
+        result.stopped_reason = "awaiting_approval"
+        result.pending_approval = [{"id": "c1", "name": "tool", "arguments": {}, "service_name": "server", "remote_tool_name": "write"}]
+        result.checkpoint = {"query": "question", "messages": [], "steps": [], "pending_round": {}}
+        return result
+
     def post_agent_chat(self, data):
         return self.client.post(
             f"/api/v1/agent-chat/{self.session.id}",
@@ -77,6 +85,40 @@ class MCPChatTests(TestCase):
         run_context = engine_class.return_value.execute.call_args.kwargs["context_str"]
         self.assertIn("以下 MCP 服务不可用：offline（connection refused）", run_context)
         toolset.close.assert_called_once()
+
+    def test_non_streaming_approval_is_persisted_and_returned(self):
+        toolset = SimpleNamespace(tools=[], errors=[], close=Mock())
+        history, prefetch, context, maintenance, engine = self.patch_chat()
+        with history, prefetch, context, maintenance, engine as engine_class, patch(
+            "personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset
+        ):
+            engine_class.return_value.execute.return_value = self.approval_result()
+            response = self.post_agent_chat({"query": "question", "mcp_service_ids": []})
+
+        self.assertEqual(response.status_code, 200)
+        message = response.json()["data"]["message"]
+        self.assertFalse(message["is_completed"])
+        self.assertEqual(message["pending_tool_approval"]["tool_calls"][0]["service_name"], "server")
+        toolset.close.assert_called_once()
+
+    def test_streaming_approval_emits_terminal_approval_event(self):
+        toolset = SimpleNamespace(tools=[], errors=[], close=Mock())
+        history, prefetch, context, maintenance, engine = self.patch_chat()
+        with (
+            history,
+            prefetch,
+            context,
+            maintenance,
+            engine as engine_class,
+            patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
+            patch("chat.views.run_database_background", side_effect=lambda callback: callback()),
+        ):
+            engine_class.return_value.execute.return_value = self.approval_result()
+            response = self.post_agent_chat({"query": "question", "stream": True, "mcp_service_ids": []})
+        body = b"".join(response.streaming_content).decode()
+        self.assertIn("tool_approval_required", body)
+        self.assertIn("event: done", body)
+        self.assertFalse(Message.objects.filter(session=self.session, role="assistant").get().is_completed)
 
     def test_streaming_failure_adds_context_completes_and_closes_toolset(self):
         toolset = SimpleNamespace(tools=[], errors=[{"service_name": "offline", "error": "timeout"}], close=Mock())
