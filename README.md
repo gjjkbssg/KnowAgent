@@ -239,6 +239,42 @@ DuRetrieval 只有单段落事实题，所以另写了一套智能楼宇领域�
 
 限制：46 道题，出题人和实现者是同一个人；一类只有 1 到 8 道题，分类结果只能看方向。复现：`python manage.py prepare_interview_demo --rebuild --kb-name "[评测] 智能楼宇领域集" --corpus-dir interview_materials/domain_eval_corpus`，然后 `python manage.py run_interview_eval --kb-name "[评测] 智能楼宇领域集" --noise-kb-name "[评测] DuRetrieval 子集" --questions interview_materials/domain_eval_questions.json --output-name domain_retrieval_evaluation`。
 
+### 检索改进：中文二元组、加权 RRF、Rerank 阈值
+
+针对上面两套评测发现的问题做了三处改动（思路参考 Tencent WeKnora，用 Python 重新实现），在同一份数据上用真实模型重跑：
+
+- **中文二元组分词**：写入 FTS5 前把连续汉字切成重叠二元组（`中文检索` → `中文 文检 检索`），查询端同样切分，去掉之前按演示语料写的中文回退词表。旧库由迁移 `0014_cjk_bigram_fts` 原地重写索引，不需要重新调用 Embedding。
+- **加权 RRF**：`score = Σ w / (60 + rank)`，默认向量 0.7、关键词 0.3、图谱 0.3（`RETRIEVAL_RRF_*_WEIGHT`）。
+- **Rerank 分数阈值**：丢弃低于阈值的结果；全部低于阈值时降一次阈值，仍没有就只保留最好的一条（分数 ≥ 0.15），否则返回空。默认 0.4（`RETRIEVAL_RERANK_THRESHOLD`）。WeKnora 的默认值 0.2 对 qwen3-rerank 不起作用：两套评测里它给出的分数没有一条低于 0.2。0.4 是看了这两套评测的分数分布选的，换 Rerank 模型要重新校准。
+
+DuRetrieval 子集（5,489 个 Chunk）：
+
+| 方案 | 改动前 MRR | 改动后 MRR | 改动前 Recall@10 | 改动后 Recall@10 | 平均返回条数 |
+|---|---:|---:|---:|---:|---:|
+| FTS only | 0.3644 | **0.8767** | 20.9% | **81.2%** | 9.9 |
+| Hybrid raw（RRF） | 0.9370 | 0.9678 | 93.7% | 92.8% | 10 |
+| Hybrid + Rerank | 0.9711 | 0.9719 | 96.1% | 96.1% | 10 |
+| Hybrid + Rerank + 阈值 | — | 0.9719 | — | 95.3% | 7.6 |
+| Full pipeline | 0.9695 | 0.9695 | 92.7% | 92.7% | 8.1 |
+
+领域困难集（5,508 个 Chunk）：
+
+| 方案 | 改动前 MRR | 改动后 MRR | 改动前 Hit@1 | 改动后 Hit@1 | 改动前 Recall@5 | 改动后 Recall@5 | 平均返回条数 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| FTS only | 0.5543 | **0.8442** | 45.7% | **76.1%** | 65.9% | **94.6%** | 10 |
+| Hybrid raw（RRF） | 0.8100 | 0.8650 | 69.6% | 78.3% | 96.7% | 94.9% | 10 |
+| Hybrid + Rerank | 0.8866 | 0.8866 | 80.4% | 80.4% | 98.2% | 98.2% | 10 |
+| Hybrid + Rerank + 阈值 | — | 0.8866 | — | 80.4% | — | 98.2% | 5.2 |
+| Full pipeline | 0.8884 | 0.8866 | 80.4% | 80.4% | 98.2% | 98.2% | 5.9 |
+
+1. **中文全文检索从不可用变成可用**：FTS 在 Top-10 里一个正例都没有的题，DuRetrieval 从 61 道降到 6 道，领域集从 13 道降到 2 道。
+2. **融合排序变好，但最终排序没变**：Hybrid raw 的 MRR 两套都提高；加 Rerank 之后和改动前几乎一样，因为排序主要由 Rerank 决定。这次改动没有提升最终 Top-1 的准确率。
+3. **权重的作用要分开看**：同样用二元组分词、只把权重换成等权（1/1/1），DuRetrieval 上 Hybrid raw 的 MRR 是 0.9520、Hybrid + Rerank 的 Recall@10 降到 94.7%：FTS 变强后，等权会把更多关键词结果挤进 Rerank 的 20 个候选，替掉向量找到的正例。领域集上等权反而略好（MRR 0.8705，Recall@5 96.7%）。默认用 0.7/0.3，是因为它在 DuRetrieval 上保住了 Rerank 前的召回。
+4. **阈值减少了送进上下文的无关片段**：返回条数 DuRetrieval 从 10 降到 7.6、领域集从 10 降到 5.2；前 10 条里标注为正例的比例分别从 44.0% 升到 57.4%、从 12.2% 升到 23.3%。代价是 DuRetrieval 的 Recall@10 少了 0.8 个百分点（440 个正例结果里丢了 3 个），没有一道题因此一条正例都不剩。DuRetrieval 只标注了部分相关段落，所以这个比例是下限。
+5. **版本冲突仍没解决**：4 道版本题的 MRR 还是 0.625，需要文档生效状态的元数据，不是排序能解决的。
+
+延迟：同一代码路径（纯向量）在两次评测间的平均延迟从 808 ms 变到 971 ms，差异来自外部模型接口的网络波动，所以表里不比较延迟。阈值过滤本身不调用模型，不增加延迟。
+
 完整评估报告见 [`interview_materials/05_真实评估报告.md`](interview_materials/05_真实评估报告.md)。
 
 ## 快速开始
@@ -377,7 +413,7 @@ KnowAgent/
 
 - `StreamManager` 当前是单进程内存实现；多 Worker 与服务重启恢复应迁移到 Redis Streams。
 - SQLite 适合个人和小团队部署，更高并发应使用 PostgreSQL、独立向量库与任务队列。
-- 中文 FTS5 仍受默认分词能力限制。
+- 中文 FTS5 用的是二元组切分，不是词典分词：召回好，但“检索”和“索引”这类共享单字的词会互相命中，排序靠向量和 Rerank 修正。
 - GraphRAG 的实体消歧、别名归一和增量一致性仍需完善。
 - 评测只覆盖检索，不覆盖答案质量和引用正确率；领域困难集只有 46 道题，公开基准子集只有单段落事实题。
 

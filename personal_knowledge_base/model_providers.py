@@ -777,7 +777,8 @@ def rerank(query: str, results: list[dict], top_k: int | None = None, tenant: Te
             result = {**results[int(idx)]}
             score = item.get("relevance_score", item.get("score", result.get("score", 0)))
             result["score"] = float(score)
-            result.setdefault("metadata", {})["rerank_model"] = cfg["model"]
+            result["rerank_score"] = float(score)
+            result["metadata"] = {**(result.get("metadata") or {}), "rerank_model": cfg["model"]}
             scored.append(result)
         return (scored or results)[:top_k] if top_k else (scored or results)
     except Exception as exc:

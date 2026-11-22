@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
@@ -56,8 +57,33 @@ class PreparePublicEvalTests(TestCase):
 
         report = json.loads((self.out / "public.json").read_text(encoding="utf-8"))
         self.assertEqual((report["question_count"], report["chunk_count"]), (1, 3))
-        self.assertEqual(len(report["summary"]), 5)
-        self.assertEqual(len(report["by_category"]), 5)
+        self.assertEqual(len(report["summary"]), 6)
+        self.assertEqual(len(report["by_category"]), 6)
+        variants = {row["variant"] for row in report["summary"]}
+        self.assertIn("hybrid_rerank_threshold", variants)
+        detail = report["details"][0]
+        self.assertTrue({"result_count", "scores", "gold_flags"} <= detail.keys())
+        self.assertTrue(all(isinstance(flag, bool) for flag in detail["gold_flags"]))
+        self.assertEqual(
+            report["rrf_weights"],
+            {
+                "vector": settings.RETRIEVAL_RRF_VECTOR_WEIGHT,
+                "keyword": settings.RETRIEVAL_RRF_KEYWORD_WEIGHT,
+                "graph": settings.RETRIEVAL_RRF_GRAPH_WEIGHT,
+            },
+        )
+        self.assertEqual(
+            report["rerank_threshold"],
+            {
+                "threshold": settings.RETRIEVAL_RERANK_THRESHOLD,
+                "fallback_min_score": settings.RETRIEVAL_RERANK_FALLBACK_MIN_SCORE,
+            },
+        )
+        by_variant = {row["variant"]: row for row in report["details"]}
+        self.assertEqual(
+            by_variant["hybrid_rerank"]["latency_ms"],
+            by_variant["hybrid_rerank_threshold"]["latency_ms"],
+        )
         # 三个段落全部会进 Top-10，按段落 ID 标注的正例一定被找到
         self.assertEqual(next(row for row in report["summary"] if row["variant"] == "full_pipeline")["hit_at_10"], 1.0)
 

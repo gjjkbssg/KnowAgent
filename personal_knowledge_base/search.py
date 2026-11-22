@@ -16,11 +16,7 @@ logger = logging.getLogger(__name__)
 
 TOKEN_RE = re.compile(r"[\w一-鿿]+", re.UNICODE)
 IDENTIFIER_RE = re.compile(r"[A-Za-z]{1,12}(?:[-_]?\d+)+(?:[-_][A-Za-z0-9]+)*", re.I)
-CHINESE_QUERY_SPLIT_RE = re.compile(
-    r"出现|应该|什么|如何|为什么|为何|怎么|怎样|哪个|哪些|多少|时候|以后|之后|"
-    r"停止|必须|需要|可能|检查|影响|连接|顺序|规则|设备|数据|没有|仍然|还会|"
-    r"[的了在是但和与及后时会把被让吗呢？?，,。；;：:]"
-)
+CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]+")
 PARTIAL_OVERLAP_THRESHOLD = 0.85
 RRF_K = 60
 
@@ -42,6 +38,39 @@ STOPWORDS = frozenset({
     "i", "me", "my", "we", "our", "you", "your", "he", "him", "his",
     "she", "her", "it", "its", "they", "them", "their",
 })
+
+
+def cjk_bigram_text(text: str) -> str:
+    text = text or ""
+
+    def replace(match):
+        run = match.group()
+        tokens = [run] if len(run) == 1 else [run[index:index + 2] for index in range(len(run) - 1)]
+        previous = text[match.start() - 1] if match.start() else ""
+        following = text[match.end()] if match.end() < len(text) else ""
+        prefix = " " if previous and (previous.isalnum() or previous == "_") else ""
+        suffix = " " if following and (following.isalnum() or following == "_") else ""
+        return f"{prefix}{' '.join(tokens)}{suffix}"
+
+    return CJK_RE.sub(replace, text)
+
+
+def build_fts_query(query: str) -> str:
+    tokens = TOKEN_RE.findall(cjk_bigram_text(query or ""))
+    seen = set()
+    quoted = []
+    for token in tokens:
+        normalized = token.lower()
+        if normalized in seen or normalized in STOPWORDS:
+            continue
+        seen.add(normalized)
+        escaped = normalized.replace('"', '""')
+        term = f'"{escaped}"'
+        if len(token) == 1 and CJK_RE.fullmatch(token):
+            term += "*"
+        quoted.append(term)
+    return " OR ".join(quoted)
+
 
 # 中文问题前缀
 QUESTION_PREFIX_RE = re.compile(
@@ -106,7 +135,14 @@ def index_chunk(chunk: Chunk, vec: bytes | None = None):
             INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content)
             VALUES (%s, %s, %s, %s, %s, %s)
             """,
-            [chunk.id, chunk.tenant_id, chunk.knowledge_base_id, chunk.knowledge_id, knowledge.title, chunk.content],
+            [
+                chunk.id,
+                chunk.tenant_id,
+                chunk.knowledge_base_id,
+                chunk.knowledge_id,
+                cjk_bigram_text(knowledge.title),
+                cjk_bigram_text(chunk.content),
+            ],
         )
         rowid = chunk.seq_id if chunk.seq_id is not None else _rowid(chunk.id)
         cursor.execute(
@@ -115,6 +151,23 @@ def index_chunk(chunk: Chunk, vec: bytes | None = None):
         )
     if chunk.seq_id is None:
         Chunk.objects.filter(id=chunk.id).update(seq_id=rowid)
+
+
+def retokenize_fts_rows(cursor):
+    cursor.execute("SELECT rowid, title, content FROM chunks_fts")
+    rows = cursor.fetchall()
+    for offset in range(0, len(rows), 500):
+        updates = []
+        for rowid, title, content in rows[offset:offset + 500]:
+            bigram_title = cjk_bigram_text(title or "")
+            bigram_content = cjk_bigram_text(content or "")
+            if bigram_title != title or bigram_content != content:
+                updates.append((bigram_title, bigram_content, rowid))
+        if updates:
+            cursor.executemany(
+                "UPDATE chunks_fts SET title = %s, content = %s WHERE rowid = %s",
+                updates,
+            )
 
 
 def update_chunk_index_scope(chunk: Chunk):
@@ -358,16 +411,63 @@ def _fts_match(cursor, fts_query: str, tenant_id: int, kb_set: set, limit: int) 
     return [(chunk_id, -float(rank)) for chunk_id, rank in cursor.fetchall()]
 
 
-def rrf_fuse(rankings: list[list[str]], k: int = RRF_K) -> dict[str, float]:
+def rrf_channel_weights() -> dict[str, float]:
+    return {
+        "vector": settings.RETRIEVAL_RRF_VECTOR_WEIGHT,
+        "keyword": settings.RETRIEVAL_RRF_KEYWORD_WEIGHT,
+        "graph": settings.RETRIEVAL_RRF_GRAPH_WEIGHT,
+    }
+
+
+def rrf_fuse(
+    rankings: list[list[str]],
+    k: int = RRF_K,
+    weights: list[float] | None = None,
+) -> dict[str, float]:
     """
-    Reciprocal Rank Fusion：score = Σ 1 / (k + rank)。
+    Reciprocal Rank Fusion：score = Σ w_i / (k + rank)。
     各通道分数量纲不同（BM25、向量距离），只用名次融合，不直接相加原始分数。
     """
+    if weights is not None and len(weights) != len(rankings):
+        raise ValueError("weights must have the same length as rankings")
     fused: dict[str, float] = {}
-    for ranking in rankings:
+    for channel, ranking in enumerate(rankings):
+        weight = weights[channel] if weights is not None else 1.0
         for rank, chunk_id in enumerate(ranking, 1):
-            fused[chunk_id] = fused.get(chunk_id, 0.0) + 1.0 / (k + rank)
+            fused[chunk_id] = fused.get(chunk_id, 0.0) + weight / (k + rank)
     return fused
+
+
+def apply_rerank_threshold(
+    results: list[dict],
+    threshold: float,
+    fallback_min_score: float,
+) -> list[dict]:
+    if not any("rerank_score" in item for item in results):
+        return results
+
+    def score(item):
+        try:
+            return float(item.get("rerank_score"))
+        except (TypeError, ValueError):
+            return None
+
+    def filtered(minimum):
+        return [item for item in results if (item_score := score(item)) is not None and item_score >= minimum]
+
+    passing = filtered(threshold)
+    if passing:
+        return passing
+    if threshold > 0.3:
+        passing = filtered(max(threshold * 0.7, 0.3))
+        if passing:
+            return passing
+
+    scored = [(item, item_score) for item in results if (item_score := score(item)) is not None]
+    if not scored:
+        return []
+    best, best_score = max(scored, key=lambda result: result[1])
+    return [best] if best_score >= fallback_min_score else []
 
 
 def _ranked_ids(scores: dict[str, float]) -> list[str]:
@@ -379,27 +479,13 @@ def _fts_search(tenant_id: int, kb_set: set, query: str, top_k: int) -> dict[str
     kb_set = {str(value) for value in kb_set}
     scores: dict[str, float] = {}
     with connection.cursor() as cursor:
-        fts_query = " OR ".join(TOKEN_RE.findall(query)) or query
+        fts_query = build_fts_query(query)
         if fts_query:
             try:
                 for chunk_id, score in _fts_match(cursor, fts_query, tenant_id, kb_set, top_k * 4):
                     scores[chunk_id] = score
             except Exception:
-                cursor.execute(
-                    """
-                    SELECT chunk_id, knowledge_base_id FROM chunks_fts
-                    WHERE tenant_id = %s AND content LIKE %s
-                    LIMIT %s
-                    """,
-                    [tenant_id, f"%{query}%", top_k * 4],
-                )
-                for chunk_id, kb_id in cursor.fetchall():
-                    if not kb_set or kb_id in kb_set:
-                        scores[chunk_id] = scores.get(chunk_id, 0.0) + 3.0
-        # SQLite's stock unicode61 tokenizer treats a continuous Chinese
-        # sentence as one token. A valid MATCH can therefore return no rows
-        # even when exact model numbers or short Chinese phrases are present.
-        # Fall back to bounded lexical LIKE clauses for those sparse terms.
+                logger.debug("FTS query failed; falling back to identifier LIKE", exc_info=True)
         if not scores:
             terms = []
             seen = set()
@@ -408,18 +494,15 @@ def _fts_search(tenant_id: int, kb_set: set, query: str, top_k: int) -> dict[str
                 if key not in seen:
                     terms.append(term)
                     seen.add(key)
-            chinese = "".join(re.findall(r"[一-鿿]+", query))
-            for term in CHINESE_QUERY_SPLIT_RE.split(chinese):
-                term = term.strip()
-                if 2 <= len(term) <= 12 and term not in seen:
-                    terms.append(term)
-                    seen.add(term)
             terms = terms[:8]
             if terms:
-                predicates = " OR ".join(["title LIKE %s OR content LIKE %s"] * len(terms))
+                title_search = "replace(replace(lower(title), '-', ''), '_', '') LIKE %s"
+                content_search = "replace(replace(lower(content), '-', ''), '_', '') LIKE %s"
+                predicates = " OR ".join([f"{title_search} OR {content_search}"] * len(terms))
                 params = [tenant_id]
                 for term in terms:
-                    params.extend([f"%{term}%", f"%{term}%"])
+                    normalized = term.lower().replace("-", "").replace("_", "")
+                    params.extend([f"%{normalized}%", f"%{normalized}%"])
                 params.append(top_k * 4)
                 cursor.execute(
                     f"""
@@ -434,7 +517,13 @@ def _fts_search(tenant_id: int, kb_set: set, query: str, top_k: int) -> dict[str
                     if kb_set and kb_id not in kb_set:
                         continue
                     haystack = f"{title}\n{content}".lower()
-                    matched = sum(1 for term in terms if term.lower() in haystack)
+                    normalized_haystack = haystack.replace("-", "").replace("_", "")
+                    matched = sum(
+                        1
+                        for term in terms
+                        if term.lower() in haystack
+                        or term.lower().replace("-", "").replace("_", "") in normalized_haystack
+                    )
                     if matched:
                         scores[chunk_id] = 2.0 + float(matched)
     return scores
@@ -500,16 +589,19 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
             vec_scores = vec_future.result()
 
     # 每个召回通道是一份名次表，最后用 RRF 融合
+    weights = rrf_channel_weights()
     rankings = [_ranked_ids(fts_scores), _ranked_ids(vec_scores)]
+    ranking_weights = [weights["keyword"], weights["vector"]]
 
     # ── 查询扩展（召回不足时）────────────────────────────────────────
     if len(set(fts_scores) | set(vec_scores)) < max(1, top_k):
         for variant in expand_query(query):
             with connection.cursor() as cursor:
-                exp_fts = " OR ".join(TOKEN_RE.findall(variant)) or variant
+                exp_fts = build_fts_query(variant)
                 if exp_fts:
                     try:
                         rankings.append([chunk_id for chunk_id, _ in _fts_match(cursor, exp_fts, tenant_id, kb_set, top_k * 2)])
+                        ranking_weights.append(weights["keyword"])
                     except Exception:
                         pass
 
@@ -519,9 +611,10 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
     graph_ids = [item["chunk_id"] for item in graph_search_results(tenant_id, kb_ids, query, set(), top_k)]
     if graph_ids:
         rankings.append(graph_ids)
+        ranking_weights.append(weights["graph"])
     graph_only_ids = set(graph_ids) - set(fts_scores) - set(vec_scores)
 
-    scores = rrf_fuse(rankings)
+    scores = rrf_fuse(rankings, weights=ranking_weights)
 
     # ── 排序 + 去重 ─────────────────────────────────────────────────
     ranked_ids = _ranked_ids(scores)[: top_k * 4]
@@ -562,6 +655,11 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
     results = deduplicate_results(results)
     results = rerank(query, results, top_k * 2, tenant=Tenant.objects.filter(id=tenant_id).first())
     results = deduplicate_results(results)
+    results = apply_rerank_threshold(
+        results,
+        settings.RETRIEVAL_RERANK_THRESHOLD,
+        settings.RETRIEVAL_RERANK_FALLBACK_MIN_SCORE,
+    )
 
     # ── 知识条目级多样性 ────────────────────────────────────────────
     results = diversify_by_knowledge(results, max_per_knowledge=2)

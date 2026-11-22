@@ -30,6 +30,16 @@ def env_bool(name, default=False):
     return raw.lower() in {"1", "true", "yes", "on"}
 
 
+def env_float(name, default=0.0):
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
 # ── 安全配置 ─────────────────────────────────────────────────────
 # SECRET_KEY: 生产环境必须从环境变量读取
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
@@ -201,6 +211,12 @@ LLM_BASE_URL = LLM_CHAT_BASE_URL
 APP_EMBEDDING_DIM = int(os.environ.get("APP_EMBEDDING_DIM", "384"))
 APP_TASK_WORKERS = 4
 APP_TASKS_SYNC = "test" in sys.argv
+RETRIEVAL_RRF_VECTOR_WEIGHT = env_float("RETRIEVAL_RRF_VECTOR_WEIGHT", 0.7)
+RETRIEVAL_RRF_KEYWORD_WEIGHT = env_float("RETRIEVAL_RRF_KEYWORD_WEIGHT", 0.3)
+RETRIEVAL_RRF_GRAPH_WEIGHT = env_float("RETRIEVAL_RRF_GRAPH_WEIGHT", 0.3)
+# 阈值依赖 Rerank 模型的分数分布：qwen3-rerank 在两套评测上没有低于 0.2 的分数，0.4 由评测分布选定，换模型要重新校准
+RETRIEVAL_RERANK_THRESHOLD = env_float("RETRIEVAL_RERANK_THRESHOLD", 0.4)
+RETRIEVAL_RERANK_FALLBACK_MIN_SCORE = env_float("RETRIEVAL_RERANK_FALLBACK_MIN_SCORE", 0.15)
 LLM_CHAT_MODEL_TIMEOUT = int(os.environ.get("LLM_CHAT_MODEL_TIMEOUT", "60"))
 AGENT_LLM_MAX_ATTEMPTS = int(os.environ.get("AGENT_LLM_MAX_ATTEMPTS", "3"))
 AGENT_TOOL_TIMEOUT_SECONDS = float(os.environ.get("AGENT_TOOL_TIMEOUT_SECONDS", "60"))

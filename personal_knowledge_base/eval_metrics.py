@@ -56,4 +56,6 @@ def summarize(details: list[dict], ks=DEFAULT_KS) -> dict:
             key = f"{name}_at_{k}"
             summary[key] = round(sum(row[key] for row in details) / count, 4)
     summary["avg_latency_ms"] = round(sum(row["latency_ms"] for row in details) / count, 2)
+    if any("result_count" in row for row in details):
+        summary["avg_result_count"] = round(sum(row.get("result_count", 0) for row in details) / count, 2)
     return summary

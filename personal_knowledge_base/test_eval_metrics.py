@@ -51,3 +51,12 @@ class RankingMetricsTests(SimpleTestCase):
         self.assertEqual(summary["mrr"], 0.75)
         self.assertEqual(summary["hit_at_1"], 0.5)
         self.assertEqual(summary["avg_latency_ms"], 20.0)
+        self.assertNotIn("avg_result_count", summary)
+
+    def test_summarize_averages_result_count_when_present(self):
+        rows = [
+            {**ranking_metrics([{"a"}], 1), "latency_ms": 10, "result_count": 4},
+            {**ranking_metrics([set()], 1), "latency_ms": 20},
+        ]
+
+        self.assertEqual(summarize(rows)["avg_result_count"], 2.0)
