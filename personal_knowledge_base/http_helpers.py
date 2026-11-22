@@ -2,6 +2,7 @@ import json
 from collections.abc import Mapping
 
 from .authentication import require_auth
+from services.context import ServiceContext
 
 
 def parse_body(request):
@@ -20,6 +21,14 @@ def auth_context(request):
         return require_auth(request)
     except PermissionError:
         return None, None
+
+
+def service_context(request):
+    return ServiceContext(
+        tenant=request.auth_tenant,
+        user=request.auth_user,
+        request_id=request.headers.get("X-Request-ID", ""),
+    )
 
 
 def bounded_int(value, default, minimum=None, maximum=None):

@@ -24,31 +24,20 @@ def visible_wiki_pages_queryset(kb_or_id):
     return qs.exclude(page_type="index").exclude(slug="index")
 
 
-def wiki_pages(ctx: ServiceContext, kb_id, *, method: str, slug=None, data=None):
+def list_wiki_pages(ctx: ServiceContext, kb_id):
     kb = get_or_404(KnowledgeBase, id=kb_id)
-    data = data or {}
-    if slug:
-        slug = slug.lstrip("/")
-        page = get_or_404(WikiPage, knowledge_base=kb, slug=slug)
-        if method == "GET":
-            return wiki_page_dict(page)
-        if method == "DELETE":
-            page.delete()
-            return {}
-        page.title = data.get("title", page.title)
-        page.content = data.get("content", page.content)
-        page.summary = data.get("summary", page.summary)
-        page.folder_id = data.get("folder_id", page.folder_id)
-        if "page_type" in data:
-            page.page_type = data.get("page_type") or page.page_type
-        if "aliases" in data and isinstance(data.get("aliases"), list):
-            page.aliases = data.get("aliases")
-        page.save()
-        sync_manual_page_links(page)
-        return wiki_page_dict(page)
-    if method == "GET":
-        pages = visible_wiki_pages_queryset(kb).order_by("title")
-        return {"items": [wiki_page_dict(page) for page in pages]}
+    pages = visible_wiki_pages_queryset(kb).order_by("title")
+    return {"items": [wiki_page_dict(page) for page in pages]}
+
+
+def get_wiki_page(ctx: ServiceContext, kb_id, slug):
+    kb = get_or_404(KnowledgeBase, id=kb_id)
+    page = get_or_404(WikiPage, knowledge_base=kb, slug=slug.lstrip("/"))
+    return wiki_page_dict(page)
+
+
+def create_wiki_page(ctx: ServiceContext, kb_id, data):
+    kb = get_or_404(KnowledgeBase, id=kb_id)
     title = data.get("title", "Untitled")
     page = WikiPage.objects.create(
         tenant=ctx.tenant or kb.tenant,
@@ -63,27 +52,46 @@ def wiki_pages(ctx: ServiceContext, kb_id, *, method: str, slug=None, data=None)
         status=data.get("status") or "published",
     )
     sync_manual_page_links(page)
-    return {"data": wiki_page_dict(page), "status": 201}
+    return wiki_page_dict(page)
 
 
-def wiki_folders(ctx: ServiceContext, kb_id, *, method: str, folder_id=None, data=None):
+def update_wiki_page(ctx: ServiceContext, kb_id, slug, data):
     kb = get_or_404(KnowledgeBase, id=kb_id)
-    data = data or {}
-    if folder_id:
-        folder = get_or_404(WikiFolder, id=folder_id, knowledge_base=kb)
-        if method == "DELETE":
-            folder.delete()
-            return {}
-        folder.name = data.get("name", folder.name)
-        folder.parent_id = data.get("parent_id", folder.parent_id)
-        folder.path = data.get("path", folder.path)
-        folder.depth = data.get("depth", folder.depth)
-        folder.sort_order = data.get("sort_order", folder.sort_order)
-        folder.save()
-        return wiki_folder_dict(folder)
-    if method == "GET":
-        folders = WikiFolder.objects.filter(knowledge_base=kb).order_by("sort_order")
-        return {"items": [wiki_folder_dict(folder) for folder in folders]}
+    page = get_or_404(WikiPage, knowledge_base=kb, slug=slug.lstrip("/"))
+    page.title = data.get("title", page.title)
+    page.content = data.get("content", page.content)
+    page.summary = data.get("summary", page.summary)
+    page.folder_id = data.get("folder_id", page.folder_id)
+    if "page_type" in data:
+        page.page_type = data.get("page_type") or page.page_type
+    if "aliases" in data and isinstance(data.get("aliases"), list):
+        page.aliases = data.get("aliases")
+    page.save()
+    sync_manual_page_links(page)
+    return wiki_page_dict(page)
+
+
+def delete_wiki_page(ctx: ServiceContext, kb_id, slug):
+    kb = get_or_404(KnowledgeBase, id=kb_id)
+    get_or_404(WikiPage, knowledge_base=kb, slug=slug.lstrip("/")).delete()
+    return {}
+
+
+def list_wiki_folders(ctx: ServiceContext, kb_id):
+    kb = get_or_404(KnowledgeBase, id=kb_id)
+    folders = WikiFolder.objects.filter(knowledge_base=kb).order_by("sort_order")
+    return {"items": [wiki_folder_dict(folder) for folder in folders]}
+
+
+def get_wiki_folder(ctx: ServiceContext, kb_id, folder_id):
+    kb = get_or_404(KnowledgeBase, id=kb_id)
+    folder = get_or_404(WikiFolder, id=folder_id, knowledge_base=kb)
+    folder.save()
+    return wiki_folder_dict(folder)
+
+
+def create_wiki_folder(ctx: ServiceContext, kb_id, data):
+    kb = get_or_404(KnowledgeBase, id=kb_id)
     name = data.get("name", "Folder")
     folder = WikiFolder.objects.create(
         tenant=ctx.tenant or kb.tenant,
@@ -94,7 +102,25 @@ def wiki_folders(ctx: ServiceContext, kb_id, *, method: str, folder_id=None, dat
         depth=data.get("depth", 0),
         sort_order=data.get("sort_order", 0),
     )
-    return {"data": wiki_folder_dict(folder), "status": 201}
+    return wiki_folder_dict(folder)
+
+
+def update_wiki_folder(ctx: ServiceContext, kb_id, folder_id, data):
+    kb = get_or_404(KnowledgeBase, id=kb_id)
+    folder = get_or_404(WikiFolder, id=folder_id, knowledge_base=kb)
+    folder.name = data.get("name", folder.name)
+    folder.parent_id = data.get("parent_id", folder.parent_id)
+    folder.path = data.get("path", folder.path)
+    folder.depth = data.get("depth", folder.depth)
+    folder.sort_order = data.get("sort_order", folder.sort_order)
+    folder.save()
+    return wiki_folder_dict(folder)
+
+
+def delete_wiki_folder(ctx: ServiceContext, kb_id, folder_id):
+    kb = get_or_404(KnowledgeBase, id=kb_id)
+    get_or_404(WikiFolder, id=folder_id, knowledge_base=kb).delete()
+    return {}
 
 
 def wiki_index(ctx: ServiceContext, kb_id):

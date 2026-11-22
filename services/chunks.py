@@ -15,70 +15,66 @@ from .errors import NotFound, ServiceError, get_or_404
 from .knowledge import delete_knowledge_content
 
 
-def chunks_collection(
-    ctx: ServiceContext,
-    *,
-    method: str,
-    knowledge_id=None,
-    chunk_id=None,
-    data=None,
-    params: Mapping | None = None,
-):
-    params = params or {}
-    data = data or {}
-    if knowledge_id == "by-id" and chunk_id:
-        knowledge_id = None
-    if chunk_id and not knowledge_id:
-        chunk = get_or_404(Chunk, id=chunk_id)
-        if method == "GET":
-            return chunk_dict(chunk)
-        if method == "DELETE":
-            delete_knowledge_graph(chunk.knowledge)
-            delete_chunk_index(chunk.id, chunk.seq_id)
-            chunk.delete()
-            return {}
-    if knowledge_id and chunk_id:
-        chunk = get_or_404(Chunk, id=chunk_id, knowledge_id=knowledge_id)
-        if method == "GET":
-            return chunk_dict(chunk)
-        if method == "DELETE":
-            delete_knowledge_graph(chunk.knowledge)
-            delete_chunk_index(chunk.id, chunk.seq_id)
-            chunk.delete()
-            return {}
-        chunk.content = data.get("content", chunk.content)
-        chunk.is_enabled = data.get("is_enabled", chunk.is_enabled)
-        chunk.metadata = data.get("metadata", chunk.metadata)
-        try:
-            vector = chunk_vector(chunk)
-        except EmbeddingUnavailableError as exc:
-            raise ServiceError(
-                f"Embedding 服务不可用，切片未保存：{exc}",
-                status=503,
-                code="embedding_unavailable",
-            ) from exc
-        with transaction.atomic():
-            chunk.updated_at = timezone.now()
-            saved = Chunk.objects.filter(id=chunk.id).update(
-                content=chunk.content,
-                is_enabled=chunk.is_enabled,
-                metadata=chunk.metadata,
-                updated_at=chunk.updated_at,
-            )
-            if not saved:
-                raise NotFound("chunk not found")
-            index_chunk(chunk, vector)
-        return chunk_dict(chunk)
-    if knowledge_id and method == "GET":
-        chunks = Chunk.objects.filter(knowledge_id=knowledge_id).order_by("chunk_index")
-        chunk_type = params.get("chunk_type")
-        if chunk_type:
-            chunks = chunks.filter(chunk_type=chunk_type)
-        page, meta = paginate(chunks, params)
-        return list_response([chunk_dict(chunk) for chunk in page], meta, ["chunks"])
-    if knowledge_id and method == "DELETE":
-        item = Knowledge.objects.filter(id=knowledge_id).first()
-        if item:
-            delete_knowledge_content(item)
-        return {}
-    raise NotFound("not found")
+def get_chunk(ctx: ServiceContext, chunk_id, knowledge_id=None):
+    filters = {"id": chunk_id}
+    if knowledge_id:
+        filters["knowledge_id"] = knowledge_id
+    return chunk_dict(get_or_404(Chunk, **filters))
+
+
+def _delete_chunk(chunk):
+    delete_knowledge_graph(chunk.knowledge)
+    delete_chunk_index(chunk.id, chunk.seq_id)
+    chunk.delete()
+
+
+def delete_chunk(ctx: ServiceContext, chunk_id, knowledge_id=None):
+    filters = {"id": chunk_id}
+    if knowledge_id:
+        filters["knowledge_id"] = knowledge_id
+    chunk = get_or_404(Chunk, **filters)
+    _delete_chunk(chunk)
+    return {}
+
+
+def update_chunk(ctx: ServiceContext, knowledge_id, chunk_id, data):
+    chunk = get_or_404(Chunk, id=chunk_id, knowledge_id=knowledge_id)
+    chunk.content = data.get("content", chunk.content)
+    chunk.is_enabled = data.get("is_enabled", chunk.is_enabled)
+    chunk.metadata = data.get("metadata", chunk.metadata)
+    try:
+        vector = chunk_vector(chunk)
+    except EmbeddingUnavailableError as exc:
+        raise ServiceError(
+            f"Embedding 服务不可用，切片未保存：{exc}",
+            status=503,
+            code="embedding_unavailable",
+        ) from exc
+    with transaction.atomic():
+        chunk.updated_at = timezone.now()
+        saved = Chunk.objects.filter(id=chunk.id).update(
+            content=chunk.content,
+            is_enabled=chunk.is_enabled,
+            metadata=chunk.metadata,
+            updated_at=chunk.updated_at,
+        )
+        if not saved:
+            raise NotFound("chunk not found")
+        index_chunk(chunk, vector)
+    return chunk_dict(chunk)
+
+
+def list_chunks(ctx: ServiceContext, knowledge_id, params: Mapping):
+    chunks = Chunk.objects.filter(knowledge_id=knowledge_id).order_by("chunk_index")
+    chunk_type = params.get("chunk_type")
+    if chunk_type:
+        chunks = chunks.filter(chunk_type=chunk_type)
+    page, meta = paginate(chunks, params)
+    return list_response([chunk_dict(chunk) for chunk in page], meta, ["chunks"])
+
+
+def delete_knowledge_chunks(ctx: ServiceContext, knowledge_id):
+    item = Knowledge.objects.filter(id=knowledge_id).first()
+    if item:
+        delete_knowledge_content(item)
+    return {}

@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from personal_knowledge_base.graph_rag import delete_kb_graph, validate_extract_config
-from personal_knowledge_base.http_helpers import bool_from_value, list_response, paginate
+from personal_knowledge_base.http_helpers import list_response, paginate
 from personal_knowledge_base.models import KnowledgeBase
 from personal_knowledge_base.serializers import (
     DEFAULT_INDEXING_STRATEGY,
@@ -55,58 +55,39 @@ def normalize_kb_payload(data, existing=None, partial=False):
     }
 
 
-def knowledge_bases(ctx: ServiceContext, *, method: str, kb_id=None, data=None, params=None):
-    data = data or {}
-    params = params or {}
-    if kb_id:
-        kb = get_or_404(KnowledgeBase, id=kb_id, deleted_at__isnull=True)
-        if method == "GET":
-            return {"data": kb_dict(kb)}
-        if method == "DELETE":
-            delete_kb_graph(kb)
-            cleanup_wiki_for_kb(kb)
-            kb.deleted_at = timezone.now()
-            kb.save(update_fields=["deleted_at", "updated_at"])
-            return {"data": {}}
-        config = data.get("config") or data
-        normalized = normalize_kb_payload(data, kb, partial=True)
-        for field in ["name", "description"]:
-            if field in data:
-                setattr(kb, field, data[field])
-        for field in ["chunking_config", "image_processing_config"]:
-            if field in config:
-                setattr(kb, field, config[field])
-        for field, value in normalized.items():
-            setattr(kb, field, value)
-        kb.save()
-        return {"data": kb_dict(kb)}
+def list_knowledge_bases(ctx: ServiceContext, params):
+    qs = KnowledgeBase.objects.filter(
+        tenant=ctx.tenant, deleted_at__isnull=True, is_temporary=False
+    ).order_by("-is_pinned", "-updated_at")
+    creator = params.get("creator")
+    keyword = params.get("keyword") or params.get("q") or params.get("query")
+    kb_type = params.get("type")
+    if creator == "mine" and ctx.user:
+        qs = qs.filter(creator_id=ctx.user.id)
+    elif creator == "others" and ctx.user:
+        qs = qs.exclude(creator_id=ctx.user.id)
+    if keyword:
+        qs = qs.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
+    if kb_type:
+        if kb_type == "faq":
+            qs = qs.none()
+        elif kb_type == "wiki":
+            qs = qs.filter(Q(type="wiki") | Q(indexing_strategy__wiki_enabled=True))
+        else:
+            qs = qs.filter(type=kb_type)
+    page, meta = paginate(qs, params)
+    items = [kb_dict(kb) for kb in page]
+    for item in items:
+        if ctx.user and item.get("creator_id") == ctx.user.id:
+            item["creator_name"] = ctx.user.username
+    return list_response(items, meta, ["knowledge_bases"])
 
-    if method == "GET":
-        qs = KnowledgeBase.objects.filter(
-            tenant=ctx.tenant, deleted_at__isnull=True, is_temporary=False
-        ).order_by("-is_pinned", "-updated_at")
-        creator = params.get("creator")
-        keyword = params.get("keyword") or params.get("q") or params.get("query")
-        kb_type = params.get("type")
-        if creator == "mine" and ctx.user:
-            qs = qs.filter(creator_id=ctx.user.id)
-        elif creator == "others" and ctx.user:
-            qs = qs.exclude(creator_id=ctx.user.id)
-        if keyword:
-            qs = qs.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
-        if kb_type:
-            if kb_type == "faq":
-                qs = qs.none()
-            elif kb_type == "wiki":
-                qs = qs.filter(Q(type="wiki") | Q(indexing_strategy__wiki_enabled=True))
-            else:
-                qs = qs.filter(type=kb_type)
-        page, meta = paginate(qs, params)
-        items = [kb_dict(kb) for kb in page]
-        for item in items:
-            if ctx.user and item.get("creator_id") == ctx.user.id:
-                item["creator_name"] = ctx.user.username
-        return {"data": list_response(items, meta, ["knowledge_bases"])}
+
+def get_knowledge_base(ctx: ServiceContext, kb_id):
+    return kb_dict(get_or_404(KnowledgeBase, id=kb_id, deleted_at__isnull=True))
+
+
+def create_knowledge_base(ctx: ServiceContext, data):
     normalized = normalize_kb_payload(data)
     kb = KnowledgeBase.objects.create(
         tenant=ctx.tenant,
@@ -126,18 +107,37 @@ def knowledge_bases(ctx: ServiceContext, *, method: str, kb_id=None, data=None, 
         vector_store_id=data.get("vector_store_id") or "",
         creator_id=ctx.user.id if ctx.user else "",
     )
-    return {"data": kb_dict(kb), "status": 201}
+    return kb_dict(kb)
 
 
-def kb_pin(ctx: ServiceContext, kb_id, *, method: str, data=None):
+def update_knowledge_base(ctx: ServiceContext, kb_id, data):
+    kb = get_or_404(KnowledgeBase, id=kb_id, deleted_at__isnull=True)
+    config = data.get("config") or data
+    normalized = normalize_kb_payload(data, kb, partial=True)
+    for field in ["name", "description"]:
+        if field in data:
+            setattr(kb, field, data[field])
+    for field in ["chunking_config", "image_processing_config"]:
+        if field in config:
+            setattr(kb, field, config[field])
+    for field, value in normalized.items():
+        setattr(kb, field, value)
+    kb.save()
+    return kb_dict(kb)
+
+
+def delete_knowledge_base(ctx: ServiceContext, kb_id):
+    kb = get_or_404(KnowledgeBase, id=kb_id, deleted_at__isnull=True)
+    delete_kb_graph(kb)
+    cleanup_wiki_for_kb(kb)
+    kb.deleted_at = timezone.now()
+    kb.save(update_fields=["deleted_at", "updated_at"])
+    return {}
+
+
+def set_kb_pin(ctx: ServiceContext, kb_id, pinned: bool | None):
     kb = get_or_404(KnowledgeBase, id=kb_id)
-    data = data or {}
-    if method == "DELETE":
-        kb.is_pinned = False
-    elif method in {"POST", "PUT"}:
-        kb.is_pinned = bool_from_value(data.get("is_pinned"), not kb.is_pinned)
-    else:
-        kb.is_pinned = not kb.is_pinned
+    kb.is_pinned = not kb.is_pinned if pinned is None else pinned
     kb.pinned_at = timezone.now() if kb.is_pinned else None
     kb.save(update_fields=["is_pinned", "pinned_at", "updated_at"])
     return kb_dict(kb)

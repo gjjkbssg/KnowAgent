@@ -10,6 +10,7 @@ FORBIDDEN_MODULES = (
     "django.middleware",
     "rest_framework",
 )
+HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
 
 
 class ServiceBoundaryTests(unittest.TestCase):
@@ -38,4 +39,14 @@ class ServiceBoundaryTests(unittest.TestCase):
                         arguments.append(node.args.kwarg)
                     if any(argument.arg == "request" for argument in arguments):
                         violations.append(f"{path}:{node.lineno}: forbidden parameter request")
+                    if any(argument.arg == "method" for argument in arguments):
+                        violations.append(f"{path}:{node.lineno}: forbidden parameter method")
+                if isinstance(node, ast.Compare):
+                    operands = [node.left, *node.comparators]
+                    if any(
+                        isinstance(candidate, ast.Constant) and candidate.value in HTTP_METHODS
+                        for operand in operands
+                        for candidate in ast.walk(operand)
+                    ):
+                        violations.append(f"{path}:{node.lineno}: HTTP method comparison in service")
         self.assertEqual(violations, [])

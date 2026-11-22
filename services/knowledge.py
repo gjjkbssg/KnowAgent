@@ -3,6 +3,7 @@ import mimetypes
 import time
 import uuid
 from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 
 from django.core.files.base import ContentFile
@@ -39,6 +40,13 @@ from .errors import InvalidInput, NotFound, ServiceError, get_or_404
 
 KNOWLEDGE_TYPE_VALUES = {"file"}
 PROCESSING_STATUSES = {"pending", "processing", "finalizing"}
+
+
+@dataclass(frozen=True)
+class UploadResult:
+    knowledge: dict
+    task_id: str
+    deduplicated: bool
 
 
 def normalize_ids(data):
@@ -147,23 +155,24 @@ def apply_knowledge_filters(qs, params: Mapping):
     return qs
 
 
-def knowledge_collection(ctx: ServiceContext, kb_id, *, method: str, params: Mapping):
+def list_knowledge(ctx: ServiceContext, kb_id, params: Mapping):
     kb = get_or_404(KnowledgeBase, id=kb_id)
-    if method == "GET":
-        qs = Knowledge.objects.filter(knowledge_base=kb, deleted_at__isnull=True).order_by("-updated_at")
-        qs = apply_knowledge_filters(qs, params)
-        page, meta = paginate(qs, params)
-        return list_response([knowledge_dict(item) for item in page], meta, ["knowledge"])
-    if method == "DELETE":
-        for item in Knowledge.objects.filter(knowledge_base=kb):
-            delete_knowledge_content(item)
-        Knowledge.objects.filter(knowledge_base=kb).update(deleted_at=timezone.now())
-        cleanup_wiki_for_kb(kb)
-        return {}
-    raise ServiceError("method not allowed", status=405)
+    qs = Knowledge.objects.filter(knowledge_base=kb, deleted_at__isnull=True).order_by("-updated_at")
+    qs = apply_knowledge_filters(qs, params)
+    page, meta = paginate(qs, params)
+    return list_response([knowledge_dict(item) for item in page], meta, ["knowledge"])
 
 
-def knowledge_file(ctx: ServiceContext, kb_id, uploaded, *, form_data: Mapping):
+def delete_knowledge_collection(ctx: ServiceContext, kb_id):
+    kb = get_or_404(KnowledgeBase, id=kb_id)
+    for item in Knowledge.objects.filter(knowledge_base=kb):
+        delete_knowledge_content(item)
+    Knowledge.objects.filter(knowledge_base=kb).update(deleted_at=timezone.now())
+    cleanup_wiki_for_kb(kb)
+    return {}
+
+
+def upload_knowledge_file(ctx: ServiceContext, kb_id, uploaded, *, form_data: Mapping):
     kb = get_or_404(KnowledgeBase, id=kb_id)
     if not uploaded:
         raise InvalidInput("file is required")
@@ -183,7 +192,7 @@ def knowledge_file(ctx: ServiceContext, kb_id, uploaded, *, form_data: Mapping):
         deleted_at__isnull=True,
     ).order_by("-created_at").first()
     if existing:
-        return {"data": {"knowledge": knowledge_dict(existing), "task_id": "", "deduplicated": True}}
+        return UploadResult(knowledge_dict(existing), "", True)
     path = default_storage.save(f"tenant-{ctx.tenant.id}/{kb.id}/{uuid.uuid4()}-{uploaded.name}", ContentFile(content))
     item = None
     for attempt in range(3):
@@ -197,7 +206,7 @@ def knowledge_file(ctx: ServiceContext, kb_id, uploaded, *, form_data: Mapping):
                 ).order_by("-created_at").first()
                 if existing:
                     default_storage.delete(path)
-                    return {"data": {"knowledge": knowledge_dict(existing), "task_id": "", "deduplicated": True}}
+                    return UploadResult(knowledge_dict(existing), "", True)
                 item = Knowledge.objects.create(
                     tenant=ctx.tenant,
                     knowledge_base=kb,
@@ -224,7 +233,7 @@ def knowledge_file(ctx: ServiceContext, kb_id, uploaded, *, form_data: Mapping):
                 deleted_at__isnull=True,
             ).order_by("-created_at").first()
             if existing:
-                return {"data": {"knowledge": knowledge_dict(existing), "task_id": "", "deduplicated": True}}
+                return UploadResult(knowledge_dict(existing), "", True)
             raise
         except Exception as exc:
             if "database is locked" in str(exc) and attempt < 2:
@@ -236,18 +245,16 @@ def knowledge_file(ctx: ServiceContext, kb_id, uploaded, *, form_data: Mapping):
         default_storage.delete(path)
         raise ServiceError("upload failed after retries", status=500)
     task = enqueue("process_knowledge", lambda: (process_knowledge(item.id), {"knowledge_id": item.id})[1], {"knowledge_id": item.id})
-    return {"data": {"knowledge": knowledge_dict(item), "task_id": task.id}, "status": 201}
+    return UploadResult(knowledge_dict(item), task.id, False)
 
 
-def knowledge_detail(ctx: ServiceContext, knowledge_id, *, method: str, data=None):
+def get_knowledge(ctx: ServiceContext, knowledge_id):
     item = get_or_404(Knowledge, id=knowledge_id)
-    if method == "GET":
-        return knowledge_dict(item)
-    if method == "DELETE":
-        retire_knowledge_for_delete(item)
-        delete_knowledge_content(item)
-        return {"id": knowledge_id, "task_id": ""}
-    data = data or {}
+    return knowledge_dict(item)
+
+
+def update_knowledge(ctx: ServiceContext, knowledge_id, data):
+    item = get_or_404(Knowledge, id=knowledge_id)
     lifecycle_status = data.get("lifecycle_status")
     if "lifecycle_status" in data and lifecycle_status not in {"current", "superseded"}:
         raise InvalidInput("invalid lifecycle_status")
@@ -279,6 +286,13 @@ def knowledge_detail(ctx: ServiceContext, knowledge_id, *, method: str, data=Non
             item.metadata = metadata
     item.save()
     return knowledge_dict(item)
+
+
+def delete_knowledge(ctx: ServiceContext, knowledge_id):
+    item = get_or_404(Knowledge, id=knowledge_id)
+    retire_knowledge_for_delete(item)
+    delete_knowledge_content(item)
+    return {"id": knowledge_id, "task_id": ""}
 
 
 def knowledge_reparse(ctx: ServiceContext, knowledge_id, data=None):
