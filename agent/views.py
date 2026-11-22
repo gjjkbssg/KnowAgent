@@ -42,7 +42,7 @@ def generic_collection(request, resource_type, item_id=None, extra=None, **kwarg
     if not tenant:
         return fail("unauthorized", 401)
     if item_id:
-        item = get_object_or_404(GenericResource, id=item_id, resource_type=resource_type)
+        item = get_object_or_404(GenericResource, id=item_id, resource_type=resource_type, tenant=tenant)
         if request.method == "GET":
             return ok(resource_dict(item))
         if request.method == "DELETE":
@@ -50,6 +50,8 @@ def generic_collection(request, resource_type, item_id=None, extra=None, **kwarg
             item.save(update_fields=["deleted_at", "updated_at"])
             return ok({})
         data = parse_body(request)
+        if resource_type == "mcp_services" and not data.get("api_key"):
+            data.pop("api_key", None)
         item.name = data.get("name", item.name)
         item.status = data.get("status", item.status)
         item.data = {**(item.data or {}), **data}
@@ -76,6 +78,55 @@ def generic_collection(request, resource_type, item_id=None, extra=None, **kwarg
 def generic_action(request, resource_type, action="", item_id=None, sub_id=None, **kwargs):
     item_id = item_id or kwargs.get("channel_id") or kwargs.get("pending_id")
     sub_id = sub_id or kwargs.get("tool_name") or kwargs.get("field")
+    if resource_type == "mcp_services" and action in {"test", "tools"}:
+        _, tenant = auth_context(request)
+        if not tenant:
+            return fail("unauthorized", 401)
+        service = get_object_or_404(
+            GenericResource,
+            id=item_id,
+            resource_type="mcp_services",
+            tenant=tenant,
+            deleted_at__isnull=True,
+        )
+        data = service.data or {}
+        from personal_knowledge_base.mcp_client import MCPClient
+
+        client = MCPClient(data.get("url") or "", api_key=data.get("api_key") or "", timeout=10)
+        try:
+            client.initialize()
+            tools = client.list_tools()
+            if action == "test":
+                return ok(
+                    {
+                        "status": "ok",
+                        "available": True,
+                        "protocol_version": client.protocol_version,
+                        "tool_count": len(tools),
+                    }
+                )
+            return ok(
+                {
+                    "items": [
+                        {
+                            "name": tool["name"],
+                            "description": tool["description"],
+                            "input_schema": tool["inputSchema"],
+                            "annotations": tool["annotations"],
+                        }
+                        for tool in tools
+                    ]
+                }
+            )
+        except Exception as exc:
+            error = str(exc)
+            if data.get("api_key"):
+                error = error.replace(data["api_key"], "[redacted]")
+            if action == "test":
+                return ok({"status": "error", "available": False, "error": error})
+            return ok({"items": [], "error": error})
+        finally:
+            client.close()
     if action in {"types", "providers", "placeholders", "type-presets"}:
         return ok({"items": static_types(resource_type, action)})
     if action == "parser-engines/check":

@@ -1062,8 +1062,8 @@ onMounted(() => {
     <t-dialog v-model:visible="mcpDialogVisible" :header="mcpForm.id ? '编辑 MCP 服务' : '添加 MCP 服务'" confirm-btn="保存" width="600px" @confirm="saveMcpService">
       <div class="editor-grid">
         <t-input v-model="mcpForm.name" label="服务名称" placeholder="my-mcp-service" />
-        <t-input v-model="mcpForm.url" class="wide" label="服务 URL" placeholder="http://localhost:3000" />
-        <t-input v-model="mcpForm.api_key" type="password" label="API Key" placeholder="留空则不使用认证" />
+        <t-input v-model="mcpForm.url" class="wide" label="服务 URL" placeholder="http://localhost:8000/mcp" />
+        <t-input v-model="mcpForm.api_key" type="password" label="API Key" :placeholder="mcpForm.id ? '留空则保持不变' : '留空则不使用认证'" />
         <t-textarea v-model="mcpForm.description" class="wide" label="描述" placeholder="服务用途说明" />
         <label class="switch-line"><input v-model="mcpForm.enabled" type="checkbox" /> 启用服务</label>
       </div>
