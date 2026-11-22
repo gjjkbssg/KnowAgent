@@ -67,6 +67,12 @@ class TenantAdminAuthorizationTests(TestCase):
         self.assertEqual(response.json()["message"], message)
         self.assertEqual(response.json()["error"]["message"], message)
 
+    def _leave_single_active_owner(self):
+        TenantMember.objects.filter(
+            tenant=self.target,
+            role="owner",
+        ).exclude(user=self.owner).delete()
+
     def test_unauthenticated_requests_are_rejected(self):
         requests = [
             ("GET", self._detail(), None),
@@ -374,3 +380,56 @@ class TenantAdminAuthorizationTests(TestCase):
         )
         self.assertEqual(missing.status_code, 404)
         self.assertTrue(missing["Content-Type"].startswith("text/html"))
+
+    def test_last_active_owner_cannot_demote_self(self):
+        self._leave_single_active_owner()
+        response = self._request(
+            "PATCH",
+            self._member(self.owner.id),
+            {"role": "viewer"},
+            self.owner_headers,
+        )
+        self._assert_error(response, 409, "tenant must keep at least one owner")
+        self.assertEqual(
+            TenantMember.objects.get(user=self.owner, tenant=self.target).role,
+            "owner",
+        )
+
+    def test_last_active_owner_cannot_remove_self(self):
+        self._leave_single_active_owner()
+        response = self._request(
+            "DELETE",
+            self._member(self.owner.id),
+            headers=self.owner_headers,
+        )
+        self._assert_error(response, 409, "tenant must keep at least one owner")
+        self.assertTrue(
+            TenantMember.objects.filter(user=self.owner, tenant=self.target).exists()
+        )
+
+    def test_last_active_owner_cannot_be_upserted_as_viewer(self):
+        self._leave_single_active_owner()
+        response = self._request(
+            "POST",
+            self._members(),
+            {"email": self.owner.email, "role": "viewer"},
+            self.owner_headers,
+        )
+        self._assert_error(response, 409, "tenant must keep at least one owner")
+        self.assertEqual(
+            TenantMember.objects.get(user=self.owner, tenant=self.target).role,
+            "owner",
+        )
+
+    def test_owner_can_be_demoted_when_another_active_owner_remains(self):
+        response = self._request(
+            "PATCH",
+            self._member(self.other_owner.id),
+            {"role": "admin"},
+            self.owner_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            TenantMember.objects.get(user=self.other_owner, tenant=self.target).role,
+            "admin",
+        )

@@ -1,5 +1,6 @@
 import secrets
 
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -7,7 +8,14 @@ from personal_knowledge_base.authentication import role_for
 from personal_knowledge_base.models import AuditLog, Tenant, TenantMember, User
 from personal_knowledge_base.serializers import membership_dict, tenant_dict, user_dict
 from services.context import ServiceContext
-from services.errors import Forbidden, InvalidInput, NotFound, Unauthorized, get_or_404
+from services.errors import (
+    Conflict,
+    Forbidden,
+    InvalidInput,
+    NotFound,
+    Unauthorized,
+    get_or_404,
+)
 
 
 TENANT_KV_FIELDS = {
@@ -139,14 +147,22 @@ def add_tenant_member(ctx: ServiceContext, tenant_id, data: dict) -> dict:
     user = User.objects.filter(Q(email=data.get("email")) | Q(id=data.get("user_id"))).first()
     if not user:
         raise NotFound("user not found")
-    existing_member = TenantMember.objects.filter(user=user, tenant=tenant).first()
-    if existing_member is not None and existing_member.role == "owner" and role != "owner":
-        raise Forbidden("forbidden")
-    member, _ = TenantMember.objects.update_or_create(
-        user=user,
-        tenant=tenant,
-        defaults={"role": member_role, "status": "active"},
-    )
+    with transaction.atomic():
+        tenant = _lock_tenant(tenant)
+        existing_member = TenantMember.objects.filter(user=user, tenant=tenant).first()
+        if (
+            existing_member is not None
+            and existing_member.role == "owner"
+            and role != "owner"
+        ):
+            raise Forbidden("forbidden")
+        if existing_member is not None and member_role != existing_member.role:
+            _ensure_active_owner_remains(tenant, existing_member)
+        member, _ = TenantMember.objects.update_or_create(
+            user=user,
+            tenant=tenant,
+            defaults={"role": member_role, "status": "active"},
+        )
     return membership_dict(member)
 
 
@@ -154,28 +170,51 @@ def _get_tenant_member(tenant, user_id):
     return get_or_404(TenantMember, tenant=tenant, user_id=user_id)
 
 
+def _lock_tenant(tenant):
+    return get_or_404(Tenant.objects.select_for_update(), id=tenant.id)
+
+
+def _ensure_active_owner_remains(tenant, member):
+    if member.status != "active" or member.role != "owner":
+        return
+    owner_count = TenantMember.objects.filter(
+        tenant=tenant,
+        status="active",
+        role="owner",
+    ).count()
+    if owner_count <= 1:
+        raise Conflict("tenant must keep at least one owner")
+
+
 def delete_tenant_member(ctx: ServiceContext, tenant_id, user_id) -> dict:
     tenant, role = _authorized_tenant(ctx, tenant_id)
     _require_roles(role, TENANT_MANAGEMENT_ROLES)
-    member = _get_tenant_member(tenant, user_id)
-    if member.role == "owner" and role != "owner":
-        raise Forbidden("forbidden")
-    member.delete()
+    with transaction.atomic():
+        tenant = _lock_tenant(tenant)
+        member = _get_tenant_member(tenant, user_id)
+        if member.role == "owner" and role != "owner":
+            raise Forbidden("forbidden")
+        _ensure_active_owner_remains(tenant, member)
+        member.delete()
     return {}
 
 
 def update_tenant_member(ctx: ServiceContext, tenant_id, user_id, data: dict) -> dict:
     tenant, role = _authorized_tenant(ctx, tenant_id)
     _require_roles(role, TENANT_MANAGEMENT_ROLES)
-    member = _get_tenant_member(tenant, user_id)
-    if member.role == "owner" and role != "owner":
-        raise Forbidden("forbidden")
-    member_role = data.get("role", member.role)
-    _validate_tenant_role(member_role)
-    if member_role == "owner" and role != "owner":
-        raise Forbidden("forbidden")
-    member.role = member_role
-    member.save(update_fields=["role", "updated_at"])
+    with transaction.atomic():
+        tenant = _lock_tenant(tenant)
+        member = _get_tenant_member(tenant, user_id)
+        if member.role == "owner" and role != "owner":
+            raise Forbidden("forbidden")
+        member_role = data.get("role", member.role)
+        _validate_tenant_role(member_role)
+        if member_role == "owner" and role != "owner":
+            raise Forbidden("forbidden")
+        if member_role != member.role:
+            _ensure_active_owner_remains(tenant, member)
+        member.role = member_role
+        member.save(update_fields=["role", "updated_at"])
     return membership_dict(member)
 
 
