@@ -231,9 +231,11 @@ class MCPClient:
                     value = value[1:]
                 if field == "data":
                     data_lines.append(value)
-            if data_lines:
+            data = "\n".join(data_lines)
+            # 2025-11-25 起服务端可能先发一个只有 id、data 为空的预热事件，用于断线续传
+            if data.strip():
                 try:
-                    messages.append(json.loads("\n".join(data_lines)))
+                    messages.append(json.loads(data))
                 except json.JSONDecodeError as exc:
                     raise MCPError("invalid_sse", "Invalid JSON in MCP event stream") from exc
         return messages

@@ -137,7 +137,8 @@ class FakeMCPServer:
                         {"jsonrpc": "2.0", "method": "notifications/progress", "params": {"progress": 1}},
                         response,
                     ]
-                    body = b": fake event stream\n\n"
+                    # 先发一个只有 id、data 为空的预热事件（2025-11-25 规范允许）
+                    body = b": fake event stream\n\nid: prime-1\ndata:\n\n"
                     for event in events:
                         encoded = json.dumps(event, separators=(",", ":"))
                         split = encoded.find(',"')
