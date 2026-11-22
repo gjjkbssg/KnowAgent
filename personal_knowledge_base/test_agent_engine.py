@@ -164,6 +164,28 @@ class AgentEngineTests(TestCase):
         self.assertEqual(result.steps[0].tool_calls[0].result.error, "")
         self.assertEqual(result.stopped_reason, "completed")
 
+    def test_max_iterations_force_final_answer_without_tools(self):
+        model = ScriptedModel(
+            [{"content": "", "tool_calls": [tool_call("c1", "thinking", {"thought": "plan"})]}]
+        )
+        engine = AgentEngine(
+            self.tenant,
+            "session",
+            agent_config={"allowed_tools": ["thinking"], "knowledge_base_ids": ["kb"], "max_rounds": 1},
+        )
+        forced_answer = "根据已检索的信息，设备需要重新校准。"
+        nudge = "已达到最大推理轮数。请停止调用工具，基于已获得的信息直接给出最终回答；信息不足的部分请明确说明。"
+
+        with patch.object(model_providers, "chat_completion_raw", model), patch.object(
+            model_providers, "chat_completion", return_value=forced_answer
+        ) as final_call:
+            result = engine.execute("设备如何处理？")
+
+        self.assertEqual(result.content, forced_answer)
+        self.assertEqual(result.stopped_reason, "max_iterations")
+        final_call.assert_called_once()
+        self.assertEqual(final_call.call_args.args[1][-1]["content"], nudge)
+
     def test_identical_tool_round_stops_the_loop_with_a_final_answer(self):
         same_call = {"content": "", "tool_calls": [tool_call("c1", "thinking", {"thought": "again"})]}
         result, model, final_call = self.run_engine([same_call, same_call, same_call], allowed_tools=["thinking"])
@@ -265,6 +287,26 @@ class AgentEngineTests(TestCase):
 
         self.assertEqual(result.references, [])
 
+    def test_markup_only_answer_is_retried_until_visible_text_arrives(self):
+        result, model, _ = self.run_engine(
+            [
+                {"content": "</th> </invoke>", "tool_calls": None},
+                {"content": "真实回答", "tool_calls": None},
+            ],
+            allowed_tools=["knowledge_search"],
+        )
+
+        self.assertEqual(result.content, "真实回答")
+        self.assertEqual(result.stopped_reason, "completed")
+        self.assertEqual(result.total_iterations, 2)
+        self.assertEqual(model.responses, [])
+
+    def test_normal_answer_with_html_tag_is_returned_unchanged(self):
+        answer = "第一行<br>第二行"
+        result, _, _ = self.run_engine([{"content": answer, "tool_calls": None}], allowed_tools=["knowledge_search"])
+
+        self.assertEqual(result.content, answer)
+
     def test_approval_suspends_before_tool_execution_and_resumes_in_new_engine(self):
         calls = []
         first_tool = GatedTool(calls)
@@ -309,8 +351,8 @@ class AgentEngineTests(TestCase):
             {"service_id": "service-a", "remote_tool_name": "delete"},
         )
 
-    def test_last_round_approval_uses_max_iterations_fallback(self):
-        expected = "已达到最大推理轮数，基于当前信息给出回答。"
+    def test_last_round_approval_forces_answer_when_resumed_at_max_iterations(self):
+        expected = "根据已处理的信息直接给出最终回答。"
         response = {
             "content": "我现在去删除",
             "tool_calls": [tool_call("g1", "mcp_test_action", {"x": 1})],
@@ -320,7 +362,10 @@ class AgentEngineTests(TestCase):
                 calls = []
                 tool = GatedTool(calls)
                 config = {"allowed_tools": [], "extra_tools": [tool], "max_rounds": 1}
-                with patch.object(model_providers, "chat_completion_raw", return_value=response):
+                with (
+                    patch.object(model_providers, "chat_completion_raw", return_value=response),
+                    patch.object(model_providers, "chat_completion", return_value=expected) as final_call,
+                ):
                     suspended = AgentEngine(self.tenant, "session", agent_config=config).execute("question")
                     resumed = AgentEngine(
                         self.tenant,
@@ -331,6 +376,7 @@ class AgentEngineTests(TestCase):
                 self.assertEqual(suspended.stopped_reason, "awaiting_approval")
                 self.assertEqual(resumed.stopped_reason, "max_iterations")
                 self.assertEqual(resumed.content, expected)
+                final_call.assert_called_once()
                 self.assertEqual(calls, [{"x": 1}] if decision == "approved" else [])
 
     def test_checkpoint_serialization_preserves_full_tool_result(self):
@@ -659,3 +705,22 @@ class ToolIsolationTests(TestCase):
         self.assertIn("evidence text", first.output)
         self.assertIn("content omitted", repeat.output)
         self.assertIn("evidence text", other.output)
+
+    def test_execute_exposes_uncapped_retrieved_chunks_without_changing_references(self):
+        tenant = Tenant.objects.create(name="Agent Engine retrieval test", api_key="agent-engine-retrieval-key")
+        engine = AgentEngine(tenant, "session")
+        refs = [
+            {"chunk_id": f"chunk-{index}", "knowledge_title": f"doc-{index}", "content": f"evidence {index}"}
+            for index in range(12)
+        ]
+
+        def execute(*args, **kwargs):
+            engine._references.add(refs)
+            return AgentResult("answer", [], 1, 0)
+
+        with patch.object(engine, "_execute", side_effect=execute):
+            result = engine.execute("question")
+
+        self.assertEqual(len(result.references), 10)
+        self.assertEqual(result.retrieved, refs)
+        self.assertNotIn("retrieved", result.to_dict())

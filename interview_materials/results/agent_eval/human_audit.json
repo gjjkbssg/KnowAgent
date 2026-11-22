@@ -1,0 +1,45 @@
+{
+ "method": "Every answer was read by hand against the task reference. Rows listed here override the keyword scorer (score_answer); all other rows keep the scorer's verdict, which manual review confirmed.",
+ "overrides": [
+  {
+   "run": "baseline",
+   "config": "rag",
+   "task_id": "h-a305-lt2",
+   "keyword": true,
+   "human": false,
+   "reason": "Says LT-2 turns off nothing after 10 minutes; v2.4 turns off the light group (A305 has no screen)."
+  },
+  {
+   "run": "baseline",
+   "config": "rag",
+   "task_id": "h-c102-e17",
+   "keyword": true,
+   "human": false,
+   "reason": "Claims the KB has no C102 information and gives both ES-20 and ES-21 thresholds conditionally instead of resolving C102 -> ES-21 -> 300 s."
+  },
+  {
+   "run": "baseline",
+   "config": "rag",
+   "task_id": "h-b210-battery",
+   "keyword": true,
+   "human": false,
+   "reason": "Says it cannot give a yes/no because ES-21's power source is not stated; the ES-21 spec chunk was not retrieved."
+  },
+  {
+   "run": "agent_after_fix",
+   "config": "agent",
+   "task_id": "h-a305-lt2",
+   "keyword": true,
+   "human": false,
+   "reason": "Forced final answer after max_iterations uses the superseded v2.3 value (15 minutes) and concludes nothing is turned off."
+  },
+  {
+   "run": "agent_after_fix",
+   "config": "agent",
+   "task_id": "v-lt2",
+   "keyword": true,
+   "human": false,
+   "reason": "Forced final answer after max_iterations came back empty, so the fallback dumped raw tool output (canteen and shuttle notes) instead of an answer."
+  }
+ ]
+}
