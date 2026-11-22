@@ -281,6 +281,30 @@ class ToolApprovalTests(TransactionTestCase):
         self.assertTrue(message.is_completed)
         self.assertEqual(message.content, "rejected")
 
+    def test_reconnect_uses_new_offsets_when_the_worker_replaces_the_approval_stream(self):
+        approval, message, client, toolset = self.queue_approval_without_dispatch()
+        old_stream = stream_manager.create_stream(message.id, self.session.id)
+        old_stream.append_event("thinking", {"content": "waiting for approval"})
+        old_stream.append_event("approval_required", {"approval": {"id": approval.id}})
+        response = self.client.get(
+            f"/api/v1/sessions/continue-stream/{self.session.id}?message_id={message.id}",
+            HTTP_LAST_EVENT_ID="0",
+            **self.headers,
+        )
+        with (
+            patch("personal_knowledge_base.mcp_client.load_mcp_toolset", return_value=toolset),
+            patch("personal_knowledge_base.model_providers.chat_completion_raw", return_value={
+                "content": "finished", "tool_calls": None,
+            }),
+            patch("chat.views.schedule_chat_maintenance"),
+            patch("chat.views.time.sleep", side_effect=lambda _: tasks.recover_incomplete_tasks()),
+        ):
+            body = b"".join(response.streaming_content).decode()
+        client.call_tool.assert_called_once()
+        self.assertIn('id: 0\nevent: message\ndata: {"response_type": "tool_call"', body)
+        self.assertIn('id: 1\nevent: message\ndata: {"response_type": "tool_result"', body)
+        self.assertIn("event: done", body)
+
     def test_two_recovery_workers_claim_the_same_pending_resume_once(self):
         approval, message, client, toolset = self.queue_approval_without_dispatch()
         both_read_pending = threading.Barrier(2, timeout=5)

@@ -349,6 +349,7 @@ def stream_message_events(message: Message, offset: int = 0, idle_timeout: float
     这里就从 offset = id + 1 继续，不重放已经送达的事件。
     """
     msg_id = message.id
+    stream = stream_manager.get_stream(msg_id)
     if offset == 0:
         yield sse_frame({"id": msg_id, "request_id": message.request_id}, "message_start")
         yield sse_frame({"response_type": "agent_query", "assistant_message_id": msg_id, "session_id": message.session_id, "content": "", "done": False})
@@ -356,7 +357,12 @@ def stream_message_events(message: Message, offset: int = 0, idle_timeout: float
     idle = 0.0
     next_db_check = 0.0
     while idle_timeout is None or idle < idle_timeout:
-        events = stream_manager.get_events(msg_id, offset)
+        current_stream = stream_manager.get_stream(msg_id)
+        if wait_for_resume and current_stream is not stream:
+            # Each resumed round starts its event offsets at zero.
+            offset = 0
+        stream = current_stream
+        events = stream.get_events(offset) if stream else []
         for event in events:
             data = event.data
             if event.event_type == "thinking":
@@ -368,7 +374,6 @@ def stream_message_events(message: Message, offset: int = 0, idle_timeout: float
             elif event.event_type.startswith("actor_"):
                 payload = data
             elif event.event_type == "complete":
-                stream = stream_manager.get_stream(msg_id)
                 payload = {
                     "response_type": "answer",
                     "content": data.get("content") or (stream.final_content if stream else ""),
