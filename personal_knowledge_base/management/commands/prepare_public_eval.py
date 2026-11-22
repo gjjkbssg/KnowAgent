@@ -6,7 +6,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from knowledge.views import delete_knowledge_content
+from services.knowledge import delete_knowledge_content
 from personal_knowledge_base.model_providers import embedding
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant, User
 from personal_knowledge_base.search import index_chunk, pack_embedding

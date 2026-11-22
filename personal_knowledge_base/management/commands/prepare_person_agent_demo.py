@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.management.base import BaseCommand, CommandError
 
-from knowledge.views import delete_knowledge_content
+from services.knowledge import delete_knowledge_content
 from personal_knowledge_base.document_processing import detect_file_type, process_knowledge
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant, User
 

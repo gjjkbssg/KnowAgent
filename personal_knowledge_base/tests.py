@@ -1151,7 +1151,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         ).json()["data"]["id"]
         removed_extensions = ["mp3", "wav", "m4a", "aac", "ogg", "flac", "mp4", "mov", "avi", "mkv", "webm"]
 
-        with patch("knowledge.views.default_storage.save", return_value="must-not-be-saved") as save_file, patch("knowledge.views.enqueue") as enqueue_task:
+        with patch("services.knowledge.default_storage.save", return_value="must-not-be-saved") as save_file, patch("services.knowledge.enqueue") as enqueue_task:
             enqueue_task.return_value.id = "must-not-be-created"
             for extension in removed_extensions:
                 with self.subTest(extension=extension):
@@ -1175,7 +1175,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
             **self.headers,
         ).json()["data"]["id"]
 
-        with patch("knowledge.views.default_storage.save", return_value="tenant/diagram.png"), patch("knowledge.views.enqueue") as enqueue_task:
+        with patch("services.knowledge.default_storage.save", return_value="tenant/diagram.png"), patch("services.knowledge.enqueue") as enqueue_task:
             enqueue_task.return_value.id = "image-task"
             response = self.client.post(
                 f"/api/v1/knowledge-bases/{kb_id}/knowledge/file",
@@ -1284,7 +1284,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.json()["data"]["knowledge"]["metadata"]["process_config"], {"chunking_config": {"chunk_size": 384}})
         self.assertEqual(response.json()["data"]["knowledge"]["metadata"]["process_overrides"], {"chunking_config": {"chunk_size": 384}})
 
-        with patch("knowledge.views.delete_knowledge_graph") as delete_graph, patch("knowledge.views.rebuild_knowledge_graph") as rebuild_graph:
+        with patch("services.knowledge.delete_knowledge_graph") as delete_graph, patch("services.knowledge.rebuild_knowledge_graph") as rebuild_graph:
             response = self.client.post(
                 "/api/v1/knowledge/move",
                 data=json.dumps({"source_kb_id": kb_id, "target_kb_id": target_kb_id, "knowledge_ids": [flow_doc["id"]], "mode": "reuse_vectors"}),

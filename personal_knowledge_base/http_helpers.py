@@ -1,6 +1,8 @@
 import json
+from collections.abc import Mapping
 
 from .authentication import require_auth
+from services.context import ServiceContext
 
 
 def parse_body(request):
@@ -21,6 +23,14 @@ def auth_context(request):
         return None, None
 
 
+def service_context(request):
+    return ServiceContext(
+        tenant=request.auth_tenant,
+        user=request.auth_user,
+        request_id=request.headers.get("X-Request-ID", ""),
+    )
+
+
 def bounded_int(value, default, minimum=None, maximum=None):
     try:
         number = int(value if value not in (None, "") else default)
@@ -33,13 +43,15 @@ def bounded_int(value, default, minimum=None, maximum=None):
     return number
 
 
-def paginate(qs, request):
-    page_size = bounded_int(request.GET.get("page_size", request.GET.get("limit", 20)), 20, 1, 200)
-    if "offset" in request.GET and "page" not in request.GET:
-        offset = bounded_int(request.GET.get("offset"), 0, 0)
+def paginate(qs, params: Mapping):
+    if not isinstance(params, Mapping):
+        params = params.GET
+    page_size = bounded_int(params.get("page_size", params.get("limit", 20)), 20, 1, 200)
+    if "offset" in params and "page" not in params:
+        offset = bounded_int(params.get("offset"), 0, 0)
         page = offset // page_size + 1
     else:
-        page = bounded_int(request.GET.get("page"), 1, 1)
+        page = bounded_int(params.get("page"), 1, 1)
         offset = (page - 1) * page_size
     total = qs.count()
     return qs[offset : offset + page_size], {"page": page, "page_size": page_size, "total": total}
