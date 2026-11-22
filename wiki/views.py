@@ -8,7 +8,6 @@ from services.wiki import (
     create_wiki_page as create_wiki_page_service,
     delete_wiki_folder as delete_wiki_folder_service,
     delete_wiki_page as delete_wiki_page_service,
-    get_wiki_folder as get_wiki_folder_service,
     get_wiki_page as get_wiki_page_service,
     wiki_index as wiki_index_service,
     wiki_issues as wiki_issues_service,
@@ -32,16 +31,12 @@ def wiki_pages(request, kb_id, slug=None):
     if slug:
         if request.method == "GET":
             return ok(get_wiki_page_service(ctx, kb_id, slug))
-        if request.method == "PUT":
-            return ok(update_wiki_page_service(ctx, kb_id, slug, parse_body(request)))
         if request.method == "DELETE":
             return ok(delete_wiki_page_service(ctx, kb_id, slug))
-        return fail("method not allowed", 405)
+        return ok(update_wiki_page_service(ctx, kb_id, slug, parse_body(request)))
     if request.method == "GET":
         return ok(list_wiki_pages_service(ctx, kb_id))
-    if request.method == "POST":
-        return ok(create_wiki_page_service(ctx, kb_id, parse_body(request)), status=201)
-    return fail("method not allowed", 405)
+    return ok(create_wiki_page_service(ctx, kb_id, parse_body(request)), status=201)
 
 
 @csrf_exempt
@@ -50,18 +45,12 @@ def wiki_pages(request, kb_id, slug=None):
 def wiki_folders(request, kb_id, folder_id=None):
     ctx = service_context(request)
     if folder_id:
-        if request.method == "GET":
-            return ok(get_wiki_folder_service(ctx, kb_id, folder_id))
-        if request.method == "PUT":
-            return ok(update_wiki_folder_service(ctx, kb_id, folder_id, parse_body(request)))
         if request.method == "DELETE":
             return ok(delete_wiki_folder_service(ctx, kb_id, folder_id))
-        return fail("method not allowed", 405)
+        return ok(update_wiki_folder_service(ctx, kb_id, folder_id, parse_body(request)))
     if request.method == "GET":
         return ok(list_wiki_folders_service(ctx, kb_id))
-    if request.method == "POST":
-        return ok(create_wiki_folder_service(ctx, kb_id, parse_body(request)), status=201)
-    return fail("method not allowed", 405)
+    return ok(create_wiki_folder_service(ctx, kb_id, parse_body(request)), status=201)
 
 
 @tenant_scoped

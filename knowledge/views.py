@@ -60,16 +60,12 @@ def knowledge_bases(request, kb_id=None):
     if kb_id:
         if request.method == "GET":
             return ok(get_knowledge_base_service(ctx, kb_id))
-        if request.method == "PUT":
-            return ok(update_knowledge_base_service(ctx, kb_id, parse_body(request)))
         if request.method == "DELETE":
             return ok(delete_knowledge_base_service(ctx, kb_id))
-        return fail("method not allowed", 405)
+        return ok(update_knowledge_base_service(ctx, kb_id, parse_body(request)))
     if request.method == "GET":
         return ok(list_knowledge_bases_service(ctx, request.GET))
-    if request.method == "POST":
-        return ok(create_knowledge_base_service(ctx, parse_body(request)), status=201)
-    return fail("method not allowed", 405)
+    return ok(create_knowledge_base_service(ctx, parse_body(request)), status=201)
 
 
 @csrf_exempt
@@ -116,8 +112,6 @@ def knowledge_collection(request, kb_id):
 @tenant_scoped
 @service_errors
 def knowledge_file(request, kb_id):
-    if request.method != "POST":
-        return fail("method not allowed", 405)
     result = upload_knowledge_file_service(
         service_context(request),
         kb_id,
@@ -137,11 +131,9 @@ def knowledge_detail(request, knowledge_id):
     ctx = service_context(request)
     if request.method == "GET":
         return ok(get_knowledge_service(ctx, knowledge_id))
-    if request.method == "PUT":
-        return ok(update_knowledge_service(ctx, knowledge_id, parse_body(request)))
     if request.method == "DELETE":
         return ok(delete_knowledge_service(ctx, knowledge_id))
-    return fail("method not allowed", 405)
+    return ok(update_knowledge_service(ctx, knowledge_id, parse_body(request)))
 
 
 @csrf_exempt
@@ -250,15 +242,13 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
             return ok(get_chunk(ctx, chunk_id, knowledge_id))
         if request.method == "DELETE":
             return ok(delete_chunk(ctx, chunk_id, knowledge_id))
-        if knowledge_id and request.method == "PUT":
+        if knowledge_id:
             return ok(update_chunk(ctx, knowledge_id, chunk_id, parse_body(request)))
-        return fail("method not allowed", 405)
     if knowledge_id:
         if request.method == "GET":
             return ok(list_chunks(ctx, knowledge_id, request.GET))
         if request.method == "DELETE":
             return ok(delete_knowledge_chunks(ctx, knowledge_id))
-        return fail("method not allowed", 405)
     return fail("not found", 404)
 
 
@@ -271,11 +261,9 @@ def knowledge_tags(request, kb_id, tag_id=None):
         return ok(list_knowledge_tags_service(ctx, kb_id))
     if tag_id and request.method == "DELETE":
         return ok(delete_knowledge_tag_service(ctx, kb_id, tag_id))
-    if tag_id and request.method == "PUT":
+    if tag_id:
         return ok(update_knowledge_tag_service(ctx, kb_id, tag_id, parse_body(request)))
-    if not tag_id and request.method == "POST":
-        return ok(create_knowledge_tag_service(ctx, kb_id, parse_body(request)), status=201)
-    return fail("method not allowed", 405)
+    return ok(create_knowledge_tag_service(ctx, kb_id, parse_body(request)), status=201)
 
 
 @csrf_exempt

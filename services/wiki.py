@@ -83,13 +83,6 @@ def list_wiki_folders(ctx: ServiceContext, kb_id):
     return {"items": [wiki_folder_dict(folder) for folder in folders]}
 
 
-def get_wiki_folder(ctx: ServiceContext, kb_id, folder_id):
-    kb = get_or_404(KnowledgeBase, id=kb_id)
-    folder = get_or_404(WikiFolder, id=folder_id, knowledge_base=kb)
-    folder.save()
-    return wiki_folder_dict(folder)
-
-
 def create_wiki_folder(ctx: ServiceContext, kb_id, data):
     kb = get_or_404(KnowledgeBase, id=kb_id)
     name = data.get("name", "Folder")
