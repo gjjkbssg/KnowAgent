@@ -100,7 +100,7 @@ class MCPServiceManagementTests(TestCase):
         self.assertNotIn("action-key", test_response.content.decode())
 
     def test_mcp_service_default_approval_mode_is_always(self):
-        from .views import default_resource_payload
+        from services.agent_resources import default_resource_payload
 
         self.assertEqual(default_resource_payload("mcp_services", {"name": "service"})["approval_mode"], "always")
 

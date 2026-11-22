@@ -1,48 +1,36 @@
 import json
-import secrets
 
-from django.conf import settings
-from django.db.models import Q
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from personal_knowledge_base.authentication import hash_password, issue_tokens, verify_password
 from personal_knowledge_base.http_helpers import auth_context, parse_body
-from personal_knowledge_base.models import (
-    AuditLog,
-    AuthToken,
-    Tenant,
-    TenantMember,
-    User,
+from personal_knowledge_base.responses import fail, ok, service_errors
+from services.accounts import (
+    auto_setup,
+    change_password,
+    current_user,
+    login,
+    logout,
+    refresh,
+    register,
+    switch_tenant as switch_tenant_service,
+    update_preferences,
+    validate_auth,
 )
-from personal_knowledge_base.responses import fail, ok
-from personal_knowledge_base.serializers import (
-    membership_dict,
-    tenant_dict,
-    user_dict,
+from services.tenants import (
+    add_tenant_member,
+    create_tenant,
+    delete_tenant,
+    delete_tenant_member,
+    get_tenant_detail,
+    get_tenant_kv,
+    list_audit_logs,
+    list_tenant_members,
+    list_tenants,
+    rotate_tenant_api_key,
+    update_tenant,
+    update_tenant_kv,
+    update_tenant_member,
 )
-
-
-TENANT_KV_FIELDS = {
-    "agent-config": "agent_config",
-    "agent_config": "agent_config",
-    "context-config": "context_config",
-    "context_config": "context_config",
-    "conversation-config": "conversation_config",
-    "conversation_config": "conversation_config",
-    "web-search-config": "web_search_config",
-    "web_search_config": "web_search_config",
-    "parser-engine-config": "parser_engine_config",
-    "parser_engine_config": "parser_engine_config",
-    "storage-engine-config": "storage_engine_config",
-    "storage_engine_config": "storage_engine_config",
-    "chat-history-config": "chat_history_config",
-    "chat_history_config": "chat_history_config",
-    "retrieval-config": "retrieval_config",
-    "retrieval_config": "retrieval_config",
-    "prompt-templates": "credentials",
-}
 
 
 # ---------------------------------------------------------------------------
@@ -50,120 +38,69 @@ TENANT_KV_FIELDS = {
 # ---------------------------------------------------------------------------
 
 @csrf_exempt
+@service_errors
 def auth_register(request):
-    data = parse_body(request)
-    username = data.get("username") or data.get("email", "").split("@")[0] or f"user-{secrets.token_hex(3)}"
-    email = data.get("email") or f"{username}@local"
-    password = data.get("password")
-    if not password:
-        return fail("password is required", 400)
-    if User.objects.filter(Q(username=username) | Q(email=email)).exists():
-        return fail("user already exists", 409, "user_exists")
-    tenant = Tenant.objects.create(name=f"{username} 的空间", api_key=secrets.token_urlsafe(24), business="default")
-    user = User.objects.create(username=username, email=email, password_hash=hash_password(password), tenant=tenant)
-    TenantMember.objects.create(user=user, tenant=tenant, role="owner")
-    token, refresh = issue_tokens(user)
-    return ok({"user": user_dict(user), "tenant": tenant_dict(tenant), "token": token, "refresh_token": refresh}, status=201)
+    return ok(register(parse_body(request)), status=201)
 
 
 @csrf_exempt
+@service_errors
 def auth_auto_setup(request):
-    user = User.objects.order_by("created_at").first()
-    if not user:
-        # 生成随机密码，首次登录后必须修改
-        random_password = secrets.token_urlsafe(12)
-        request._body = json.dumps({"username": "admin", "email": "admin@knowledge.local", "password": random_password}).encode()
-        response = auth_register(request)
-        # 在响应中添加临时密码提示
-        if hasattr(response, 'content'):
-            try:
-                data = json.loads(response.content)
-                if 'data' in data:
-                    data['data']['temp_password'] = random_password
-                    data['data']['require_password_change'] = True
-                    response.content = json.dumps(data).encode()
-            except Exception:
-                pass
-        return response
-    if not settings.AUTO_LOGIN_ENABLED:
-        return fail("passwordless login is disabled; sign in with your password, or run `python manage.py reset_password` on the server if it is lost", 403, "auto_login_disabled")
-    token, refresh = issue_tokens(user)
-    return ok({"user": user_dict(user), "tenant": tenant_dict(user.tenant), "token": token, "refresh_token": refresh})
+    data = auto_setup()
+    response = ok(data, status=201 if data.get("require_password_change") else 200)
+    if data.get("require_password_change"):
+        response.content = json.dumps(
+            {"success": True, "message": "success", "data": data}
+        ).encode()
+    return response
 
 
 @csrf_exempt
+@service_errors
 def auth_login(request):
-    data = parse_body(request)
-    login = data.get("email") or data.get("username") or ""
-    user = User.objects.filter(Q(email=login) | Q(username=login), deleted_at__isnull=True).first()
-    if not user or not verify_password(data.get("password", ""), user.password_hash):
-        return fail("invalid credentials", 401, "invalid_credentials")
-    token, refresh = issue_tokens(user)
-    tenant = user.tenant
-    memberships = [membership_dict(m) for m in TenantMember.objects.filter(user=user, status="active")]
-    return ok({"user": user_dict(user), "tenant": tenant_dict(tenant), "token": token, "refresh_token": refresh, "memberships": memberships})
+    return ok(login(parse_body(request)))
 
 
 @csrf_exempt
+@service_errors
 def auth_refresh(request):
-    data = parse_body(request)
-    token = data.get("refresh_token") or data.get("refreshToken") or data.get("token")
-    auth = AuthToken.objects.filter(token=token, token_type="refresh", is_revoked=False, expires_at__gt=timezone.now()).select_related("user").first()
-    if not auth:
-        return fail("invalid refresh token", 401, "invalid_refresh")
-    access, refresh = issue_tokens(auth.user)
-    auth.is_revoked = True
-    auth.save(update_fields=["is_revoked", "updated_at"])
-    return ok({"token": access, "refreshToken": refresh, "refresh_token": refresh, "user": user_dict(auth.user), "tenant": tenant_dict(auth.user.tenant)})
+    return ok(refresh(parse_body(request)))
 
 
 @csrf_exempt
+@service_errors
 def auth_logout(request):
     header = request.headers.get("Authorization", "")
-    if header.startswith("Bearer "):
-        AuthToken.objects.filter(token=header.removeprefix("Bearer ").strip()).update(is_revoked=True)
-    return ok({})
+    token = header.removeprefix("Bearer ").strip() if header.startswith("Bearer ") else ""
+    return ok(logout(token))
 
 
 @csrf_exempt
+@service_errors
 def auth_me(request):
     user, tenant = auth_context(request)
-    if not user:
-        return fail("unauthorized", 401, "unauthorized")
-    memberships = [membership_dict(m) for m in TenantMember.objects.filter(user=user, status="active")]
-    return ok({"user": user_dict(user), "tenant": tenant_dict(tenant or user.tenant), "memberships": memberships})
+    return ok(current_user(user, tenant))
 
 
 @csrf_exempt
+@service_errors
 def auth_validate(request):
     user, tenant = auth_context(request)
-    return ok({"valid": bool(user or tenant), "user": user_dict(user), "tenant": tenant_dict(tenant)})
+    return ok(validate_auth(user, tenant))
 
 
 @csrf_exempt
+@service_errors
 def auth_preferences(request):
     user, _ = auth_context(request)
-    if not user:
-        return fail("unauthorized", 401)
-    data = parse_body(request)
-    prefs = user.preferences or {}
-    prefs.update(data)
-    user.preferences = prefs
-    user.save(update_fields=["preferences", "updated_at"])
-    return ok({"user": user_dict(user)})
+    return ok(update_preferences(user, parse_body(request)))
 
 
 @csrf_exempt
+@service_errors
 def auth_change_password(request):
     user, _ = auth_context(request)
-    if not user:
-        return fail("unauthorized", 401)
-    data = parse_body(request)
-    if not verify_password(data.get("old_password", data.get("oldPassword", "")), user.password_hash):
-        return fail("old password mismatch", 400)
-    user.password_hash = hash_password(data.get("new_password", data.get("newPassword", "")))
-    user.save(update_fields=["password_hash", "updated_at"])
-    return ok({})
+    return ok(change_password(user, parse_body(request)))
 
 
 def auth_config(request):
@@ -187,112 +124,70 @@ def oidc_callback(request):
 # ---------------------------------------------------------------------------
 
 @csrf_exempt
+@service_errors
 def switch_tenant(request):
     user, _ = auth_context(request)
-    if not user:
-        return fail("unauthorized", 401)
     tenant_id = parse_body(request).get("tenant_id")
-    tenant = Tenant.objects.filter(id=tenant_id).first()
-    if not tenant:
-        return fail("tenant not found", 404)
-    return ok({"tenant": tenant_dict(tenant), "user": user_dict(user)})
+    return ok(switch_tenant_service(user, tenant_id))
 
 
 @csrf_exempt
+@service_errors
 def tenants_collection(request):
     user, tenant = auth_context(request)
     if not user and not tenant:
         return fail("unauthorized", 401)
     if request.method == "GET":
-        if user and user.can_access_all_tenants:
-            qs = Tenant.objects.filter(deleted_at__isnull=True)
-        elif user:
-            ids = TenantMember.objects.filter(user=user, status="active").values_list("tenant_id", flat=True)
-            qs = Tenant.objects.filter(id__in=ids, deleted_at__isnull=True)
-        else:
-            qs = Tenant.objects.filter(id=tenant.id)
-        return ok({"items": [tenant_dict(t) for t in qs], "tenants": [tenant_dict(t) for t in qs]})
-    data = parse_body(request)
-    tenant = Tenant.objects.create(name=data.get("name", "新空间"), description=data.get("description", ""), api_key=secrets.token_urlsafe(24), business=data.get("business", "default"))
-    if user:
-        TenantMember.objects.create(user=user, tenant=tenant, role="owner")
-    return ok(tenant_dict(tenant), status=201)
+        return ok(list_tenants(user, tenant))
+    return ok(create_tenant(user, parse_body(request)), status=201)
 
 
 @csrf_exempt
+@service_errors
 def tenant_detail(request, tenant_id):
-    user, tenant = auth_context(request)
-    target = get_object_or_404(Tenant, id=tenant_id)
+    auth_context(request)
     if request.method == "GET":
-        return ok(tenant_dict(target))
+        return ok(get_tenant_detail(tenant_id))
     if request.method == "DELETE":
-        target.deleted_at = timezone.now()
-        target.save(update_fields=["deleted_at", "updated_at"])
-        return ok({})
-    data = parse_body(request)
-    for field in ["name", "description", "business", "status"]:
-        if field in data:
-            setattr(target, field, data[field])
-    target.save()
-    return ok(tenant_dict(target))
+        return ok(delete_tenant(tenant_id))
+    return ok(update_tenant(tenant_id, parse_body(request)))
 
 
 @csrf_exempt
+@service_errors
 def tenant_members(request, tenant_id, user_id=None):
-    tenant = get_object_or_404(Tenant, id=tenant_id)
     if request.method == "GET":
-        members = TenantMember.objects.filter(tenant=tenant, status="active").select_related("user")
-        return ok({"items": [{**membership_dict(m), "user": user_dict(m.user)} for m in members]})
+        return ok(list_tenant_members(tenant_id))
     data = parse_body(request)
     if request.method == "POST":
-        user = User.objects.filter(Q(email=data.get("email")) | Q(id=data.get("user_id"))).first()
-        if not user:
-            return fail("user not found", 404)
-        member, _ = TenantMember.objects.update_or_create(user=user, tenant=tenant, defaults={"role": data.get("role", "viewer"), "status": "active"})
-        return ok(membership_dict(member))
-    member = get_object_or_404(TenantMember, tenant=tenant, user_id=user_id)
+        return ok(add_tenant_member(tenant_id, data))
     if request.method == "DELETE":
-        member.delete()
-        return ok({})
-    member.role = data.get("role", member.role)
-    member.save(update_fields=["role", "updated_at"])
-    return ok(membership_dict(member))
+        return ok(delete_tenant_member(tenant_id, user_id))
+    return ok(update_tenant_member(tenant_id, user_id, data))
 
 
 @csrf_exempt
+@service_errors
 def tenant_api_key(request, tenant_id):
-    tenant = get_object_or_404(Tenant, id=tenant_id)
-    tenant.api_key = secrets.token_urlsafe(24)
-    tenant.save(update_fields=["api_key", "updated_at"])
-    return ok(tenant_dict(tenant))
+    return ok(rotate_tenant_api_key(tenant_id))
 
 
 @csrf_exempt
+@service_errors
 def tenant_kv(request, key):
     _, tenant = auth_context(request)
     if not tenant:
         return fail("unauthorized", 401)
-    field = TENANT_KV_FIELDS.get(key, f"{key.replace('-', '_')}_config" if not key.endswith("_config") else key.replace("-", "_"))
     if request.method == "GET":
-        value = getattr(tenant, field, None) if hasattr(tenant, field) else None
-        return ok({"key": key, "field": field, "value": value or {}, "configured": bool(value)})
-    data = parse_body(request)
-    if hasattr(tenant, field):
-        value = data.get("value", data)
-        setattr(tenant, field, value)
-        tenant.save(update_fields=[field, "updated_at"])
-    return ok({"key": key, "field": field, "value": getattr(tenant, field, None) if hasattr(tenant, field) else data})
+        return ok(get_tenant_kv(tenant, key))
+    return ok(update_tenant_kv(tenant, key, parse_body(request)))
 
 
 # ---------------------------------------------------------------------------
 # Audit views
 # ---------------------------------------------------------------------------
 
+@service_errors
 def audit_logs(request, tenant_id=None):
     _, tenant = auth_context(request)
-    if not tenant:
-        return fail("unauthorized", 401)
-    if tenant_id and int(tenant_id) != tenant.id:
-        return fail("forbidden", 403)
-    qs = AuditLog.objects.filter(tenant_id=tenant.id).order_by("-created_at")
-    return ok({"items": [{"id": a.id, "action": a.action, "outcome": a.outcome, "created_at": a.created_at.isoformat(), "details": a.details} for a in qs[:100]]})
+    return ok(list_audit_logs(tenant, tenant_id))
