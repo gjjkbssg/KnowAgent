@@ -177,6 +177,36 @@ class PreparePublicEvalTests(TestCase):
         self.assertEqual(generation["details"][0]["weknora_generation_metrics"], expected)
         self.assertEqual(generation["weknora_generation_summary"], {key: round(value, 4) for key, value in expected.items()})
 
+    def test_with_generation_uses_ground_truth_when_present(self):
+        self.prepare()
+        question = json.loads(self.questions.read_text(encoding="utf-8"))[0]
+        question["evidence"] = ["fallback evidence"]
+        question["ground_truth"] = "ground truth answer"
+        self.questions.write_text(json.dumps([question], ensure_ascii=False), encoding="utf-8")
+        answer = question["ground_truth"]
+
+        fake_generation = SimpleNamespace(
+            details=[SimpleNamespace(question=question["question"], answer=answer)],
+            to_dict=lambda: {"details": [{"question": question["question"], "answer": answer}]},
+        )
+
+        with patch(
+            "personal_knowledge_base.management.commands.run_interview_eval.run_rag_evaluation",
+            return_value=fake_generation,
+        ):
+            call_command(
+                "run_interview_eval",
+                kb_name=PUBLIC_KB_NAME,
+                questions=str(self.questions),
+                output_dir=str(self.out),
+                output_name="ground_truth",
+                with_generation=True,
+                stdout=io.StringIO(),
+            )
+
+        generation = json.loads((self.out / "generation_evaluation.json").read_text(encoding="utf-8"))
+        self.assertEqual(generation["details"][0]["weknora_generation_metrics"]["bleu1"], 1.0)
+
     def test_eval_chunk_rows_include_lifecycle_status(self):
         kb = KnowledgeBase.objects.create(tenant=self.tenant, name="lifecycle")
         knowledge = Knowledge.objects.create(

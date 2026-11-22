@@ -280,7 +280,8 @@ class Command(BaseCommand):
             generation = generation_result.to_dict()
             generation_scores = []
             for index, (question, detail) in enumerate(zip(generation_questions, generation_result.details)):
-                metrics = generation_metrics(detail.answer, "。".join(question["evidence"]))
+                reference = question.get("ground_truth") or "。".join(question["evidence"])
+                metrics = generation_metrics(detail.answer, reference)
                 generation_scores.append(metrics)
                 generation["details"][index]["weknora_generation_metrics"] = metrics
             generation["weknora_generation_summary"] = {
