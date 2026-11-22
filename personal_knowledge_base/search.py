@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable
 
 from django.conf import settings
-from django.db import connection
+from django.db import DatabaseError, connection
 
 from .models import Chunk, Knowledge
 
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 TOKEN_RE = re.compile(r"[\w一-鿿]+", re.UNICODE)
 IDENTIFIER_RE = re.compile(r"[A-Za-z]{1,12}(?:[-_]?\d+)+(?:[-_][A-Za-z0-9]+)*", re.I)
 CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]+")
+VECTOR_INDEX_DIM_RE = re.compile(r"\bembedding\s+float\s*\[\s*(\d+)\s*\]", re.I)
 HISTORICAL_INTENT_RE = re.compile(
     r"旧版|老版|旧规则|历史版本|历史规则|以前的版本|之前的版本|上一版|早期版本|废止|作废|"
     r"previous version|old version|deprecated|superseded|legacy",
@@ -84,7 +85,7 @@ QUESTION_PREFIX_RE = re.compile(
 
 
 def stable_embedding(text: str, dim: int | None = None) -> list[float]:
-    dim = dim or settings.APP_EMBEDDING_DIM
+    dim = dim or effective_embedding_dim()
     vec = [0.0] * dim
     tokens = TOKEN_RE.findall((text or "").lower())
     if not tokens:
@@ -104,6 +105,26 @@ def pack_embedding(vec: Iterable[float]) -> bytes:
     return sqlite_vec.serialize_float32(list(vec))
 
 
+def vector_index_dim() -> int | None:
+    if connection.vendor != "sqlite":
+        return None
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = %s", ["chunk_embeddings_vec"])
+        row = cursor.fetchone()
+    if not row or not row[0]:
+        return None
+    match = VECTOR_INDEX_DIM_RE.search(row[0])
+    return int(match.group(1)) if match else None
+
+
+def effective_embedding_dim() -> int:
+    try:
+        index_dim = vector_index_dim()
+    except DatabaseError:
+        return settings.APP_EMBEDDING_DIM
+    return index_dim if index_dim is not None else settings.APP_EMBEDDING_DIM
+
+
 def ensure_search_tables():
     dim = settings.APP_EMBEDDING_DIM
     with connection.cursor() as cursor:
@@ -119,11 +140,11 @@ def ensure_search_tables():
         )
 
 
-def chunk_vector(chunk: Chunk) -> bytes:
+def chunk_vector(chunk: Chunk, dim: int | None = None) -> bytes:
     """Chunk 内容的向量（已序列化）。会请求 Embedding 服务，不要在数据库事务里调用。"""
     from .model_providers import embedding
 
-    return pack_embedding(embedding(chunk.tenant, [chunk.content], chunk.knowledge.embedding_model_id)[0])
+    return pack_embedding(embedding(chunk.tenant, [chunk.content], chunk.knowledge.embedding_model_id, dim=dim)[0])
 
 
 def index_chunk(chunk: Chunk, vec: bytes | None = None):

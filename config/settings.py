@@ -208,7 +208,7 @@ LLM_API_KEY = LLM_CHAT_API_KEY
 LLM_BASE_URL = LLM_CHAT_BASE_URL
 
 # ── 其他配置 ─────────────────────────────────────────────────────
-APP_EMBEDDING_DIM = int(os.environ.get("APP_EMBEDDING_DIM", "384"))
+APP_EMBEDDING_DIM = int(os.environ.get("APP_EMBEDDING_DIM", "1024"))
 APP_TASK_WORKERS = 4
 APP_TASKS_SYNC = "test" in sys.argv
 RETRIEVAL_RRF_VECTOR_WEIGHT = env_float("RETRIEVAL_RRF_VECTOR_WEIGHT", 0.7)

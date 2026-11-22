@@ -7,7 +7,7 @@ from django.core.management import call_command
 from django.db import connection
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 
-from personal_knowledge_base.model_providers import EmbeddingUnavailableError, embedding, rerank_url
+from personal_knowledge_base.model_providers import EmbeddingUnavailableError, _fit_vectors, embedding, rerank_url
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
 from personal_knowledge_base.search import _fts_search, chunk_vector, hybrid_search, index_chunk, stable_embedding
 
@@ -23,6 +23,9 @@ EMBEDDING_ENV = {
 
 class EnvEmbeddingTests(TestCase):
     def setUp(self):
+        self.vector_index_dim_patch = patch("personal_knowledge_base.search.vector_index_dim", return_value=None)
+        self.vector_index_dim_patch.start()
+        self.addCleanup(self.vector_index_dim_patch.stop)
         self.tenant = Tenant.objects.create(name="t")
 
     @override_settings(LLM_USE_ENV_EMBEDDING=True, **EMBEDDING_ENV)
@@ -31,7 +34,8 @@ class EnvEmbeddingTests(TestCase):
             vectors = embedding(self.tenant, ["hello"])
 
         call.assert_called_once_with("https://embedding.example/v1", "embedding-key", "text-embedding-v4", ["hello"])
-        self.assertEqual(vectors, [[0.1, 0.2, 0.3, 0.4]])
+        self.assertEqual(vectors, _fit_vectors([[0.1, 0.2, 0.3, 0.4]], 4))
+        self.assertAlmostEqual(sum(value * value for value in vectors[0]), 1.0)
 
     @override_settings(LLM_USE_ENV_EMBEDDING=False, **EMBEDDING_ENV)
     def test_without_the_switch_vectors_are_local_hashes(self):
@@ -60,7 +64,7 @@ class EnvEmbeddingTests(TestCase):
         ):
             vectors = embedding(self.tenant, ["hello"])
 
-        self.assertEqual(vectors, [[0.1, 0.2, 0.3, 0.4]])
+        self.assertEqual(vectors, _fit_vectors([[0.1, 0.2, 0.3, 0.4]], 4))
 
     @override_settings(LLM_USE_ENV_EMBEDDING=True, **EMBEDDING_ENV)
     def test_rejected_credentials_are_not_retried(self):
@@ -132,7 +136,7 @@ class EmbeddingOutageTests(TestCase):
         index_chunk(self.chunk)
         added = []
 
-        def embed_while_ingestion_continues(chunk):
+        def embed_while_ingestion_continues(chunk, dim=None):
             if not added:
                 added.append(
                     Chunk.objects.create(
@@ -146,7 +150,7 @@ class EmbeddingOutageTests(TestCase):
                 index_chunk(added[0])
                 self.chunk.content = "papaya orchard notes"
                 self.chunk.save()
-            return chunk_vector(chunk)
+            return chunk_vector(chunk, dim=dim)
 
         with patch(
             "personal_knowledge_base.management.commands.rebuild_vector_index.chunk_vector",
@@ -233,3 +237,29 @@ class RerankUrlTests(SimpleTestCase):
     def test_other_base_urls_are_left_alone(self):
         self.assertEqual(rerank_url("https://rerank.example/v1"), "https://rerank.example/v1/reranks")
         self.assertEqual(rerank_url("https://rerank.example/v1/rerank"), "https://rerank.example/v1/rerank")
+
+
+class FitVectorsTests(SimpleTestCase):
+    def test_truncated_vector_is_normalized(self):
+        vector = _fit_vectors([[3.0, 4.0, 12.0]], 2)[0]
+
+        self.assertEqual(len(vector), 2)
+        self.assertEqual(vector, [0.6, 0.8])
+        self.assertAlmostEqual(sum(value * value for value in vector), 1.0)
+
+    def test_padded_vector_is_normalized(self):
+        vector = _fit_vectors([[3.0, 4.0]], 4)[0]
+
+        self.assertEqual(len(vector), 4)
+        self.assertEqual(vector, [0.6, 0.8, 0.0, 0.0])
+        self.assertAlmostEqual(sum(value * value for value in vector), 1.0)
+
+    def test_exact_dimension_vector_is_normalized(self):
+        vector = _fit_vectors([[3.0, 4.0]], 2)[0]
+
+        self.assertEqual(len(vector), 2)
+        self.assertEqual(vector, [0.6, 0.8])
+        self.assertAlmostEqual(sum(value * value for value in vector), 1.0)
+
+    def test_zero_vector_stays_zero(self):
+        self.assertEqual(_fit_vectors([[0.0, 0.0, 0.0]], 2), [[0.0, 0.0]])

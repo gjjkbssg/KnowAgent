@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 
@@ -21,7 +22,7 @@ class Command(BaseCommand):
 
         def embed(chunks):
             for chunk in chunks.select_related("knowledge", "knowledge_base", "tenant").iterator():
-                vectors[chunk.id] = (chunk, chunk_vector(chunk))
+                vectors[chunk.id] = (chunk, chunk_vector(chunk, dim=settings.APP_EMBEDDING_DIM))
 
         # 向量全部在事务外算好再动现有索引：Embedding 服务中途失败时，旧的全文和向量索引原样保留
         embed(enabled)
