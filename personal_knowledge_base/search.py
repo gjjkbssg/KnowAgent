@@ -18,7 +18,8 @@ TOKEN_RE = re.compile(r"[\w一-鿿]+", re.UNICODE)
 IDENTIFIER_RE = re.compile(r"[A-Za-z]{1,12}(?:[-_]?\d+)+(?:[-_][A-Za-z0-9]+)*", re.I)
 CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]+")
 HISTORICAL_INTENT_RE = re.compile(
-    r"旧版|老版|历史|以前|之前|过去|原来|废止|作废|停用的|上一版|早期|previous|old version|deprecated|superseded|legacy",
+    r"旧版|老版|旧规则|历史版本|历史规则|以前的版本|之前的版本|上一版|早期版本|废止|作废|"
+    r"previous version|old version|deprecated|superseded|legacy",
     re.I,
 )
 PARTIAL_OVERLAP_THRESHOLD = 0.85
@@ -696,6 +697,8 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
 
     # ── MMR：从至多 2×top_k 个候选里选出 top_k 个 ───────────────────
     results = apply_mmr(results, k=max(1, top_k), lambda_param=0.7)
+    # MMR 按相关性分数重新挑选，会打乱版本排序，所以选完再排一次
+    results = apply_version_policy(results, query)
 
     # ── 短 chunk 扩展 ──────────────────────────────────────────────
     return expand_short_chunks(results, min_chars=350, max_chars=850)

@@ -455,7 +455,7 @@ class VersionPolicyTests(SimpleTestCase):
         for query in ("查旧版", "历史规则", "deprecated procedure"):
             with self.subTest(query=query):
                 self.assertTrue(query_wants_history(query))
-        for query in ("现在应该怎么做", "按现行规则处理"):
+        for query in ("现在应该怎么做", "按现行规则处理", "上线之前要检查什么", "以前没装传感器的会议室怎么办"):
             with self.subTest(query=query):
                 self.assertFalse(query_wants_history(query))
 
