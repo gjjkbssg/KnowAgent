@@ -155,7 +155,7 @@
           "request_id": "str"
         },
         "event": "str",
-        "id": "null"
+        "id": "number"
       }
     ],
     "status": "number"
@@ -274,7 +274,7 @@
           "request_id": "str"
         },
         "event": "str",
-        "id": "null"
+        "id": "number"
       }
     ],
     "status": "number"
