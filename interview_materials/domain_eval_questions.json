@@ -1,0 +1,382 @@
+[
+  {
+    "id": "exact-xh100-e42",
+    "category": "精确术语",
+    "question": "XH-100 报 E42 应该按什么顺序排查？",
+    "evidence": [
+      "先确认 2.4 GHz 网络已开启，再重新配置 XH-100 的 Wi-Fi"
+    ]
+  },
+  {
+    "id": "exact-es20-e17",
+    "category": "精确术语",
+    "question": "ES-20 停止上报多长时间后网关产生 E17？",
+    "evidence": [
+      "ES-20 连续 120 秒没有上报数据时产生 E17"
+    ]
+  },
+  {
+    "id": "exact-xh100-5g",
+    "category": "精确术语",
+    "question": "XH-100 能连 5 GHz Wi-Fi 吗？",
+    "evidence": [
+      "XH-100 不支持 5 GHz 频段"
+    ]
+  },
+  {
+    "id": "exact-dns",
+    "category": "精确术语",
+    "question": "IoT 设备的备用 DNS 地址是多少？",
+    "evidence": [
+      "备用 DNS 为 10.30.0.54"
+    ]
+  },
+  {
+    "id": "exact-e60",
+    "category": "精确术语",
+    "question": "E60 是什么告警，供电低于多少会触发？",
+    "evidence": [
+      "交换机端口供电低于 12.95 W 时产生 E60"
+    ]
+  },
+  {
+    "id": "similar-xh110-e42",
+    "category": "相似型号干扰",
+    "question": "XH-110 出现 E42 怎么处理？",
+    "evidence": [
+      "先在管理端同步网关系统时间"
+    ]
+  },
+  {
+    "id": "similar-xh110-e43",
+    "category": "相似型号干扰",
+    "question": "XH-110 的子设备多久没有心跳会报 E43？",
+    "evidence": [
+      "子设备连续 5 分钟没有心跳时产生 E43"
+    ]
+  },
+  {
+    "id": "similar-ap55-filter",
+    "category": "相似型号干扰",
+    "question": "AP-55 的滤芯能用多久？",
+    "evidence": [
+      "滤芯寿命为 3000 小时"
+    ]
+  },
+  {
+    "id": "similar-ap50-filter",
+    "category": "相似型号干扰",
+    "question": "AP-50 滤芯寿命多少小时？",
+    "evidence": [
+      "滤芯寿命为 2000 小时，到期后管理端提示更换"
+    ]
+  },
+  {
+    "id": "similar-es21-power",
+    "category": "相似型号干扰",
+    "question": "ES-21 会出现低电量告警吗？",
+    "evidence": [
+      "使用 USB-C 常电供电，没有电池"
+    ]
+  },
+  {
+    "id": "similar-reset",
+    "category": "相似型号干扰",
+    "question": "XH-100 和 XH-110 恢复出厂设置的操作有什么区别？",
+    "evidence": [
+      "长按复位键 10 秒",
+      "长按复位键 15 秒"
+    ]
+  },
+  {
+    "id": "hop-b205-e42",
+    "category": "跨文档多跳",
+    "question": "B205 会议室的网关报 E42，第一步该做什么？",
+    "evidence": [
+      "| B205 | XH-110 |",
+      "先在管理端同步网关系统时间"
+    ]
+  },
+  {
+    "id": "hop-c102-e17",
+    "category": "跨文档多跳",
+    "question": "C102 的环境传感器多久没上报会产生 E17？",
+    "evidence": [
+      "| C102 | XH-100 | ES-21 |",
+      "连续 300 秒没有上报数据时才产生 E17"
+    ]
+  },
+  {
+    "id": "hop-a305-aq4",
+    "category": "跨文档多跳",
+    "question": "A305 会议室会启用 AQ-4 吗？",
+    "evidence": [
+      "AQ-4 只在安装了 ES-21 的会议室启用",
+      "| A305 | XH-100 | ES-20 |"
+    ]
+  },
+  {
+    "id": "hop-b210-battery",
+    "category": "跨文档多跳",
+    "question": "每周一的电量检查需要覆盖 B210 的传感器吗？",
+    "evidence": [
+      "每周一检查电池供电传感器的电量",
+      "| B210 | XH-110 | ES-21 |",
+      "使用 USB-C 常电供电，没有电池"
+    ]
+  },
+  {
+    "id": "hop-b205-sleep",
+    "category": "跨文档多跳",
+    "question": "为什么人工操作 30 分钟后恢复自动控制的规则在 B205 事件里没起作用？",
+    "evidence": [
+      "人工操作 30 分钟后恢复自动控制的规则对睡眠模式也不生效"
+    ]
+  },
+  {
+    "id": "hop-c102-vlan",
+    "category": "跨文档多跳",
+    "question": "C102 的会议屏要放在哪个 VLAN 才能无线投屏？",
+    "evidence": [
+      "会议屏和网关必须处于同一 VLAN 才能使用无线投屏",
+      "VLAN 30：IoT 设备"
+    ]
+  },
+  {
+    "id": "hop-b-wifi",
+    "category": "跨文档多跳",
+    "question": "B 栋会议室的网关配网时应该连哪个 Wi-Fi？",
+    "evidence": [
+      "使用有线以太网连接云端",
+      "B 栋改造后 IoT 设备全部走有线"
+    ]
+  },
+  {
+    "id": "hop-a305-lt2",
+    "category": "跨文档多跳",
+    "question": "A305 没人开会 10 分钟后，LT-2 会关掉哪些设备？",
+    "evidence": [
+      "A305 没有会议屏，LT-2 只控制灯组",
+      "无会议持续 10 分钟后关闭灯组和会议屏"
+    ]
+  },
+  {
+    "id": "semantic-cloud",
+    "category": "语义改写",
+    "question": "网关连不上服务器，Wi-Fi 密码也没改过，还可能是什么原因？",
+    "evidence": [
+      "DNS 无法解析云端地址"
+    ]
+  },
+  {
+    "id": "semantic-subdevice",
+    "category": "语义改写",
+    "question": "A 栋的净化器在网关上显示掉线了怎么办？",
+    "evidence": [
+      "先检查子设备电源，再把子设备移到距离网关 8 米以内重新配对"
+    ]
+  },
+  {
+    "id": "semantic-window",
+    "category": "语义改写",
+    "question": "环境传感器装在窗边会有什么问题？",
+    "evidence": [
+      "远离出风口和窗户至少 1 米，否则二氧化碳读数会偏低"
+    ]
+  },
+  {
+    "id": "semantic-log-full",
+    "category": "语义改写",
+    "question": "网关日志快满了会影响自动化吗？",
+    "evidence": [
+      "E51 不影响自动化规则执行"
+    ]
+  },
+  {
+    "id": "semantic-filter-expired",
+    "category": "语义改写",
+    "question": "滤芯到期还不换会怎样？",
+    "evidence": [
+      "强效模式的风量会下降约 30%"
+    ]
+  },
+  {
+    "id": "semantic-dark-room",
+    "category": "语义改写",
+    "question": "开会时屋里太暗，灯会怎么调？",
+    "evidence": [
+      "灯组调整到 70% 亮度、4000K 色温"
+    ]
+  },
+  {
+    "id": "semantic-casting",
+    "category": "语义改写",
+    "question": "会议时间已经到了但还在投屏，会议屏会被关掉吗？",
+    "evidence": [
+      "无线投屏进行中时，即使会议日程已经结束，也要延迟关闭会议屏"
+    ]
+  },
+  {
+    "id": "semantic-no-ack",
+    "category": "语义改写",
+    "question": "网关切换净化器模式一直收不到回应会怎样？",
+    "evidence": [
+      "网关会重试 3 次，仍失败则产生 E43"
+    ]
+  },
+  {
+    "id": "version-aq3",
+    "category": "版本冲突",
+    "question": "现在二氧化碳超过多少会让净化器进入强效模式？",
+    "evidence": [
+      "连续 3 次高于 1000 ppm"
+    ]
+  },
+  {
+    "id": "version-manual",
+    "category": "版本冲突",
+    "question": "人工调整设备后多久恢复自动控制？",
+    "evidence": [
+      "并在 30 分钟后恢复自动控制"
+    ]
+  },
+  {
+    "id": "version-v23-e17",
+    "category": "版本冲突",
+    "question": "旧版规则在 E17 期间是怎么处理 AQ-3 的？",
+    "evidence": [
+      "v2.3 没有规定 E17 期间的行为"
+    ]
+  },
+  {
+    "id": "version-lt2-idle",
+    "category": "版本冲突",
+    "question": "按现行规则，会议室没人开会多久后关灯？",
+    "evidence": [
+      "无会议持续 10 分钟后关闭灯组和会议屏"
+    ]
+  },
+  {
+    "id": "number-aq4",
+    "category": "数值条件",
+    "question": "PM2.5 到多少会触发强效模式，降到多少恢复？",
+    "evidence": [
+      "PM2.5 连续 2 次高于 75 微克每立方米时",
+      "PM2.5 低于 35 微克每立方米持续 10 分钟后恢复自动模式"
+    ]
+  },
+  {
+    "id": "number-p1",
+    "category": "数值条件",
+    "question": "E17 持续了 20 分钟，值班要在多长时间内响应？",
+    "evidence": [
+      "E17 持续超过 10 分钟、PM2.5 超过 115 微克每立方米。要求 15 分钟内响应"
+    ]
+  },
+  {
+    "id": "number-upgrade",
+    "category": "数值条件",
+    "question": "网关固件一般什么时候升级，每批多少台？",
+    "evidence": [
+      "工作日 22:00 之后分批进行，每批不超过 20 台网关"
+    ]
+  },
+  {
+    "id": "number-a301-timeline",
+    "category": "数值条件",
+    "question": "A301 事件中传感器几点停止上报，几点才发现异常？",
+    "evidence": [
+      "7 月 15 日 14:02",
+      "14:18 收到人工投诉后才发现异常"
+    ]
+  },
+  {
+    "id": "root-a301",
+    "category": "根因分析",
+    "question": "A301 事件的触发因素和系统性原因分别是什么？",
+    "evidence": [
+      "ES-20 电量不足是触发因素，缺少失效保护才是系统性原因"
+    ]
+  },
+  {
+    "id": "root-b205",
+    "category": "根因分析",
+    "question": "B205 那次 PM2.5 超标时净化器为什么没有切到强效？",
+    "evidence": [
+      "AP-55 的睡眠模式会忽略自动化指令"
+    ]
+  },
+  {
+    "id": "root-b205-fix",
+    "category": "根因分析",
+    "question": "B205 事件之后规则引擎做了什么改进？",
+    "evidence": [
+      "规则引擎在下发指令后读取设备实际模式"
+    ]
+  },
+  {
+    "id": "device-ap55-sleep",
+    "category": "设备能力",
+    "question": "AP-55 比 AP-50 多了什么模式，这个模式有什么特点？",
+    "evidence": [
+      "睡眠模式下设备锁定风量并忽略自动化指令"
+    ]
+  },
+  {
+    "id": "device-calibration",
+    "category": "设备能力",
+    "question": "PM2.5 传感器校准期间 AQ-4 会怎样？",
+    "evidence": [
+      "校准期间 PM2.5 读数标记为无效",
+      "PM2.5 读数被标记为无效时，AQ-4 跳过本次判断"
+    ]
+  },
+  {
+    "id": "firmware-dns",
+    "category": "运维流程",
+    "question": "XH-100 哪个固件版本降低了 E42 的发生率？",
+    "evidence": [
+      "v2.4.2（10 月）：DNS 解析失败时自动回退到备用 DNS"
+    ]
+  },
+  {
+    "id": "firmware-ntp",
+    "category": "运维流程",
+    "question": "XH-110 因为系统时间不准导致的证书问题在哪个版本修复？",
+    "evidence": [
+      "v1.2.0（10 月）：开机时强制进行一次 NTP 校时"
+    ]
+  },
+  {
+    "id": "ops-escalation",
+    "category": "运维流程",
+    "question": "P1 告警半小时还没解决要找谁？",
+    "evidence": [
+      "升级到设施组负责人"
+    ]
+  },
+  {
+    "id": "ops-e43-level",
+    "category": "运维流程",
+    "question": "子设备离线属于几级告警？",
+    "evidence": [
+      "P2：单个设备离线或功能降级"
+    ]
+  },
+  {
+    "id": "rule-conflict",
+    "category": "运维流程",
+    "question": "两条自动化规则同时要改同一台设备，听谁的？",
+    "evidence": [
+      "按优先级和更新时间决策"
+    ]
+  },
+  {
+    "id": "distractor-booking",
+    "category": "干扰文档",
+    "question": "会议开始后多久没人签到会释放会议室？",
+    "evidence": [
+      "会议开始 15 分钟后仍无人签到，预订自动释放"
+    ]
+  }
+]

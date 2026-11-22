@@ -5,12 +5,15 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
+from personal_knowledge_base.eval_metrics import DEFAULT_KS, gold_hits, gold_size, ranking_metrics, summarize
 from personal_knowledge_base.model_providers import rerank
 from personal_knowledge_base.models import Chunk, KnowledgeBase, Tenant
 from personal_knowledge_base.rag_eval import run_rag_evaluation
 from personal_knowledge_base.search import _fts_search, _ranked_ids, _vector_search, hybrid_search, rrf_fuse
 
 from .prepare_interview_demo import DEMO_KB_NAME
+
+TOP_K = max(DEFAULT_KS)
 
 
 def _chunk_rows(chunk_ids, score_map):
@@ -32,6 +35,7 @@ def _chunk_rows(chunk_ids, score_map):
                 "knowledge_id": chunk.knowledge_id,
                 "knowledge_base_id": chunk.knowledge_base_id,
                 "knowledge_title": chunk.knowledge.title,
+                "knowledge_source": chunk.knowledge.source,
                 "knowledge_base_name": chunk.knowledge_base.name,
                 "metadata": chunk.metadata or {},
             }
@@ -39,7 +43,7 @@ def _chunk_rows(chunk_ids, score_map):
     return rows
 
 
-def _rank_scores(score_map, limit=5):
+def _rank_scores(score_map, limit=TOP_K):
     return [item[0] for item in sorted(score_map.items(), key=lambda item: item[1], reverse=True)[:limit]]
 
 
@@ -49,16 +53,15 @@ def _measure(fn):
     return result, round((time.perf_counter() - started) * 1000, 2)
 
 
-def _metrics(expected_titles, rows):
-    titles = [str(row.get("knowledge_title") or "") for row in rows]
-    expected = list(dict.fromkeys(expected_titles))
-    matched = [title for title in expected if title in titles]
-    first_rank = next((index for index, title in enumerate(titles, 1) if title in expected), None)
+def _metrics(question, rows):
+    for row in rows:
+        # hybrid_search 的结果里没有来源 ID，从 Chunk 上补
+        if "knowledge_source" not in row:
+            chunk = Chunk.objects.filter(id=row.get("chunk_id") or row.get("id")).select_related("knowledge").first()
+            row["knowledge_source"] = chunk.knowledge.source if chunk else ""
     return {
-        "titles": titles,
-        "hit_at_5": 1.0 if matched else 0.0,
-        "recall_at_5": len(matched) / max(len(expected), 1),
-        "reciprocal_rank": 1.0 / first_rank if first_rank else 0.0,
+        "titles": [str(row.get("knowledge_title") or "") for row in rows],
+        **ranking_metrics([gold_hits(row, question) for row in rows[:TOP_K]], gold_size(question)),
     }
 
 
@@ -68,6 +71,14 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--questions", default="interview_materials/evaluation_questions.json")
         parser.add_argument("--output-dir", default="interview_materials/results")
+        parser.add_argument("--kb-name", default=DEMO_KB_NAME)
+        parser.add_argument(
+            "--noise-kb-name",
+            action="append",
+            default=[],
+            help="Extra knowledge bases searched together with --kb-name, as distractors.",
+        )
+        parser.add_argument("--output-name", default="retrieval_evaluation")
         parser.add_argument("--with-generation", action="store_true")
         parser.add_argument("--generation-limit", type=int, default=5)
 
@@ -77,24 +88,29 @@ class Command(BaseCommand):
         tenant = Tenant.objects.order_by("created_at").first()
         if not tenant:
             raise CommandError("No tenant exists")
-        kb = KnowledgeBase.objects.filter(tenant=tenant, name=DEMO_KB_NAME).first()
+        kb = KnowledgeBase.objects.filter(tenant=tenant, name=options["kb_name"]).first()
         if not kb:
-            raise CommandError("Interview demo knowledge base does not exist")
+            raise CommandError(f"Knowledge base does not exist: {options['kb_name']}")
+        kb_ids = [kb.id]
+        for name in options["noise_kb_name"]:
+            noise = KnowledgeBase.objects.filter(tenant=tenant, name=name).first()
+            if not noise:
+                raise CommandError(f"Knowledge base does not exist: {name}")
+            kb_ids.append(noise.id)
 
         variants = ["fts_only", "vector_only", "hybrid_raw", "hybrid_rerank", "full_pipeline"]
         details = []
         for question in questions:
             query = question["question"]
-            expected = question["expected_titles"]
-            fts, fts_ms = _measure(lambda: _fts_search(tenant.id, {kb.id}, query, 5))
-            vector, vector_ms = _measure(lambda: _vector_search(tenant.id, {kb.id}, query, 5))
+            fts, fts_ms = _measure(lambda: _fts_search(tenant.id, set(kb_ids), query, TOP_K))
+            vector, vector_ms = _measure(lambda: _vector_search(tenant.id, set(kb_ids), query, TOP_K))
             combined = rrf_fuse([_ranked_ids(fts), _ranked_ids(vector)])
 
             fts_rows = _chunk_rows(_rank_scores(fts), fts)
             vector_rows = _chunk_rows(_rank_scores(vector), vector)
             raw_rows = _chunk_rows(_rank_scores(combined), combined)
-            reranked_rows, rerank_ms = _measure(lambda: rerank(query, _chunk_rows(_rank_scores(combined, 20), combined), 5, tenant))
-            full_rows, full_ms = _measure(lambda: hybrid_search(tenant.id, [kb.id], query, 5))
+            reranked_rows, rerank_ms = _measure(lambda: rerank(query, _chunk_rows(_rank_scores(combined, 20), combined), TOP_K, tenant))
+            full_rows, full_ms = _measure(lambda: hybrid_search(tenant.id, kb_ids, query, TOP_K))
 
             variant_rows = {
                 "fts_only": (fts_rows, fts_ms),
@@ -104,7 +120,7 @@ class Command(BaseCommand):
                 "full_pipeline": (full_rows, full_ms),
             }
             for variant, (rows, latency_ms) in variant_rows.items():
-                metric = _metrics(expected, rows)
+                metric = _metrics(question, rows)
                 details.append(
                     {
                         "question_id": question["id"],
@@ -117,35 +133,41 @@ class Command(BaseCommand):
                 )
             self.stdout.write(f"evaluated {question['id']}")
 
-        summary = []
-        for variant in variants:
-            rows = [row for row in details if row["variant"] == variant]
-            summary.append(
-                {
-                    "variant": variant,
-                    "questions": len(rows),
-                    "hit_at_5": round(sum(row["hit_at_5"] for row in rows) / len(rows), 4),
-                    "recall_at_5": round(sum(row["recall_at_5"] for row in rows) / len(rows), 4),
-                    "mrr": round(sum(row["reciprocal_rank"] for row in rows) / len(rows), 4),
-                    "avg_latency_ms": round(sum(row["latency_ms"] for row in rows) / len(rows), 2),
-                }
-            )
+        summary = [
+            {"variant": variant, **summarize([row for row in details if row["variant"] == variant])}
+            for variant in variants
+        ]
+        categories = list(dict.fromkeys(row["category"] for row in details))
+        by_category = [
+            {
+                "category": category,
+                "variant": variant,
+                **summarize([row for row in details if row["variant"] == variant and row["category"] == category]),
+            }
+            for category in categories
+            for variant in variants
+        ]
 
         output_dir = Path(options["output_dir"]).resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
         report = {
             "knowledge_base": {"id": kb.id, "name": kb.name},
             "question_count": len(questions),
+            "chunk_count": Chunk.objects.filter(knowledge_base_id__in=kb_ids).count(),
+            "noise_knowledge_bases": options["noise_kb_name"],
             "metric_definition": {
-                "hit_at_5": "At least one expected source document appears in the top five results.",
-                "recall_at_5": "Fraction of expected source documents represented in the top five results.",
-                "mrr": "Mean reciprocal rank of the first expected source document.",
+                "hit_at_k": "At least one gold item appears in the top k results.",
+                "recall_at_k": "Fraction of distinct gold items found in the top k results.",
+                "ndcg_at_k": "Binary-gain nDCG over distinct gold items in the top k results.",
+                "mrr": "Mean reciprocal rank of the first result that matches a gold item (top 10).",
+                "gold": "expected_sources (passage id), expected_titles (document title) or evidence (verbatim text).",
             },
             "summary": summary,
+            "by_category": by_category,
             "details": details,
         }
-        (output_dir / "retrieval_evaluation.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-        with (output_dir / "retrieval_evaluation.csv").open("w", encoding="utf-8-sig", newline="") as handle:
+        (output_dir / f"{options['output_name']}.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        with (output_dir / f"{options['output_name']}.csv").open("w", encoding="utf-8-sig", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=summary[0].keys())
             writer.writeheader()
             writer.writerows(summary)
