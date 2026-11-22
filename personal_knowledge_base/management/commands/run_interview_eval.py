@@ -73,16 +73,25 @@ def _measure(fn):
     return result, round((time.perf_counter() - started) * 1000, 2)
 
 
+def _weknora_gold_items(question):
+    items = [
+        *(f"source:{source}" for source in question.get("expected_sources") or []),
+        *(f"title:{title}" for title in question.get("expected_titles") or []),
+        *(f"evidence:{evidence}" for evidence in question.get("evidence") or []),
+    ]
+    return list(dict.fromkeys(items))
+
+
 def _weknora_retrieval_ids(question, rows):
-    evidence = question.get("evidence") or []
+    gold_items = _weknora_gold_items(question)
     ids = []
     for rank, row in enumerate(rows[:TOP_K]):
-        hits = gold_hits(row, {"evidence": evidence})
+        hits = gold_hits(row, question)
         matched = next(
             (
                 index
-                for index, item in enumerate(evidence)
-                if f"evidence:{item}" in hits
+                for index, item in enumerate(gold_items)
+                if item in hits
             ),
             None,
         )
@@ -97,8 +106,9 @@ def _metrics(question, rows):
             chunk = Chunk.objects.filter(id=row.get("chunk_id") or row.get("id")).select_related("knowledge").first()
             row["knowledge_source"] = chunk.knowledge.source if chunk else ""
     hits_by_rank = [gold_hits(row, question) for row in rows[:TOP_K]]
+    gold_items = _weknora_gold_items(question)
     weknora_metrics = retrieval_metrics(
-        [list(range(len(question.get("evidence") or [])))],
+        [list(range(len(gold_items)))],
         _weknora_retrieval_ids(question, rows),
     )
     return {

@@ -127,6 +127,25 @@ class PreparePublicEvalTests(TestCase):
         self.assertAlmostEqual(metrics["weknora_precision"], 2 / 3)
         self.assertEqual(metrics["weknora_recall"], 1.0)
 
+    def test_weknora_retrieval_metrics_include_title_and_source_golds(self):
+        cases = [
+            (
+                {"expected_titles": ["Gold title"]},
+                {"content": "", "knowledge_title": "Gold title", "knowledge_source": "", "score": 1.0},
+            ),
+            (
+                {"expected_sources": ["p1"]},
+                {"content": "", "knowledge_title": "", "knowledge_source": "p1", "score": 1.0},
+            ),
+        ]
+        for question, row in cases:
+            with self.subTest(question=question):
+                metrics = _metrics(question, [row])
+
+                self.assertEqual(_weknora_retrieval_ids(question, [row]), [0])
+                self.assertEqual(metrics["weknora_mrr"], 1.0)
+                self.assertEqual(metrics["weknora_recall"], 1.0)
+
     def test_with_generation_adds_weknora_generation_metrics(self):
         self.prepare()
         question = json.loads(self.questions.read_text(encoding="utf-8"))[0]
