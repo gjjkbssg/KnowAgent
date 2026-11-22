@@ -6,7 +6,14 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from personal_knowledge_base.eval_metrics import DEFAULT_KS, gold_hits, gold_size, ranking_metrics, summarize
+from personal_knowledge_base.eval_metrics import generation_metrics, retrieval_metrics
+from personal_knowledge_base.interview_eval_metrics import (
+    DEFAULT_KS,
+    gold_hits,
+    gold_size,
+    ranking_metrics,
+    summarize,
+)
 from personal_knowledge_base.model_providers import rerank
 from personal_knowledge_base.models import Chunk, KnowledgeBase, Tenant
 from personal_knowledge_base.rag_eval import run_rag_evaluation
@@ -24,6 +31,8 @@ from personal_knowledge_base.search import (
 from .prepare_interview_demo import DEMO_KB_NAME
 
 TOP_K = max(DEFAULT_KS)
+WEKNORA_RETRIEVAL_KEYS = ("precision", "recall", "ndcg3", "ndcg10", "mrr", "map")
+WEKNORA_GENERATION_KEYS = ("bleu1", "bleu2", "bleu4", "rouge1", "rouge2", "rougel")
 
 
 def _chunk_rows(chunk_ids, score_map):
@@ -64,6 +73,23 @@ def _measure(fn):
     return result, round((time.perf_counter() - started) * 1000, 2)
 
 
+def _weknora_retrieval_ids(question, rows):
+    evidence = question.get("evidence") or []
+    ids = []
+    for rank, row in enumerate(rows[:TOP_K]):
+        hits = gold_hits(row, {"evidence": evidence})
+        matched = next(
+            (
+                index
+                for index, item in enumerate(evidence)
+                if f"evidence:{item}" in hits
+            ),
+            None,
+        )
+        ids.append(matched if matched is not None else -(rank + 1))
+    return ids
+
+
 def _metrics(question, rows):
     for row in rows:
         # hybrid_search 的结果里没有来源 ID，从 Chunk 上补
@@ -71,13 +97,29 @@ def _metrics(question, rows):
             chunk = Chunk.objects.filter(id=row.get("chunk_id") or row.get("id")).select_related("knowledge").first()
             row["knowledge_source"] = chunk.knowledge.source if chunk else ""
     hits_by_rank = [gold_hits(row, question) for row in rows[:TOP_K]]
+    weknora_metrics = retrieval_metrics(
+        [list(range(len(question.get("evidence") or [])))],
+        _weknora_retrieval_ids(question, rows),
+    )
     return {
         "titles": [str(row.get("knowledge_title") or "") for row in rows],
         "result_count": len(rows),
         "scores": [round(row["score"], 4) for row in rows[:TOP_K]],
         "gold_flags": [bool(hits) for hits in hits_by_rank],
+        **{f"weknora_{key}": value for key, value in weknora_metrics.items()},
         **ranking_metrics(hits_by_rank, gold_size(question)),
     }
+
+
+def _summarize(rows):
+    summary = summarize(rows)
+    count = len(rows)
+    for key in WEKNORA_RETRIEVAL_KEYS:
+        summary[f"weknora_{key}"] = round(
+            sum(row[f"weknora_{key}"] for row in rows) / count,
+            4,
+        ) if count else 0.0
+    return summary
 
 
 class Command(BaseCommand):
@@ -169,7 +211,7 @@ class Command(BaseCommand):
             self.stdout.write(f"evaluated {question['id']}")
 
         summary = [
-            {"variant": variant, **summarize([row for row in details if row["variant"] == variant])}
+            {"variant": variant, **_summarize([row for row in details if row["variant"] == variant])}
             for variant in variants
         ]
         categories = list(dict.fromkeys(row["category"] for row in details))
@@ -177,7 +219,7 @@ class Command(BaseCommand):
             {
                 "category": category,
                 "variant": variant,
-                **summarize([row for row in details if row["variant"] == variant and row["category"] == category]),
+                **_summarize([row for row in details if row["variant"] == variant and row["category"] == category]),
             }
             for category in categories
             for variant in variants
@@ -201,6 +243,7 @@ class Command(BaseCommand):
                 "ndcg_at_k": "Binary-gain nDCG over distinct gold items in the top k results.",
                 "mrr": "Mean reciprocal rank of the first result that matches a gold item (top 10).",
                 "gold": "expected_sources (passage id), expected_titles (document title) or evidence (verbatim text).",
+                "weknora_retrieval": "WeKnora metrics map ranked chunks to the first matching evidence item; unmatched chunks use unique negative ids.",
             },
             "summary": summary,
             "by_category": by_category,
@@ -216,10 +259,26 @@ class Command(BaseCommand):
 
         if options["with_generation"]:
             generation_questions = [
-                {"question": item["question"], "ground_truth": item["ground_truth"]}
+                {
+                    "question": item["question"],
+                    "ground_truth": item.get("ground_truth", ""),
+                    "evidence": item.get("evidence") or [],
+                }
                 for item in questions[: max(1, options["generation_limit"])]
             ]
-            generation = run_rag_evaluation(tenant, generation_questions).to_dict()
+            generation_result = run_rag_evaluation(tenant, generation_questions)
+            generation = generation_result.to_dict()
+            generation_scores = []
+            for index, (question, detail) in enumerate(zip(generation_questions, generation_result.details)):
+                metrics = generation_metrics(detail.answer, "。".join(question["evidence"]))
+                generation_scores.append(metrics)
+                generation["details"][index]["weknora_generation_metrics"] = metrics
+            generation["weknora_generation_summary"] = {
+                key: round(sum(row[key] for row in generation_scores) / len(generation_scores), 4)
+                if generation_scores
+                else 0.0
+                for key in WEKNORA_GENERATION_KEYS
+            }
             (output_dir / "generation_evaluation.json").write_text(
                 json.dumps(generation, ensure_ascii=False, indent=2),
                 encoding="utf-8",

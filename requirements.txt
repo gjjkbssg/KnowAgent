@@ -32,6 +32,8 @@ python-dotenv>=1.0.0
 tiktoken>=0.7.0
 
 # RAG 评估
+jieba==0.42.1
+regex>=2026.9.29,<2027.0
 ragas>=0.1.0
 datasets>=2.14.0
 langchain-openai>=0.1.0

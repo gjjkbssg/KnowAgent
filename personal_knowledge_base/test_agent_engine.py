@@ -659,3 +659,22 @@ class ToolIsolationTests(TestCase):
         self.assertIn("evidence text", first.output)
         self.assertIn("content omitted", repeat.output)
         self.assertIn("evidence text", other.output)
+
+    def test_execute_exposes_uncapped_retrieved_chunks_without_changing_references(self):
+        tenant = Tenant.objects.create(name="Agent Engine retrieval test", api_key="agent-engine-retrieval-key")
+        engine = AgentEngine(tenant, "session")
+        refs = [
+            {"chunk_id": f"chunk-{index}", "knowledge_title": f"doc-{index}", "content": f"evidence {index}"}
+            for index in range(12)
+        ]
+
+        def execute(*args, **kwargs):
+            engine._references.add(refs)
+            return AgentResult("answer", [], 1, 0)
+
+        with patch.object(engine, "_execute", side_effect=execute):
+            result = engine.execute("question")
+
+        self.assertEqual(len(result.references), 10)
+        self.assertEqual(result.retrieved, refs)
+        self.assertNotIn("retrieved", result.to_dict())

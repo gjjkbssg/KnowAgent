@@ -142,6 +142,7 @@ class AgentResult:
     references: list[dict] = field(default_factory=list)
     pending_approval: list[dict] = field(default_factory=list)
     checkpoint: dict | None = None
+    retrieved: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -454,6 +455,7 @@ class AgentEngine:
         self._references = self.config.get("reference_collector") or ReferenceCollector()
         result = self._execute(query, history, context_str, on_event)
         result.references = self._references.for_answer(result.content)
+        result.retrieved = self._references.to_list()
         return result
 
     def resume(self, checkpoint: dict, decision: str, on_event: callable = None) -> AgentResult:
@@ -474,6 +476,7 @@ class AgentEngine:
             decision=decision,
         )
         result.references = self._references.for_answer(result.content)
+        result.retrieved = self._references.to_list()
         return result
 
     def _execute_pending_round(self, state: dict, messages: list[dict], steps: list[AgentStep], context: dict, on_event):

@@ -2,6 +2,7 @@ import io
 import json
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.conf import settings
@@ -9,8 +10,9 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 
+from .eval_metrics import generation_metrics
 from .management.commands.prepare_public_eval import PUBLIC_KB_NAME
-from .management.commands.run_interview_eval import _chunk_rows
+from .management.commands.run_interview_eval import _chunk_rows, _metrics, _weknora_retrieval_ids
 from .models import Chunk, Knowledge, KnowledgeBase, Tenant
 from .search import index_chunk
 
@@ -65,6 +67,17 @@ class PreparePublicEvalTests(TestCase):
         self.assertIn("hybrid_rerank_threshold_version", variants)
         detail = report["details"][0]
         self.assertTrue({"result_count", "scores", "gold_flags"} <= detail.keys())
+        self.assertTrue(
+            {
+                "weknora_precision",
+                "weknora_recall",
+                "weknora_ndcg3",
+                "weknora_ndcg10",
+                "weknora_mrr",
+                "weknora_map",
+            }
+            <= detail.keys()
+        )
         self.assertTrue(all(isinstance(flag, bool) for flag in detail["gold_flags"]))
         self.assertEqual(
             report["rrf_weights"],
@@ -86,8 +99,64 @@ class PreparePublicEvalTests(TestCase):
             by_variant["hybrid_rerank"]["latency_ms"],
             by_variant["hybrid_rerank_threshold"]["latency_ms"],
         )
+        summary = next(row for row in report["summary"] if row["variant"] == "full_pipeline")
+        self.assertTrue(
+            {
+                "weknora_precision",
+                "weknora_recall",
+                "weknora_ndcg3",
+                "weknora_ndcg10",
+                "weknora_mrr",
+                "weknora_map",
+            }
+            <= summary.keys()
+        )
         # 三个段落全部会进 Top-10，按段落 ID 标注的正例一定被找到
-        self.assertEqual(next(row for row in report["summary"] if row["variant"] == "full_pipeline")["hit_at_10"], 1.0)
+        self.assertEqual(summary["hit_at_10"], 1.0)
+
+    def test_weknora_retrieval_metrics_map_first_evidence_match_and_unique_misses(self):
+        question = {"evidence": ["first evidence", "second evidence"]}
+        rows = [
+            {"content": "unrelated", "knowledge_source": "", "score": 1.0},
+            {"content": "second evidence", "knowledge_source": "", "score": 0.8},
+            {"content": "first evidence and second evidence", "knowledge_source": "", "score": 0.5},
+        ]
+
+        self.assertEqual(_weknora_retrieval_ids(question, rows), [-1, 1, 0])
+        metrics = _metrics(question, rows)
+        self.assertAlmostEqual(metrics["weknora_precision"], 2 / 3)
+        self.assertEqual(metrics["weknora_recall"], 1.0)
+
+    def test_with_generation_adds_weknora_generation_metrics(self):
+        self.prepare()
+        question = json.loads(self.questions.read_text(encoding="utf-8"))[0]
+        question["evidence"] = ["国家法定节假日一共 11 天。"]
+        self.questions.write_text(json.dumps([question], ensure_ascii=False), encoding="utf-8")
+        answer = "国家法定节假日一共 11 天。"
+
+        fake_generation = SimpleNamespace(
+            details=[SimpleNamespace(question=question["question"], answer=answer)],
+            to_dict=lambda: {"details": [{"question": question["question"], "answer": answer}]},
+        )
+
+        with patch(
+            "personal_knowledge_base.management.commands.run_interview_eval.run_rag_evaluation",
+            return_value=fake_generation,
+        ):
+            call_command(
+                "run_interview_eval",
+                kb_name=PUBLIC_KB_NAME,
+                questions=str(self.questions),
+                output_dir=str(self.out),
+                output_name="generation",
+                with_generation=True,
+                stdout=io.StringIO(),
+            )
+
+        generation = json.loads((self.out / "generation_evaluation.json").read_text(encoding="utf-8"))
+        expected = generation_metrics(answer, "。".join(question["evidence"]))
+        self.assertEqual(generation["details"][0]["weknora_generation_metrics"], expected)
+        self.assertEqual(generation["weknora_generation_summary"], {key: round(value, 4) for key, value in expected.items()})
 
     def test_eval_chunk_rows_include_lifecycle_status(self):
         kb = KnowledgeBase.objects.create(tenant=self.tenant, name="lifecycle")
