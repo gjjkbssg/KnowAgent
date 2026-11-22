@@ -208,6 +208,8 @@ def _role_config(role: str) -> dict:
 
 
 def bailian_status():
+    from .search import effective_embedding_dim
+
     roles = {role: _role_config(role) for role in ["chat", "summary", "title", "question", "extract", "embedding", "rerank", "vlm"]}
     return {
         "enabled": roles["chat"]["enabled"],
@@ -216,7 +218,7 @@ def bailian_status():
         "chat_model": settings.LLM_CHAT_MODEL,
         "api_key_configured": bool(settings.LLM_CHAT_API_KEY),
         "embedding_dimension": settings.LLM_EMBEDDING_DIM,
-        "local_embedding_dimension": settings.APP_EMBEDDING_DIM,
+        "local_embedding_dimension": effective_embedding_dim(),
         "roles": roles,
     }
 
@@ -625,7 +627,15 @@ def _is_retryable_embedding_error(exc: Exception) -> bool:
     return status is None or status == 429 or status >= 500
 
 
-def _provider_embedding(tenant: Tenant, base_url: str, api_key: str, model_name: str, values: list[str], usage: dict) -> list[list[float]]:
+def _provider_embedding(
+    tenant: Tenant,
+    base_url: str,
+    api_key: str,
+    model_name: str,
+    values: list[str],
+    usage: dict,
+    dim: int,
+) -> list[list[float]]:
     """
     调用真实的 Embedding 服务。失败时抛错而不是回退到本地哈希向量：
     两者不在同一个向量空间，混进同一个索引后距离没有意义，而且事后无法分辨。
@@ -649,7 +659,7 @@ def _provider_embedding(tenant: Tenant, base_url: str, api_key: str, model_name:
                     total_tokens=estimate_tokens(values),
                     duration_ms=int((time.monotonic() - started) * 1000),
                 )
-                return _fit_vectors(vectors, settings.APP_EMBEDDING_DIM)
+                return _fit_vectors(vectors, dim)
             error = f"expected {len(values)} vectors, got {len(vectors)}"
         if attempt < EMBEDDING_ATTEMPTS - 1:
             time.sleep(attempt + 1)
@@ -665,16 +675,17 @@ def _provider_embedding(tenant: Tenant, base_url: str, api_key: str, model_name:
     raise EmbeddingUnavailableError(_safe_model_error_text(error, "embedding provider failed", 300))
 
 
-def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[list[float]]:
+def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "", *, dim: int | None = None) -> list[list[float]]:
     """
     没有配置 Embedding 服务时返回本地哈希向量（stable_embedding）；
     配置了但调用失败时抛 EmbeddingUnavailableError。
     """
-    from .search import stable_embedding
+    from .search import effective_embedding_dim, stable_embedding
 
     values = list(texts)
     if not values:
         return []
+    resolved_dim = dim or effective_embedding_dim()
     if not model_id and settings.LLM_USE_ENV_EMBEDDING and settings.LLM_EMBEDDING_API_KEY:
         return _provider_embedding(
             tenant,
@@ -688,16 +699,17 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
                 "model_type": "embedding",
                 "provider": "aliyun-bailian",
             },
+            resolved_dim,
         )
     model = ModelConfig.objects.filter(id=model_id, tenant=tenant).first() if model_id else default_model(tenant, "embedding")
     if not model or model.source == "local":
-        return [stable_embedding(text) for text in values]
+        return [stable_embedding(text, dim=resolved_dim) for text in values]
     params = model.parameters or {}
     base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
     api_key = params.get("api_key") or params.get("apiKey") or params.get("token")
     model_name = params.get("model") or model.name
     if not base_url:
-        return [stable_embedding(text) for text in values]
+        return [stable_embedding(text, dim=resolved_dim) for text in values]
     return _provider_embedding(
         tenant,
         base_url,
@@ -705,6 +717,7 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
         model_name,
         values,
         {"model_id": model.id, "model_name": model_name, "model_type": model.type, "provider": model.source},
+        resolved_dim,
     )
 
 

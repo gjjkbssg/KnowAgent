@@ -15,7 +15,8 @@ def check_vector_index_dimension(app_configs, **kwargs):
         return []
     return [
         Warning(
-            f"chunk_embeddings_vec uses {index_dim} dimensions, but APP_EMBEDDING_DIM is {settings.APP_EMBEDDING_DIM}.",
+            f"chunk_embeddings_vec uses {index_dim} dimensions, but APP_EMBEDDING_DIM is {settings.APP_EMBEDDING_DIM}; "
+            f"the app will keep using the existing {index_dim}-d index until it is rebuilt.",
             hint="Run `python manage.py rebuild_vector_index` to rebuild the vector index.",
             id="personal_knowledge_base.W001",
         )

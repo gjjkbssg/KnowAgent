@@ -23,6 +23,9 @@ EMBEDDING_ENV = {
 
 class EnvEmbeddingTests(TestCase):
     def setUp(self):
+        self.vector_index_dim_patch = patch("personal_knowledge_base.search.vector_index_dim", return_value=None)
+        self.vector_index_dim_patch.start()
+        self.addCleanup(self.vector_index_dim_patch.stop)
         self.tenant = Tenant.objects.create(name="t")
 
     @override_settings(LLM_USE_ENV_EMBEDDING=True, **EMBEDDING_ENV)
@@ -133,7 +136,7 @@ class EmbeddingOutageTests(TestCase):
         index_chunk(self.chunk)
         added = []
 
-        def embed_while_ingestion_continues(chunk):
+        def embed_while_ingestion_continues(chunk, dim=None):
             if not added:
                 added.append(
                     Chunk.objects.create(
@@ -147,7 +150,7 @@ class EmbeddingOutageTests(TestCase):
                 index_chunk(added[0])
                 self.chunk.content = "papaya orchard notes"
                 self.chunk.save()
-            return chunk_vector(chunk)
+            return chunk_vector(chunk, dim=dim)
 
         with patch(
             "personal_knowledge_base.management.commands.rebuild_vector_index.chunk_vector",

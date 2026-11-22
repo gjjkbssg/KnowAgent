@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable
 
 from django.conf import settings
-from django.db import connection
+from django.db import DatabaseError, connection
 
 from .models import Chunk, Knowledge
 
@@ -85,7 +85,7 @@ QUESTION_PREFIX_RE = re.compile(
 
 
 def stable_embedding(text: str, dim: int | None = None) -> list[float]:
-    dim = dim or settings.APP_EMBEDDING_DIM
+    dim = dim or effective_embedding_dim()
     vec = [0.0] * dim
     tokens = TOKEN_RE.findall((text or "").lower())
     if not tokens:
@@ -117,6 +117,14 @@ def vector_index_dim() -> int | None:
     return int(match.group(1)) if match else None
 
 
+def effective_embedding_dim() -> int:
+    try:
+        index_dim = vector_index_dim()
+    except DatabaseError:
+        return settings.APP_EMBEDDING_DIM
+    return index_dim if index_dim is not None else settings.APP_EMBEDDING_DIM
+
+
 def ensure_search_tables():
     dim = settings.APP_EMBEDDING_DIM
     with connection.cursor() as cursor:
@@ -132,11 +140,11 @@ def ensure_search_tables():
         )
 
 
-def chunk_vector(chunk: Chunk) -> bytes:
+def chunk_vector(chunk: Chunk, dim: int | None = None) -> bytes:
     """Chunk 内容的向量（已序列化）。会请求 Embedding 服务，不要在数据库事务里调用。"""
     from .model_providers import embedding
 
-    return pack_embedding(embedding(chunk.tenant, [chunk.content], chunk.knowledge.embedding_model_id)[0])
+    return pack_embedding(embedding(chunk.tenant, [chunk.content], chunk.knowledge.embedding_model_id, dim=dim)[0])
 
 
 def index_chunk(chunk: Chunk, vec: bytes | None = None):

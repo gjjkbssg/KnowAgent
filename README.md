@@ -312,6 +312,8 @@ DuRetrieval 子集（5,489 个 Chunk）：
 
 三种向量设置在 Rerank 后的最终结果相同：DuRetrieval MRR 均为 0.972；领域集（不含版本策略）MRR 均为 0.887。384 维归一化后的领域集结果下降没有按题分析，不能据此作因果判断。纯向量检索平均延迟约 1.1–1.3 秒，主要耗时来自 Embedding API，维度变化没有改变主要延迟来源。
 
+已有的 384 维索引会继续按 384 维写入和查询（新向量截断后归一化），启动时提示 W001；运行 `python manage.py rebuild_vector_index` 后切换到 1024 维。
+
 1024 维向量约 4 KB，384 维约 1.5 KB，存储开销约为 2.7 倍。已有数据库需运行 `python manage.py rebuild_vector_index`；该命令会通过 API 为每个 Chunk 重新计算向量，我们的 5,514 个 Chunk 用时约 100 分钟。
 
 ## 快速开始
