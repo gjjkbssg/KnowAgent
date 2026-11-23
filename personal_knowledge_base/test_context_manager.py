@@ -175,6 +175,35 @@ class CurrentTurnCompactionTests(SimpleTestCase):
         self.assertIn("CURRENT_TURN_MARKER", prompts[0])
         self.assertIn("CURRENT_TURN_MARKER", prompts[1])
 
+    def test_prior_summary_precedes_long_current_turn_in_compaction_prompts(self):
+        messages = self._messages_with_tool_groups(12)
+        messages.insert(
+            1,
+            {
+                "role": "system",
+                "content": "PRIOR_SUMMARY_MARKER " + ("prior summary " * 12000),
+            },
+        )
+        self.assertGreater(len(_build_history_text(messages[3:-4])), 8000)
+
+        prompts = []
+        responses = iter(
+            [
+                "Key information from the prior summary.",
+                "A concise summary preserving prior and current evidence.",
+            ]
+        )
+
+        def llm_caller(llm_messages):
+            prompts.append(llm_messages[-1]["content"])
+            return next(responses)
+
+        consolidate_messages(messages, max_tokens=16000, llm_caller=llm_caller, force=True)
+
+        self.assertEqual(len(prompts), 2)
+        self.assertIn("PRIOR_SUMMARY_MARKER", prompts[0])
+        self.assertIn("PRIOR_SUMMARY_MARKER", prompts[1])
+
     def test_force_skips_threshold_without_changing_default_under_threshold_behavior(self):
         messages = self._messages_with_tool_groups(2)
         self.assertLessEqual(estimate_messages_tokens(messages), int(16000 * 0.5))

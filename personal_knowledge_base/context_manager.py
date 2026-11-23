@@ -330,16 +330,32 @@ def _build_history_text(messages: list[dict]) -> str:
 
 
 def _build_compaction_text(old_history: list[dict], current_groups_flat: list[dict]) -> str:
-    current_text = _build_history_text(current_groups_flat)
-    if not current_text:
-        return _build_history_text(old_history)
-    old_text = _build_history_text(old_history)
-    return (
-        "[当前问题中较早的工具调用与结果]\n"
-        f"{current_text}\n\n"
-        "[更早的对话]\n"
-        f"{old_text}"
+    prior_summary_text = _build_history_text(
+        [message for message in old_history if message.get("role") == "system"]
     )
+    remaining_history = [message for message in old_history if message.get("role") != "system"]
+    current_text = _build_history_text(current_groups_flat)
+
+    if not prior_summary_text:
+        if not current_text:
+            return _build_history_text(old_history)
+        old_text = _build_history_text(old_history)
+        return (
+            "[当前问题中较早的工具调用与结果]\n"
+            f"{current_text}\n\n"
+            "[更早的对话]\n"
+            f"{old_text}"
+        )
+
+    sections = [f"[之前的摘要]\n{prior_summary_text}"]
+    if current_text:
+        sections.append(f"[当前问题中较早的工具调用与结果]\n{current_text}")
+
+    old_text = _build_history_text(remaining_history)
+    if old_text:
+        sections.append(f"[更早的对话]\n{old_text}")
+
+    return "\n\n".join(sections)
 
 
 def _raw_archive(messages: list[dict]) -> str:
