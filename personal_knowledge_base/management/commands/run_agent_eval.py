@@ -4,17 +4,21 @@ import statistics
 import time
 import uuid
 from collections import Counter
+from contextlib import ExitStack
 from pathlib import Path
+from unittest.mock import patch
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Sum
 
+from personal_knowledge_base import model_providers
 from personal_knowledge_base.agent_engine import AgentEngine
 from personal_knowledge_base.agent_eval import doc_key, score_answer
 from personal_knowledge_base.agent_history import build_normal_rag_messages
 from personal_knowledge_base.agent_tools import DEFAULT_ALLOWED_TOOLS
+from personal_knowledge_base.context_manager import estimate_messages_tokens, estimate_tokens
 from personal_knowledge_base.eval_metrics import generation_metrics, retrieval_metrics
-from personal_knowledge_base.model_providers import chat_completion
+from personal_knowledge_base.model_providers import ModelHTTPError, chat_completion
 from personal_knowledge_base.models import KnowledgeBase, ModelUsage, Session, Tenant
 from personal_knowledge_base.rag_pipeline import run_rag_pipeline
 from services.chat_generation import apply_multi_agent_defaults, local_answer
@@ -41,9 +45,60 @@ ROW_CSV_FIELDS = (
     "tool_calls",
     "tool_name_histogram",
     "iterations",
+    "context_overflow_recoveries",
+    "simulated_rejections",
     "stopped_reason",
     "error",
 )
+
+
+def _context_window_simulation(limit, rejection_counter):
+    patches = ExitStack()
+    if not limit:
+        return patches
+
+    original_raw = model_providers.chat_completion_raw
+    original_simple = model_providers.chat_completion
+
+    def reject_if_oversized(messages, tools):
+        token_count = estimate_messages_tokens(messages) + estimate_tokens(
+            json.dumps(tools, ensure_ascii=False)
+        )
+        if token_count > limit:
+            rejection_counter[0] += 1
+            raise ModelHTTPError(
+                400,
+                None,
+                f"Model request failed with status 400: Range of input length should be [1, {limit}]",
+            )
+
+    def simulated_chat_completion_raw(tenant, messages, model_id="", tools=None, temperature=None):
+        reject_if_oversized(messages, tools)
+        return original_raw(
+            tenant,
+            messages,
+            model_id=model_id,
+            tools=tools,
+            temperature=temperature,
+        )
+
+    def simulated_chat_completion(tenant, messages, model_id="", stream=False):
+        reject_if_oversized(messages, None)
+        return original_simple(tenant, messages, model_id=model_id, stream=stream)
+
+    from personal_knowledge_base import agent_engine
+
+    patches.enter_context(patch.object(agent_engine, "MAX_CONTEXT_TOKENS", limit))
+    patches.enter_context(
+        patch.object(model_providers, "chat_completion_raw", simulated_chat_completion_raw)
+    )
+    patches.enter_context(
+        patch.object(model_providers, "chat_completion", simulated_chat_completion)
+    )
+    patches.enter_context(
+        patch(f"{__name__}.chat_completion", new=simulated_chat_completion)
+    )
+    return patches
 
 
 def _usage_totals(tenant):
@@ -116,6 +171,7 @@ def _run_agent(tenant, question, kb_ids, config_name):
         int(result.total_iterations or 0),
         result.stopped_reason or "completed",
         tool_names,
+        int(getattr(result, "context_overflow_recoveries", 0) or 0),
     )
 
 
@@ -145,6 +201,9 @@ def _summary_row(rows, config, category=None):
     row["mean_tokens"] = round(statistics.mean(item["total_tokens"] for item in rows), 2) if rows else 0.0
     row["mean_request_count"] = round(statistics.mean(item["request_count"] for item in rows), 2) if rows else 0.0
     row["mean_tool_calls"] = round(statistics.mean(item["tool_calls"] for item in rows), 2) if rows else 0.0
+    row["context_overflow_recoveries"] = sum(item["context_overflow_recoveries"] for item in rows)
+    row["simulated_rejections"] = sum(item["simulated_rejections"] for item in rows)
+    row["tasks_with_simulated_rejections"] = sum(item["simulated_rejections"] > 0 for item in rows)
     row["stopped_reason_counts"] = dict(sorted(Counter(item["stopped_reason"] for item in rows).items()))
     return row
 
@@ -182,6 +241,7 @@ class Command(BaseCommand):
         parser.add_argument("--configs", default=",".join(DEFAULT_CONFIGS))
         parser.add_argument("--output-dir", default="interview_materials/results/agent_eval")
         parser.add_argument("--limit", type=int, default=0)
+        parser.add_argument("--simulate-context-window", type=int, default=0)
 
     def handle(self, *args, **options):
         task_path = Path(options["tasks"]).resolve()
@@ -200,6 +260,8 @@ class Command(BaseCommand):
         invalid_configs = sorted(set(configs) - set(DEFAULT_CONFIGS))
         if not configs or invalid_configs:
             raise CommandError(f"Configs must be a comma-separated list of {', '.join(DEFAULT_CONFIGS)}")
+        if options["simulate_context_window"] < 0:
+            raise CommandError("--simulate-context-window cannot be negative")
 
         tenant = Tenant.objects.order_by("created_at").first()
         if not tenant:
@@ -217,14 +279,21 @@ class Command(BaseCommand):
             raise CommandError(f"Knowledge bases do not exist: {', '.join(missing)}")
         kb_ids = [knowledge_bases[name].id for name in kb_names]
 
+        rejection_counter = [0]
+        simulation_patches = _context_window_simulation(
+            options["simulate_context_window"],
+            rejection_counter,
+        )
         results = []
         for task in tasks:
             for config in configs:
                 started = time.perf_counter()
+                rejections_before = rejection_counter[0]
                 usage_before = _usage_totals(tenant)
                 answer = ""
                 retrieved = []
                 iterations = 0
+                context_overflow_recoveries = 0
                 stopped_reason = "not_applicable" if config == "rag" else "completed"
                 tool_names = Counter()
                 error = None
@@ -236,7 +305,14 @@ class Command(BaseCommand):
                             kb_ids,
                         )
                     else:
-                        answer, retrieved, iterations, stopped_reason, tool_names = _run_agent(
+                        (
+                            answer,
+                            retrieved,
+                            iterations,
+                            stopped_reason,
+                            tool_names,
+                            context_overflow_recoveries,
+                        ) = _run_agent(
                             tenant,
                             task["question"],
                             kb_ids,
@@ -274,12 +350,15 @@ class Command(BaseCommand):
                         "tool_calls": sum(tool_names.values()),
                         "tool_name_histogram": dict(sorted(tool_names.items())),
                         "iterations": iterations,
+                        "context_overflow_recoveries": context_overflow_recoveries,
+                        "simulated_rejections": rejection_counter[0] - rejections_before,
                         "stopped_reason": stopped_reason,
                         "error": error,
                     }
                 )
                 self.stdout.write(f"evaluated {task['id']} ({config})")
 
+        simulation_patches.close()
         categories = list(dict.fromkeys(task.get("category", "") for task in tasks))
         summary = []
         for config in configs:

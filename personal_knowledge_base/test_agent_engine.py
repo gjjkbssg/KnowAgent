@@ -8,6 +8,7 @@ from django.test import TestCase, override_settings
 from . import model_providers
 from .agent_engine import AgentEngine, AgentResult, AgentStep, ToolCallRecord, _synthesize_from_tool_results
 from .agent_tools import KnowledgeSearchTool, Tool, ToolRegistry, ToolResult, get_tool_registry
+from .context_manager import consolidate_messages
 from .model_providers import ModelHTTPError
 from .mcp_client import MCPTool
 from .models import Chunk, Knowledge, KnowledgeBase, Session, Tenant
@@ -144,6 +145,23 @@ class AgentEngineTests(TestCase):
         call.assert_called_once()
         sleep.assert_not_called()
 
+    def test_llm_tool_call_does_not_retry_context_overflow_even_for_retryable_status(self):
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
+        with (
+            override_settings(AGENT_LLM_MAX_ATTEMPTS=3),
+            patch.object(
+                model_providers,
+                "chat_completion_raw",
+                side_effect=ModelHTTPError(503, None, "Request exceeds the context window"),
+            ) as call,
+            patch("personal_knowledge_base.agent_engine.time.sleep") as sleep,
+            self.assertRaises(ModelHTTPError),
+        ):
+            engine._call_llm_with_tools([{"role": "user", "content": "question"}])
+
+        call.assert_called_once()
+        sleep.assert_not_called()
+
     def test_llm_tool_call_stops_after_max_attempts(self):
         engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
         with (
@@ -183,6 +201,103 @@ class AgentEngineTests(TestCase):
 
         self.assertEqual(result, "ok")
         self.assertEqual(call.call_count, 2)
+
+    def test_context_overflow_recovers_once_in_tool_call_path(self):
+        engine = AgentEngine(
+            self.tenant,
+            "session",
+            agent_config={"allowed_tools": ["thinking"], "knowledge_base_ids": ["kb"], "max_rounds": 1},
+        )
+        response = {"content": "answer", "tool_calls": None}
+        overflow = ModelHTTPError(400, None, "Request exceeds the context window")
+        with (
+            patch.object(model_providers, "chat_completion_raw", side_effect=[overflow, response]) as call,
+            patch(
+                "personal_knowledge_base.agent_engine.consolidate_messages",
+                wraps=consolidate_messages,
+            ) as compact,
+        ):
+            result = engine.execute("question")
+
+        self.assertEqual(result.content, "answer")
+        self.assertEqual(result.stopped_reason, "completed")
+        self.assertEqual(result.context_overflow_recoveries, 1)
+        self.assertEqual(call.call_count, 2)
+        compact.assert_called_once()
+        self.assertTrue(compact.call_args.kwargs["force"])
+
+    def test_context_overflow_recovers_once_in_simple_call_path(self):
+        engine = AgentEngine(
+            self.tenant,
+            "session",
+            agent_config={"allowed_tools": [], "knowledge_base_ids": ["kb"], "max_rounds": 1},
+        )
+        engine._granted_tools = set()
+        overflow = ModelHTTPError(400, None, "maximum context length is 8192 tokens")
+        with (
+            patch.object(model_providers, "chat_completion", side_effect=[overflow, "simple answer"]) as call,
+            patch(
+                "personal_knowledge_base.agent_engine.consolidate_messages",
+                wraps=consolidate_messages,
+            ) as compact,
+        ):
+            result = engine.execute("question")
+
+        self.assertEqual(result.content, "simple answer")
+        self.assertEqual(result.context_overflow_recoveries, 1)
+        self.assertEqual(call.call_count, 2)
+        compact.assert_called_once()
+        self.assertTrue(compact.call_args.kwargs["force"])
+
+    def test_forced_final_answer_recovers_from_context_overflow(self):
+        model = ScriptedModel(
+            [{"content": "", "tool_calls": [tool_call("c1", "thinking", {"thought": "plan"})]}]
+        )
+        engine = AgentEngine(
+            self.tenant,
+            "session",
+            agent_config={"allowed_tools": ["thinking"], "knowledge_base_ids": ["kb"], "max_rounds": 1},
+        )
+        overflow = ModelHTTPError(400, None, "exceeds the context window")
+        with (
+            patch.object(model_providers, "chat_completion_raw", model),
+            patch.object(model_providers, "chat_completion", side_effect=[overflow, "forced answer"]) as final_call,
+            patch(
+                "personal_knowledge_base.agent_engine.consolidate_messages",
+                wraps=consolidate_messages,
+            ) as compact,
+        ):
+            result = engine.execute("question")
+
+        self.assertEqual(result.content, "forced answer")
+        self.assertEqual(result.stopped_reason, "max_iterations")
+        self.assertEqual(result.context_overflow_recoveries, 1)
+        self.assertEqual(final_call.call_count, 2)
+        compact.assert_called_once()
+        self.assertTrue(compact.call_args.kwargs["force"])
+
+    def test_second_context_overflow_uses_existing_error_path_without_looping(self):
+        engine = AgentEngine(
+            self.tenant,
+            "session",
+            agent_config={"allowed_tools": ["thinking"], "knowledge_base_ids": ["kb"], "max_rounds": 1},
+        )
+        overflow = ModelHTTPError(400, None, "exceeds the context window")
+        with (
+            patch.object(model_providers, "chat_completion_raw", side_effect=[overflow, overflow]) as call,
+            patch(
+                "personal_knowledge_base.agent_engine.consolidate_messages",
+                wraps=consolidate_messages,
+            ) as compact,
+        ):
+            result = engine.execute("question")
+
+        self.assertEqual(result.stopped_reason, "error")
+        self.assertIn("context window", result.content)
+        self.assertEqual(result.context_overflow_recoveries, 1)
+        self.assertEqual(call.call_count, 2)
+        compact.assert_called_once()
+        self.assertTrue(compact.call_args.kwargs["force"])
 
     def test_tool_outside_whitelist_is_rejected_at_execution(self):
         result, model, _ = self.run_engine(

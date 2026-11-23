@@ -20,14 +20,23 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
+from django.conf import settings
+
 from .agent_tools import DEFAULT_ALLOWED_TOOLS, ToolResult, ToolRegistry, get_tool_registry
-from .context_manager import estimate_tokens, estimate_messages_tokens, manage_context_window, sort_tools_for_cache
+from .context_manager import (
+    consolidate_messages,
+    estimate_tokens,
+    estimate_messages_tokens,
+    is_context_overflow_error,
+    manage_context_window,
+    sort_tools_for_cache,
+)
 
 logger = logging.getLogger(__name__)
 
 MAX_REPEATED_TOOL_ROUNDS = 2  # 连续多少轮发出完全相同的工具调用即判定为卡死
 MAX_CONSECUTIVE_FAILED_TOOL_ROUNDS = 3
-MAX_CONTEXT_TOKENS = 120000  # 约 120K tokens 上限
+MAX_CONTEXT_TOKENS = settings.AGENT_MAX_CONTEXT_TOKENS
 MAX_TOOL_OUTPUT = 16 * 1024
 PARALLEL_TOOL_WORKERS = 4
 
@@ -143,6 +152,7 @@ class AgentResult:
     pending_approval: list[dict] = field(default_factory=list)
     checkpoint: dict | None = None
     retrieved: list[dict] = field(default_factory=list)
+    context_overflow_recoveries: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -151,6 +161,7 @@ class AgentResult:
             "total_iterations": self.total_iterations,
             "duration_ms": self.duration_ms,
             "stopped_reason": self.stopped_reason,
+            "context_overflow_recoveries": self.context_overflow_recoveries,
         }
 
     def to_checkpoint_dict(self) -> dict:
@@ -163,6 +174,7 @@ class AgentResult:
             "references": self.references,
             "pending_approval": self.pending_approval,
             "checkpoint": self.checkpoint,
+            "context_overflow_recoveries": self.context_overflow_recoveries,
         }
 
     @classmethod
@@ -176,6 +188,7 @@ class AgentResult:
             references=value.get("references") or [],
             pending_approval=value.get("pending_approval") or [],
             checkpoint=value.get("checkpoint"),
+            context_overflow_recoveries=value.get("context_overflow_recoveries", 0),
         )
 
 
@@ -301,6 +314,8 @@ class AgentEngine:
         self.actor_id = self.config.get("actor_id", "main")
         self.parent_message_id = self.config.get("parent_message_id", "")
         self.cancel_check = self.config.get("cancel_check")
+        self._context_overflow_recovered = False
+        self._context_overflow_recoveries = 0
 
     def _build_system_prompt(self) -> str:
         tools = self.registry.to_openai_tools(self.allowed_tools)
@@ -350,7 +365,7 @@ class AgentEngine:
             try:
                 return call()
             except Exception as exc:
-                if not is_retryable(exc) or attempt + 1 >= max_attempts:
+                if is_context_overflow_error(exc) or not is_retryable(exc) or attempt + 1 >= max_attempts:
                     raise
                 delay = retry_delay(exc, attempt)
                 logger.warning(
@@ -391,6 +406,37 @@ class AgentEngine:
     def _call_llm_simple(self, messages: list[dict]) -> str:
         from .model_providers import chat_completion
         return self._with_retry(lambda: chat_completion(self.tenant, messages, model_id=self.model_id))
+
+    def _recover_context_overflow(self, messages: list[dict], exc: Exception) -> list[dict] | None:
+        if self._context_overflow_recovered or not is_context_overflow_error(exc):
+            return None
+        self._context_overflow_recovered = True
+        self._context_overflow_recoveries += 1
+        return consolidate_messages(
+            messages,
+            MAX_CONTEXT_TOKENS,
+            self._call_llm_simple,
+            force=True,
+        )
+
+    def _call_llm_with_overflow_recovery(
+        self,
+        messages: list[dict],
+        tools_available: bool,
+    ) -> tuple[list[dict], str, list[dict] | None]:
+        call = self._call_llm_with_tools if tools_available else self._call_llm_simple
+        try:
+            response = call(messages)
+        except Exception as exc:
+            recovered_messages = self._recover_context_overflow(messages, exc)
+            if recovered_messages is None:
+                raise
+            messages = recovered_messages
+            response = call(messages)
+
+        if tools_available:
+            return messages, response.get("content", "") or "", response.get("tool_calls")
+        return messages, response, None
 
     def _run_tool(self, tool_name: str, args: dict, context: dict) -> ToolResult:
         """执行工具前校验白名单：模型只能调用本 Agent 被授予的工具。"""
@@ -451,7 +497,7 @@ class AgentEngine:
             nudge_content = "你在重复调用相同的工具且没有新信息。请停止调用工具，基于已获得的信息直接给出最终回答；信息不足的部分请明确说明。"
         nudge = {"role": "user", "content": nudge_content}
         try:
-            content = self._call_llm_simple([*messages, nudge])
+            _, content, _ = self._call_llm_with_overflow_recovery([*messages, nudge], tools_available=False)
         except Exception:
             logger.exception("[Agent] Forced final answer failed")
             content = ""
@@ -465,8 +511,11 @@ class AgentEngine:
         on_event: callable = None,
     ) -> AgentResult:
         # 子 Agent 复用主 Agent 的收集器，检索证据才能回到最终答案的引用里
+        self._context_overflow_recovered = False
+        self._context_overflow_recoveries = 0
         self._references = self.config.get("reference_collector") or ReferenceCollector()
         result = self._execute(query, history, context_str, on_event)
+        result.context_overflow_recoveries = self._context_overflow_recoveries
         result.references = self._references.for_answer(result.content)
         result.retrieved = self._references.to_list()
         return result
@@ -488,6 +537,7 @@ class AgentEngine:
             state=checkpoint,
             decision=decision,
         )
+        result.context_overflow_recoveries = self._context_overflow_recoveries
         result.references = self._references.for_answer(result.content)
         result.retrieved = self._references.to_list()
         return result
@@ -578,6 +628,13 @@ class AgentEngine:
         from .observability import trace_agent_execution, trace_llm_call, trace_tool_execution
 
         start_time = time.monotonic()
+        if state:
+            self._context_overflow_recovered = bool(
+                state.get("context_overflow_recovered", self._context_overflow_recovered)
+            )
+            self._context_overflow_recoveries = int(
+                state.get("context_overflow_recoveries", self._context_overflow_recoveries)
+            )
         steps: list[AgentStep] = [AgentStep.from_dict(item) for item in state.get("steps", [])] if state else []
         context = self._build_context()
         system_prompt = self._build_system_prompt()
@@ -628,6 +685,7 @@ class AgentEngine:
             agent_trace.metadata["tenant_id"] = self.tenant.id
             agent_trace.metadata["max_iterations"] = self.max_iterations
             agent_trace.metadata["allowed_tools"] = self.allowed_tools
+            agent_trace.metadata["context_overflow_recoveries"] = self._context_overflow_recoveries
 
             for iteration in range(next_iteration, self.max_iterations + 1):
                 if callable(self.cancel_check) and self.cancel_check():
@@ -654,16 +712,13 @@ class AgentEngine:
                 try:
                     # 每轮 LLM 调用追踪
                     with trace_llm_call(agent_trace, model=self.model_id or "default", messages=messages, tools=self.registry.to_openai_tools(self.allowed_tools) if tools_available else None) as llm_span:
-                        if tools_available:
-                            llm_response = self._call_llm_with_tools(messages)
-                            content = llm_response.get("content", "") or ""
-                            tool_calls = llm_response.get("tool_calls")
-                            llm_span["content"] = content
-                            llm_span["tool_calls"] = tool_calls
-                        else:
-                            content = self._call_llm_simple(messages)
-                            tool_calls = None
-                            llm_span["content"] = content
+                        messages, content, tool_calls = self._call_llm_with_overflow_recovery(
+                            messages,
+                            tools_available,
+                        )
+                        llm_span["content"] = content
+                        llm_span["tool_calls"] = tool_calls
+                        agent_trace.metadata["context_overflow_recoveries"] = self._context_overflow_recoveries
                 except Exception as e:
                     logger.exception(f"Agent LLM call failed at iteration {iteration}")
                     # 优雅降级：如果有工具结果，尝试综合答案
@@ -745,6 +800,8 @@ class AgentEngine:
                         "repeated_rounds": repeated_rounds,
                         "consecutive_failed_tool_rounds": consecutive_failed_tool_rounds,
                         "final_content": final_content,
+                        "context_overflow_recovered": self._context_overflow_recovered,
+                        "context_overflow_recoveries": self._context_overflow_recoveries,
                         "context": {
                             "seen_chunks": sorted(context.get("seen_chunks", set())),
                             "seen_wiki_slugs": sorted(context.get("seen_wiki_slugs", set())),
