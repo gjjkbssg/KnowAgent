@@ -22,6 +22,28 @@ def search_hit(chunk_id, title):
     return {"chunk_id": chunk_id, "knowledge_title": title, "content": f"evidence from {title}", "score": 0.9}
 
 
+def tool_history(group_count=3, tokens_per_group=3000):
+    messages = [{"role": "user", "content": "previous question"}]
+    for index in range(group_count):
+        call_id = f"history-call-{index}"
+        messages.extend(
+            [
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [tool_call(call_id, "thinking", {"thought": f"plan-{index}"})],
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": call_id,
+                    "name": "thinking",
+                    "content": f"history group {index} " + ("word " * tokens_per_group),
+                },
+            ]
+        )
+    return messages
+
+
 class ScriptedModel:
     """Replays a fixed list of chat_completion_raw responses and records what was advertised."""
 
@@ -212,17 +234,23 @@ class AgentEngineTests(TestCase):
         overflow = ModelHTTPError(400, None, "Request exceeds the context window")
         with (
             patch.object(model_providers, "chat_completion_raw", side_effect=[overflow, response]) as call,
+            patch.object(
+                model_providers,
+                "chat_completion",
+                side_effect=["Preserved key information.", "A compact summary of older tool traffic."],
+            ) as simple_call,
             patch(
                 "personal_knowledge_base.agent_engine.consolidate_messages",
                 wraps=consolidate_messages,
             ) as compact,
         ):
-            result = engine.execute("question")
+            result = engine.execute("question", history=tool_history())
 
         self.assertEqual(result.content, "answer")
         self.assertEqual(result.stopped_reason, "completed")
         self.assertEqual(result.context_overflow_recoveries, 1)
         self.assertEqual(call.call_count, 2)
+        self.assertEqual(simple_call.call_count, 2)
         compact.assert_called_once()
         self.assertTrue(compact.call_args.kwargs["force"])
 
@@ -324,17 +352,26 @@ class AgentEngineTests(TestCase):
         engine._granted_tools = set()
         overflow = ModelHTTPError(400, None, "maximum context length is 8192 tokens")
         with (
-            patch.object(model_providers, "chat_completion", side_effect=[overflow, "simple answer"]) as call,
+            patch.object(
+                model_providers,
+                "chat_completion",
+                side_effect=[
+                    overflow,
+                    "Preserved key information.",
+                    "A compact summary of older tool traffic.",
+                    "simple answer",
+                ],
+            ) as call,
             patch(
                 "personal_knowledge_base.agent_engine.consolidate_messages",
                 wraps=consolidate_messages,
             ) as compact,
         ):
-            result = engine.execute("question")
+            result = engine.execute("question", history=tool_history())
 
         self.assertEqual(result.content, "simple answer")
         self.assertEqual(result.context_overflow_recoveries, 1)
-        self.assertEqual(call.call_count, 2)
+        self.assertEqual(call.call_count, 4)
         compact.assert_called_once()
         self.assertTrue(compact.call_args.kwargs["force"])
 
@@ -391,17 +428,23 @@ class AgentEngineTests(TestCase):
         overflow = ModelHTTPError(400, None, "exceeds the context window")
         with (
             patch.object(model_providers, "chat_completion_raw", side_effect=[overflow, overflow]) as call,
+            patch.object(
+                model_providers,
+                "chat_completion",
+                side_effect=["Preserved key information.", "A compact summary of older tool traffic."],
+            ) as simple_call,
             patch(
                 "personal_knowledge_base.agent_engine.consolidate_messages",
                 wraps=consolidate_messages,
             ) as compact,
         ):
-            result = engine.execute("question")
+            result = engine.execute("question", history=tool_history())
 
         self.assertEqual(result.stopped_reason, "error")
         self.assertIn("context window", result.content)
         self.assertEqual(result.context_overflow_recoveries, 1)
         self.assertEqual(call.call_count, 2)
+        self.assertEqual(simple_call.call_count, 2)
         compact.assert_called_once()
         self.assertTrue(compact.call_args.kwargs["force"])
 
