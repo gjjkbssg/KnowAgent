@@ -14,9 +14,60 @@
 import json
 import logging
 import os
+import re
 import time
 
 logger = logging.getLogger(__name__)
+
+KEEP_RECENT_TOKENS = 20000
+_CONTEXT_OVERFLOW_PATTERNS = tuple(
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"(?i)prompt is too long",
+        r"(?i)request_too_large",
+        r"(?i)input is too long for requested model",
+        r"(?i)exceeds the context window",
+        r"(?i)exceeds (the )?(model'?s )?maximum context length",
+        r"(?i)input token count.*exceeds the maximum",
+        r"(?i)maximum prompt length is \d+",
+        r"(?i)reduce the length of the messages",
+        r"(?i)maximum context length is \d+ tokens",
+        r"(?i)exceeds (the )?maximum allowed input length",
+        r"(?i)is longer than the model'?s context length",
+        r"(?i)exceeds the limit of \d+",
+        r"(?i)exceeds the available context size",
+        r"(?i)greater than the context length",
+        r"(?i)context window exceeds limit",
+        r"(?i)exceeded model token limit",
+        r"(?i)too large for model with \d+ maximum context length",
+        r"(?i)but the configured context size is",
+        r"(?i)model_context_window_exceeded",
+        r"(?i)prompt too long; exceeded (max )?context length",
+        r"(?i)range of input length should be",
+        r"(?i)context[_ ]length[_ ]exceeded",
+        r"(?i)too many tokens",
+        r"(?i)token limit exceeded",
+    )
+)
+_NON_CONTEXT_OVERFLOW_PATTERNS = tuple(
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"(?i)throttling",
+        r"(?i)service unavailable",
+        r"(?i)rate limit",
+        r"(?i)too many requests",
+    )
+)
+
+
+def is_context_overflow_error(exc: Exception) -> bool:
+    if exc is None:
+        return False
+    error_text = str(exc)
+    if any(pattern.search(error_text) for pattern in _NON_CONTEXT_OVERFLOW_PATTERNS):
+        return False
+    return any(pattern.search(error_text) for pattern in _CONTEXT_OVERFLOW_PATTERNS)
+
 
 # ── Token 估算（使用 tiktoken cl100k_base BPE 编码）──────────────────
 _tiktoken_enabled = os.environ.get("TIKTOKEN_ENABLE", "true").lower() in {"1", "true", "yes", "on"}
@@ -278,6 +329,35 @@ def _build_history_text(messages: list[dict]) -> str:
     )
 
 
+def _build_compaction_text(old_history: list[dict], current_groups_flat: list[dict]) -> str:
+    prior_summary_text = _build_history_text(
+        [message for message in old_history if message.get("role") == "system"]
+    )
+    remaining_history = [message for message in old_history if message.get("role") != "system"]
+    current_text = _build_history_text(current_groups_flat)
+
+    if not prior_summary_text:
+        if not current_text:
+            return _build_history_text(old_history)
+        old_text = _build_history_text(old_history)
+        return (
+            "[当前问题中较早的工具调用与结果]\n"
+            f"{current_text}\n\n"
+            "[更早的对话]\n"
+            f"{old_text}"
+        )
+
+    sections = [f"[之前的摘要]\n{prior_summary_text}"]
+    if current_text:
+        sections.append(f"[当前问题中较早的工具调用与结果]\n{current_text}")
+
+    old_text = _build_history_text(remaining_history)
+    if old_text:
+        sections.append(f"[更早的对话]\n{old_text}")
+
+    return "\n\n".join(sections)
+
+
 def _raw_archive(messages: list[dict]) -> str:
     lines = []
     for message in messages:
@@ -379,6 +459,32 @@ def _split_history_by_token_budget(
     return _flatten_groups(compress_groups), _flatten_groups(retain_groups)
 
 
+def _split_current_round_by_token_budget(
+    current_round: list[dict],
+    keep_recent_tokens: int,
+) -> tuple[list[dict], list[list[dict]], list[list[dict]]]:
+    """Keep the current user message and the newest complete groups in its turn."""
+    current_user = current_round[:1] if current_round and current_round[0].get("role") == "user" else []
+    current_messages = current_round[len(current_user):]
+    groups = _group_history_messages(current_messages)
+    if estimate_messages_tokens(current_messages) <= keep_recent_tokens or not groups:
+        return current_user, [], groups
+
+    kept_reversed = []
+    used = 0
+    for group in reversed(groups):
+        group_tokens = estimate_messages_tokens(group)
+        if kept_reversed and used + group_tokens > keep_recent_tokens:
+            break
+        kept_reversed.append(group)
+        used += group_tokens
+        if used > keep_recent_tokens:
+            break
+
+    keep_count = len(kept_reversed)
+    return current_user, groups[:-keep_count], list(reversed(kept_reversed))
+
+
 def _summarize_with_retry(
     history_text: str,
     llm_caller,
@@ -426,6 +532,7 @@ def consolidate_messages(
     max_tokens: int,
     llm_caller=None,
     extract_key_info: bool = True,
+    force: bool = False,
 ) -> list[dict]:
     """
     Consolidator：用 LLM 摘要压缩历史消息。
@@ -445,24 +552,38 @@ def consolidate_messages(
     current_tokens = estimate_messages_tokens(messages)
     threshold = int(max_tokens * CONSOLIDATION_THRESHOLD)
 
-    if current_tokens <= threshold:
+    if current_tokens <= threshold and not force:
         return messages
 
-    logger.info(f"[Consolidator] Token count {current_tokens} exceeds threshold {threshold}, compressing...")
+    if current_tokens > threshold:
+        logger.info(f"[Consolidator] Token count {current_tokens} exceeds threshold {threshold}, compressing...")
 
     system, history, current_round = _split_system_history_current(messages)
+    keep_recent_tokens = min(KEEP_RECENT_TOKENS, max_tokens // 4)
+    current_user, current_to_compress, current_to_retain = _split_current_round_by_token_budget(
+        current_round,
+        keep_recent_tokens,
+    )
+    retained_current_round = current_user + _flatten_groups(current_to_retain)
 
-    if not history:
+    if not history and not current_to_compress:
         return messages
 
     # 根据 token 预算从历史尾部保留近期消息，而不是按消息数量比例。
-    to_compress, to_retain = _split_history_by_token_budget(history, system, current_round, max_tokens)
+    old_history_to_compress, to_retain = _split_history_by_token_budget(
+        history,
+        system,
+        retained_current_round,
+        max_tokens,
+    )
+    current_groups_to_compress = _flatten_groups(current_to_compress)
+    to_compress = [*old_history_to_compress, *current_groups_to_compress]
 
     if not to_compress:
         # 没有可压缩的消息，回退到滑动窗口
         return _sliding_window_compress(messages, max_tokens)
 
-    history_text = _build_history_text(to_compress)
+    history_text = _build_compaction_text(old_history_to_compress, current_groups_to_compress)
 
     # Step 1: 提取关键信息（参考同类知识库系统的 "先提取关键信息再压缩"）
     key_info_items = []
@@ -497,7 +618,7 @@ def consolidate_messages(
         result.append(system)
     result.append(summary_msg)
     result.extend(to_retain)
-    result.extend(current_round)
+    result.extend(retained_current_round)
 
     new_tokens = estimate_messages_tokens(result)
     logger.info(f"[Consolidator] Compressed from {current_tokens} to {new_tokens} tokens")
@@ -522,11 +643,18 @@ def _sliding_window_compress(messages: list[dict], max_tokens: int) -> list[dict
         removed_group = groups.pop(0)
         current_tokens -= estimate_messages_tokens(removed_group)
 
+    current_user = current_round[:1] if current_round and current_round[0].get("role") == "user" else []
+    current_groups = _group_history_messages(current_round[len(current_user):])
+    while current_tokens > target_tokens and len(current_groups) > 1:
+        removed_group = current_groups.pop(0)
+        current_tokens -= estimate_messages_tokens(removed_group)
+
     result = []
     if system:
         result.append(system)
     result.extend(_flatten_groups(groups))
-    result.extend(current_round)
+    result.extend(current_user)
+    result.extend(_flatten_groups(current_groups))
     return result
 
 

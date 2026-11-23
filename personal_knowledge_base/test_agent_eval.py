@@ -8,6 +8,7 @@ from unittest.mock import patch
 from django.core.management import call_command
 from django.test import TestCase
 
+from . import model_providers
 from .models import KnowledgeBase, ModelUsage, Session, Tenant
 
 
@@ -121,6 +122,7 @@ class AgentEvalCommandTests(TestCase):
         for row in report["results"]:
             self.assertEqual(row["retrieval_ids"], [0, -2, 0])
             self.assertAlmostEqual(row["retrieval_metrics"]["precision"], 1 / 3)
+            self.assertEqual(row["simulated_rejections"], 0)
             self.assertIn("latency_ms", row)
             self.assertIn("stopped_reason", row)
             self.assertIsNone(row["error"])
@@ -160,6 +162,8 @@ class AgentEvalCommandTests(TestCase):
         self.assertEqual(overall[("rag", "overall")]["accuracy"], 1.0)
         self.assertEqual(overall[("agent", "overall")]["accuracy"], 0.0)
         self.assertEqual(overall[("multi_agent", "overall")]["accuracy"], 1.0)
+        self.assertEqual(overall[("agent", "overall")]["context_overflow_recoveries"], 0)
+        self.assertEqual(overall[("agent", "overall")]["simulated_rejections"], 0)
         self.assertIn("stopped_reason_counts", overall[("rag", "overall")])
 
     def test_case_errors_are_incorrect_and_do_not_stop_later_cases(self):
@@ -222,3 +226,41 @@ class AgentEvalCommandTests(TestCase):
         self.assertEqual(results[0]["stopped_reason"], "error")
         self.assertIn("model unavailable", results[0]["error"])
         self.assertTrue(results[1]["correct"])
+
+    def test_simulated_context_window_counts_rejections_without_calling_provider(self):
+        class OversizedAgentEngine:
+            def __init__(self, tenant, session_id, agent_config):
+                self.tenant = tenant
+
+            def execute(self, question, history, context_str):
+                return model_providers.chat_completion_raw(
+                    self.tenant,
+                    [{"role": "user", "content": "request exceeds the simulated context window"}],
+                    tools=[{"type": "function", "function": {"name": "tool"}}],
+                )
+
+        with (
+            patch(
+                "personal_knowledge_base.management.commands.run_agent_eval.AgentEngine",
+                OversizedAgentEngine,
+            ),
+            patch.object(model_providers, "chat_completion_raw") as provider_call,
+        ):
+            call_command(
+                "run_agent_eval",
+                tasks=str(self.tasks_path),
+                kb_names="unit-kb",
+                configs="agent",
+                output_dir=str(self.output_dir),
+                simulate_context_window=1,
+                stdout=io.StringIO(),
+            )
+
+        report = json.loads((self.output_dir / "agent_eval.json").read_text(encoding="utf-8"))
+        result = report["results"][0]
+        self.assertEqual(result["simulated_rejections"], 1)
+        self.assertEqual(result["context_overflow_recoveries"], 0)
+        self.assertIn("ModelHTTPError", result["error"])
+        provider_call.assert_not_called()
+        self.assertEqual(report["summary"][0]["simulated_rejections"], 1)
+        self.assertEqual(report["summary"][0]["tasks_with_simulated_rejections"], 1)

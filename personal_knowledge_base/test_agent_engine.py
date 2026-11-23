@@ -8,6 +8,7 @@ from django.test import TestCase, override_settings
 from . import model_providers
 from .agent_engine import AgentEngine, AgentResult, AgentStep, ToolCallRecord, _synthesize_from_tool_results
 from .agent_tools import KnowledgeSearchTool, Tool, ToolRegistry, ToolResult, get_tool_registry
+from .context_manager import consolidate_messages, estimate_messages_tokens
 from .model_providers import ModelHTTPError
 from .mcp_client import MCPTool
 from .models import Chunk, Knowledge, KnowledgeBase, Session, Tenant
@@ -19,6 +20,28 @@ def tool_call(call_id, name, arguments):
 
 def search_hit(chunk_id, title):
     return {"chunk_id": chunk_id, "knowledge_title": title, "content": f"evidence from {title}", "score": 0.9}
+
+
+def tool_history(group_count=3, tokens_per_group=3000):
+    messages = [{"role": "user", "content": "previous question"}]
+    for index in range(group_count):
+        call_id = f"history-call-{index}"
+        messages.extend(
+            [
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [tool_call(call_id, "thinking", {"thought": f"plan-{index}"})],
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": call_id,
+                    "name": "thinking",
+                    "content": f"history group {index} " + ("word " * tokens_per_group),
+                },
+            ]
+        )
+    return messages
 
 
 class ScriptedModel:
@@ -144,6 +167,23 @@ class AgentEngineTests(TestCase):
         call.assert_called_once()
         sleep.assert_not_called()
 
+    def test_llm_tool_call_does_not_retry_context_overflow_even_for_retryable_status(self):
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
+        with (
+            override_settings(AGENT_LLM_MAX_ATTEMPTS=3),
+            patch.object(
+                model_providers,
+                "chat_completion_raw",
+                side_effect=ModelHTTPError(503, None, "Request exceeds the context window"),
+            ) as call,
+            patch("personal_knowledge_base.agent_engine.time.sleep") as sleep,
+            self.assertRaises(ModelHTTPError),
+        ):
+            engine._call_llm_with_tools([{"role": "user", "content": "question"}])
+
+        call.assert_called_once()
+        sleep.assert_not_called()
+
     def test_llm_tool_call_stops_after_max_attempts(self):
         engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
         with (
@@ -183,6 +223,230 @@ class AgentEngineTests(TestCase):
 
         self.assertEqual(result, "ok")
         self.assertEqual(call.call_count, 2)
+
+    def test_context_overflow_recovers_once_in_tool_call_path(self):
+        engine = AgentEngine(
+            self.tenant,
+            "session",
+            agent_config={"allowed_tools": ["thinking"], "knowledge_base_ids": ["kb"], "max_rounds": 1},
+        )
+        response = {"content": "answer", "tool_calls": None}
+        overflow = ModelHTTPError(400, None, "Request exceeds the context window")
+        with (
+            patch.object(model_providers, "chat_completion_raw", side_effect=[overflow, response]) as call,
+            patch.object(
+                model_providers,
+                "chat_completion",
+                side_effect=["Preserved key information.", "A compact summary of older tool traffic."],
+            ) as simple_call,
+            patch(
+                "personal_knowledge_base.agent_engine.consolidate_messages",
+                wraps=consolidate_messages,
+            ) as compact,
+        ):
+            result = engine.execute("question", history=tool_history())
+
+        self.assertEqual(result.content, "answer")
+        self.assertEqual(result.stopped_reason, "completed")
+        self.assertEqual(result.context_overflow_recoveries, 1)
+        self.assertEqual(call.call_count, 2)
+        self.assertEqual(simple_call.call_count, 2)
+        compact.assert_called_once()
+        self.assertTrue(compact.call_args.kwargs["force"])
+
+    def test_context_overflow_compacts_against_rejected_request_size(self):
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
+        messages = [
+            {"role": "system", "content": "system prompt"},
+            {"role": "user", "content": "question"},
+        ]
+        for index in range(3):
+            call_id = f"call-{index}"
+            messages.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [tool_call(call_id, "thinking", {"thought": f"plan-{index}"})],
+                    },
+                    {
+                        "role": "tool",
+                        "tool_call_id": call_id,
+                        "name": "thinking",
+                        "content": f"group-{index} " + ("word " * 3000),
+                    },
+                ]
+            )
+        self.assertLess(estimate_messages_tokens(messages), 20000)
+
+        overflow = ModelHTTPError(
+            400,
+            None,
+            "Model request failed with status 400: Range of input length should be [1, 98304]",
+        )
+        response = {"content": "answer", "tool_calls": None}
+        with (
+            patch.object(
+                model_providers,
+                "chat_completion_raw",
+                side_effect=[overflow, response],
+            ) as provider_call,
+            patch.object(
+                model_providers,
+                "chat_completion",
+                side_effect=["Preserved key information.", "A compact summary of older tool traffic."],
+            ) as simple_call,
+        ):
+            recovered_messages, content, tool_calls = engine._call_llm_with_overflow_recovery(
+                messages,
+                tools_available=True,
+            )
+
+        original_request = provider_call.call_args_list[0].args[1]
+        retry_request = provider_call.call_args_list[1].args[1]
+        self.assertEqual(content, "answer")
+        self.assertIsNone(tool_calls)
+        self.assertLess(
+            estimate_messages_tokens(retry_request),
+            estimate_messages_tokens(original_request),
+        )
+        self.assertTrue(
+            any(
+                message.get("role") == "system"
+                and "[Memory Summary" in message.get("content", "")
+                for message in retry_request
+            )
+        )
+        self.assertEqual(recovered_messages, retry_request)
+        self.assertEqual(provider_call.call_count, 2)
+        self.assertEqual(simple_call.call_count, 2)
+        self.assertEqual(engine._context_overflow_recoveries, 1)
+
+    def test_uncompressible_context_overflow_is_not_retried_or_counted(self):
+        engine = AgentEngine(self.tenant, "session", agent_config={"allowed_tools": ["thinking"]})
+        messages = [
+            {"role": "system", "content": "system prompt"},
+            {"role": "user", "content": "question"},
+        ]
+        overflow = ModelHTTPError(
+            400,
+            None,
+            "Model request failed with status 400: Range of input length should be [1, 98304]",
+        )
+        with (
+            patch.object(model_providers, "chat_completion_raw", side_effect=overflow) as provider_call,
+            self.assertRaises(ModelHTTPError),
+        ):
+            engine._call_llm_with_overflow_recovery(messages, tools_available=True)
+
+        self.assertEqual(provider_call.call_count, 1)
+        self.assertTrue(engine._context_overflow_recovered)
+        self.assertEqual(engine._context_overflow_recoveries, 0)
+
+    def test_context_overflow_recovers_once_in_simple_call_path(self):
+        engine = AgentEngine(
+            self.tenant,
+            "session",
+            agent_config={"allowed_tools": [], "knowledge_base_ids": ["kb"], "max_rounds": 1},
+        )
+        engine._granted_tools = set()
+        overflow = ModelHTTPError(400, None, "maximum context length is 8192 tokens")
+        with (
+            patch.object(
+                model_providers,
+                "chat_completion",
+                side_effect=[
+                    overflow,
+                    "Preserved key information.",
+                    "A compact summary of older tool traffic.",
+                    "simple answer",
+                ],
+            ) as call,
+            patch(
+                "personal_knowledge_base.agent_engine.consolidate_messages",
+                wraps=consolidate_messages,
+            ) as compact,
+        ):
+            result = engine.execute("question", history=tool_history())
+
+        self.assertEqual(result.content, "simple answer")
+        self.assertEqual(result.context_overflow_recoveries, 1)
+        self.assertEqual(call.call_count, 4)
+        compact.assert_called_once()
+        self.assertTrue(compact.call_args.kwargs["force"])
+
+    def test_forced_final_answer_recovers_from_context_overflow(self):
+        engine = AgentEngine(
+            self.tenant,
+            "session",
+            agent_config={"allowed_tools": ["thinking"], "knowledge_base_ids": ["kb"], "max_rounds": 1},
+        )
+        messages = [
+            {"role": "system", "content": "system prompt"},
+            {"role": "user", "content": "original question"},
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [tool_call("c1", "thinking", {"thought": "plan"})],
+            },
+            {"role": "tool", "tool_call_id": "c1", "name": "thinking", "content": "tool result"},
+        ]
+        nudge = {
+            "role": "user",
+            "content": "已达到最大推理轮数。请停止调用工具，基于已获得的信息直接给出最终回答；信息不足的部分请明确说明。",
+        }
+        overflow = ModelHTTPError(400, None, "exceeds the context window")
+        with (
+            patch.object(engine, "_call_llm_simple", side_effect=[overflow, "forced answer"]) as final_call,
+            patch(
+                "personal_knowledge_base.agent_engine.consolidate_messages",
+                return_value=[
+                    messages[0],
+                    {"role": "system", "content": "[Memory Summary] compacted earlier tool results"},
+                    *messages[1:],
+                ],
+            ) as compact,
+        ):
+            result = engine._answer_without_tools(messages, [], reason="max_iterations")
+
+        self.assertEqual(result, "forced answer")
+        self.assertEqual(engine._context_overflow_recoveries, 1)
+        self.assertEqual(final_call.call_count, 2)
+        compact.assert_called_once()
+        self.assertTrue(compact.call_args.kwargs["force"])
+        self.assertEqual(compact.call_args.args[0], messages)
+        retry_messages = final_call.call_args_list[1].args[0]
+        self.assertIn({"role": "user", "content": "original question"}, retry_messages)
+        self.assertEqual(retry_messages[-1], nudge)
+
+    def test_second_context_overflow_uses_existing_error_path_without_looping(self):
+        engine = AgentEngine(
+            self.tenant,
+            "session",
+            agent_config={"allowed_tools": ["thinking"], "knowledge_base_ids": ["kb"], "max_rounds": 1},
+        )
+        overflow = ModelHTTPError(400, None, "exceeds the context window")
+        with (
+            patch.object(model_providers, "chat_completion_raw", side_effect=[overflow, overflow]) as call,
+            patch.object(
+                model_providers,
+                "chat_completion",
+                side_effect=["Preserved key information.", "A compact summary of older tool traffic."],
+            ) as simple_call,
+            patch(
+                "personal_knowledge_base.agent_engine.consolidate_messages",
+                wraps=consolidate_messages,
+            ) as compact,
+        ):
+            result = engine.execute("question", history=tool_history())
+
+        self.assertEqual(result.stopped_reason, "error")
+        self.assertIn("context window", result.content)
+        self.assertEqual(result.context_overflow_recoveries, 1)
+        self.assertEqual(call.call_count, 2)
+        self.assertEqual(simple_call.call_count, 2)
+        compact.assert_called_once()
+        self.assertTrue(compact.call_args.kwargs["force"])
 
     def test_tool_outside_whitelist_is_rejected_at_execution(self):
         result, model, _ = self.run_engine(
