@@ -339,31 +339,48 @@ class AgentEngineTests(TestCase):
         self.assertTrue(compact.call_args.kwargs["force"])
 
     def test_forced_final_answer_recovers_from_context_overflow(self):
-        model = ScriptedModel(
-            [{"content": "", "tool_calls": [tool_call("c1", "thinking", {"thought": "plan"})]}]
-        )
         engine = AgentEngine(
             self.tenant,
             "session",
             agent_config={"allowed_tools": ["thinking"], "knowledge_base_ids": ["kb"], "max_rounds": 1},
         )
+        messages = [
+            {"role": "system", "content": "system prompt"},
+            {"role": "user", "content": "original question"},
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [tool_call("c1", "thinking", {"thought": "plan"})],
+            },
+            {"role": "tool", "tool_call_id": "c1", "name": "thinking", "content": "tool result"},
+        ]
+        nudge = {
+            "role": "user",
+            "content": "已达到最大推理轮数。请停止调用工具，基于已获得的信息直接给出最终回答；信息不足的部分请明确说明。",
+        }
         overflow = ModelHTTPError(400, None, "exceeds the context window")
         with (
-            patch.object(model_providers, "chat_completion_raw", model),
-            patch.object(model_providers, "chat_completion", side_effect=[overflow, "forced answer"]) as final_call,
+            patch.object(engine, "_call_llm_simple", side_effect=[overflow, "forced answer"]) as final_call,
             patch(
                 "personal_knowledge_base.agent_engine.consolidate_messages",
-                wraps=consolidate_messages,
+                return_value=[
+                    messages[0],
+                    {"role": "system", "content": "[Memory Summary] compacted earlier tool results"},
+                    *messages[1:],
+                ],
             ) as compact,
         ):
-            result = engine.execute("question")
+            result = engine._answer_without_tools(messages, [], reason="max_iterations")
 
-        self.assertEqual(result.content, "forced answer")
-        self.assertEqual(result.stopped_reason, "max_iterations")
-        self.assertEqual(result.context_overflow_recoveries, 1)
+        self.assertEqual(result, "forced answer")
+        self.assertEqual(engine._context_overflow_recoveries, 1)
         self.assertEqual(final_call.call_count, 2)
         compact.assert_called_once()
         self.assertTrue(compact.call_args.kwargs["force"])
+        self.assertEqual(compact.call_args.args[0], messages)
+        retry_messages = final_call.call_args_list[1].args[0]
+        self.assertIn({"role": "user", "content": "original question"}, retry_messages)
+        self.assertEqual(retry_messages[-1], nudge)
 
     def test_second_context_overflow_uses_existing_error_path_without_looping(self):
         engine = AgentEngine(

@@ -501,10 +501,18 @@ class AgentEngine:
             nudge_content = "你在重复调用相同的工具且没有新信息。请停止调用工具，基于已获得的信息直接给出最终回答；信息不足的部分请明确说明。"
         nudge = {"role": "user", "content": nudge_content}
         try:
-            _, content, _ = self._call_llm_with_overflow_recovery([*messages, nudge], tools_available=False)
-        except Exception:
-            logger.exception("[Agent] Forced final answer failed")
-            content = ""
+            content = self._call_llm_simple([*messages, nudge])
+        except Exception as exc:
+            recovered_messages = self._recover_context_overflow(messages, exc)
+            if recovered_messages is None:
+                logger.exception("[Agent] Forced final answer failed")
+                content = ""
+            else:
+                try:
+                    content = self._call_llm_simple([*recovered_messages, nudge])
+                except Exception:
+                    logger.exception("[Agent] Forced final answer failed")
+                    content = ""
         return content.strip() or _synthesize_from_tool_results(steps, "")
 
     def execute(
