@@ -663,9 +663,11 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
                         pass
 
     # ── Graph RAG：实体命中的 chunk 作为又一个召回通道，与其他候选一起重排 ──
-    from .graph_rag import expand_relation_context, graph_search_results
+    graph_ids = []
+    if settings.RETRIEVAL_GRAPH_IN_HYBRID:
+        from .graph_rag import expand_relation_context, graph_search_results
 
-    graph_ids = [item["chunk_id"] for item in graph_search_results(tenant_id, kb_ids, query, set(), top_k)]
+        graph_ids = [item["chunk_id"] for item in graph_search_results(tenant_id, kb_ids, query, set(), top_k)]
     if graph_ids:
         rankings.append(graph_ids)
         ranking_weights.append(weights["graph"])
@@ -705,7 +707,7 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
     from .models import Tenant
 
     # 关系扩展：头部候选的关联 chunk 也进入候选池，排在已有候选之后，由 Rerank 决定去留
-    if results:
+    if settings.RETRIEVAL_GRAPH_IN_HYBRID and results:
         floor_score = min(item["score"] for item in results) * 0.5
         relation_extras = expand_relation_context(results[: max(1, top_k)], tenant_id, min(3, top_k))
         extra_knowledge_ids = {item.get("knowledge_id") for item in relation_extras if item.get("knowledge_id")}

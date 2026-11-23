@@ -6,7 +6,7 @@ import requests
 from django.test import TestCase, override_settings
 
 from . import model_providers
-from .agent_engine import AgentEngine, AgentResult, AgentStep, ToolCallRecord
+from .agent_engine import AgentEngine, AgentResult, AgentStep, ToolCallRecord, _synthesize_from_tool_results
 from .agent_tools import KnowledgeSearchTool, Tool, ToolRegistry, ToolResult, get_tool_registry
 from .model_providers import ModelHTTPError
 from .mcp_client import MCPTool
@@ -60,6 +60,53 @@ class GatedTool(Tool):
 class AgentEngineTests(TestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(name="agent", api_key="agent-key")
+
+    def test_tool_result_fallback_lists_unique_retrieved_titles_without_raw_output(self):
+        steps = [
+            AgentStep(
+                iteration=1,
+                tool_calls=[
+                    ToolCallRecord(
+                        "call-1",
+                        "knowledge_search",
+                        {},
+                        ToolResult(
+                            output="secret raw tool output",
+                            data=[
+                                {"knowledge_title": "t1"},
+                                {"knowledge_title": "t2"},
+                                {"knowledge_title": "t1"},
+                                {"knowledge_title": "t3"},
+                                {"knowledge_title": "t4"},
+                            ],
+                        ),
+                    ),
+                    ToolCallRecord(
+                        "call-2",
+                        "knowledge_search",
+                        {},
+                        ToolResult(
+                            output="another secret output",
+                            data=[{"knowledge_title": "t5"}, {"knowledge_title": "t6"}],
+                        ),
+                    ),
+                ],
+            )
+        ]
+
+        answer = _synthesize_from_tool_results(steps, "question")
+
+        self.assertEqual(
+            answer,
+            "抱歉，这次没能生成完整回答。已检索到的相关资料：《t1》《t2》《t3》《t4》《t5》。可以换个问法重试。",
+        )
+        self.assertNotIn("secret", answer)
+
+    def test_tool_result_fallback_without_results_keeps_generic_apology(self):
+        self.assertEqual(
+            _synthesize_from_tool_results([], "question"),
+            "抱歉，无法生成回答。请稍后重试。",
+        )
 
     def run_engine(self, responses, allowed_tools, final_answer="forced answer", session_id="session"):
         model = ScriptedModel(responses)
