@@ -179,27 +179,38 @@ class AgentResult:
         )
 
 
-# ── 优雅降级：从工具结果综合答案 ────────────────────────────────────
-# 参考同类知识库系统的 finalize.go：LLM 失败但有工具结果时综合生成
+# ── 优雅降级：工具结果不足以生成答案时返回安全提示 ─────────────────
 
 def _synthesize_from_tool_results(steps: list, query: str) -> str:
-    """
-    从工具结果中综合答案。
-    当 LLM 调用失败但已有工具结果时使用。
-    """
-    # 收集所有工具结果
-    tool_outputs = []
+    has_tool_results = False
+    titles = []
+    seen_titles = set()
     for step in steps:
         for tc in step.tool_calls:
-            if tc.result and tc.result.output:
-                tool_outputs.append(f"[{tc.name}] {tc.result.output[:500]}")
+            if not tc.result:
+                continue
+            has_tool_results = True
+            if not isinstance(tc.result.data, list):
+                continue
+            for item in tc.result.data:
+                if not isinstance(item, dict):
+                    continue
+                title = str(item.get("knowledge_title") or "").strip()
+                if title and title not in seen_titles:
+                    seen_titles.add(title)
+                    titles.append(title)
+                    if len(titles) == 5:
+                        break
+            if len(titles) == 5:
+                break
 
-    if not tool_outputs:
+    if not has_tool_results:
         return "抱歉，无法生成回答。请稍后重试。"
 
-    # 构建简单的综合答案
-    context = "\n\n".join(tool_outputs[:5])  # 最多取 5 个结果
-    return f"根据检索到的信息：\n\n{context}\n\n以上是与您的问题相关的内容。"
+    message = "抱歉，这次没能生成完整回答。"
+    if titles:
+        message += f"已检索到的相关资料：{''.join(f'《{title}》' for title in titles)}。"
+    return f"{message}可以换个问法重试。"
 
 
 # ── 系统 Prompt 模板 ─────────────────────────────────────────────────

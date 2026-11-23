@@ -157,6 +157,38 @@ class SearchRankingTests(TestCase):
         ):
             self.assertEqual(rrf_channel_weights(), {"vector": 0.7, "keyword": 0.3, "graph": 0.3})
 
+    def test_hybrid_search_skips_graph_channels_when_disabled(self):
+        chunk = self.add_chunk("retrieval result", title="candidate")
+
+        with (
+            override_settings(RETRIEVAL_GRAPH_IN_HYBRID=False),
+            patch.object(search, "_fts_search", return_value={chunk.id: 1.0}),
+            patch.object(search, "_vector_search", return_value={}),
+            patch("personal_knowledge_base.graph_rag.graph_search_results") as graph_search,
+            patch("personal_knowledge_base.graph_rag.expand_relation_context") as expand_relation,
+            patch("personal_knowledge_base.model_providers.rerank", side_effect=lambda _query, rows, top_k=None, tenant=None: rows),
+        ):
+            hybrid_search(self.tenant.id, [self.kb.id], "retrieval", 1)
+
+        graph_search.assert_not_called()
+        expand_relation.assert_not_called()
+
+    def test_hybrid_search_calls_graph_channels_when_enabled(self):
+        chunk = self.add_chunk("retrieval result", title="candidate")
+
+        with (
+            override_settings(RETRIEVAL_GRAPH_IN_HYBRID=True),
+            patch.object(search, "_fts_search", return_value={chunk.id: 1.0}),
+            patch.object(search, "_vector_search", return_value={}),
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]) as graph_search,
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]) as expand_relation,
+            patch("personal_knowledge_base.model_providers.rerank", side_effect=lambda _query, rows, top_k=None, tenant=None: rows),
+        ):
+            hybrid_search(self.tenant.id, [self.kb.id], "retrieval", 1)
+
+        graph_search.assert_called_once()
+        expand_relation.assert_called_once()
+
     def test_hybrid_search_applies_configured_rrf_channel_weights(self):
         fts_chunk = self.add_chunk("fts result", title="fts")
         vector_chunk = self.add_chunk("vector result", title="vector")
@@ -218,7 +250,9 @@ class SearchRankingTests(TestCase):
             return [{**item, "score": 0.9 if item["chunk_id"] == relevant.id else 0.1} for item in ordered][:top_k]
 
         with (
+            override_settings(RETRIEVAL_GRAPH_IN_HYBRID=True),
             patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=graph_rows),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
             patch("personal_knowledge_base.model_providers.rerank", side_effect=fake_rerank),
             patch.object(search, "_vector_search", return_value={}),
         ):
@@ -303,6 +337,7 @@ class SearchRankingTests(TestCase):
         }
 
         with (
+            override_settings(RETRIEVAL_GRAPH_IN_HYBRID=True),
             patch.object(search, "_fts_search", return_value={current.id: 1.0}),
             patch.object(search, "_vector_search", return_value={}),
             patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
