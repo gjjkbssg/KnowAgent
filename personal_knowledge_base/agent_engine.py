@@ -411,13 +411,17 @@ class AgentEngine:
         if self._context_overflow_recovered or not is_context_overflow_error(exc):
             return None
         self._context_overflow_recovered = True
-        self._context_overflow_recoveries += 1
-        return consolidate_messages(
+        budget = min(MAX_CONTEXT_TOKENS, estimate_messages_tokens(messages) // 2)
+        recovered_messages = consolidate_messages(
             messages,
-            MAX_CONTEXT_TOKENS,
+            budget,
             self._call_llm_simple,
             force=True,
         )
+        if len(recovered_messages) == len(messages) and recovered_messages == messages:
+            return None
+        self._context_overflow_recoveries += 1
+        return recovered_messages
 
     def _call_llm_with_overflow_recovery(
         self,
