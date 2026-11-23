@@ -1,6 +1,8 @@
 from django.test import SimpleTestCase
 
 from .context_manager import (
+    _build_compaction_text,
+    _build_history_text,
     _group_history_messages,
     _sliding_window_compress,
     consolidate_messages,
@@ -107,6 +109,71 @@ class CurrentTurnCompactionTests(SimpleTestCase):
         self.assertEqual(compacted[2:4], old_history)
         self.assertEqual(compacted[4], {"role": "user", "content": "question"})
         self.assertEqual(compacted[5]["role"], "assistant")
+
+    def test_current_turn_evidence_precedes_long_old_history_in_compaction_prompts(self):
+        old_history = [
+            {"role": "user", "content": "older question"},
+            {"role": "assistant", "content": "old history " * 5000},
+        ]
+        self.assertGreater(len(old_history[1]["content"]), 8000)
+        self.assertEqual(_build_compaction_text(old_history, []), _build_history_text(old_history))
+
+        messages = [
+            {"role": "system", "content": "system prompt"},
+            *old_history,
+            {"role": "user", "content": "current question"},
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "call-old",
+                        "type": "function",
+                        "function": {"name": "knowledge_search", "arguments": "{}"},
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": "call-old",
+                "name": "knowledge_search",
+                "content": "CURRENT_TURN_MARKER " + ("evidence " * 6000),
+            },
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "call-new",
+                        "type": "function",
+                        "function": {"name": "knowledge_search", "arguments": "{}"},
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": "call-new",
+                "name": "knowledge_search",
+                "content": "recent evidence",
+            },
+        ]
+        prompts = []
+        responses = iter(
+            [
+                "Key information from earlier results.",
+                "A concise summary preserving the current-turn evidence.",
+            ]
+        )
+
+        def llm_caller(llm_messages):
+            prompts.append(llm_messages[-1]["content"])
+            return next(responses)
+
+        consolidate_messages(messages, max_tokens=16000, llm_caller=llm_caller)
+
+        self.assertEqual(len(prompts), 2)
+        self.assertIn("CURRENT_TURN_MARKER", prompts[0])
+        self.assertIn("CURRENT_TURN_MARKER", prompts[1])
 
     def test_force_skips_threshold_without_changing_default_under_threshold_behavior(self):
         messages = self._messages_with_tool_groups(2)

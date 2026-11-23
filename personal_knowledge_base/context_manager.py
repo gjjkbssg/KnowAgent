@@ -329,6 +329,19 @@ def _build_history_text(messages: list[dict]) -> str:
     )
 
 
+def _build_compaction_text(old_history: list[dict], current_groups_flat: list[dict]) -> str:
+    current_text = _build_history_text(current_groups_flat)
+    if not current_text:
+        return _build_history_text(old_history)
+    old_text = _build_history_text(old_history)
+    return (
+        "[当前问题中较早的工具调用与结果]\n"
+        f"{current_text}\n\n"
+        "[更早的对话]\n"
+        f"{old_text}"
+    )
+
+
 def _raw_archive(messages: list[dict]) -> str:
     lines = []
     for message in messages:
@@ -541,19 +554,20 @@ def consolidate_messages(
         return messages
 
     # 根据 token 预算从历史尾部保留近期消息，而不是按消息数量比例。
-    to_compress, to_retain = _split_history_by_token_budget(
+    old_history_to_compress, to_retain = _split_history_by_token_budget(
         history,
         system,
         retained_current_round,
         max_tokens,
     )
-    to_compress.extend(_flatten_groups(current_to_compress))
+    current_groups_to_compress = _flatten_groups(current_to_compress)
+    to_compress = [*old_history_to_compress, *current_groups_to_compress]
 
     if not to_compress:
         # 没有可压缩的消息，回退到滑动窗口
         return _sliding_window_compress(messages, max_tokens)
 
-    history_text = _build_history_text(to_compress)
+    history_text = _build_compaction_text(old_history_to_compress, current_groups_to_compress)
 
     # Step 1: 提取关键信息（参考同类知识库系统的 "先提取关键信息再压缩"）
     key_info_items = []
