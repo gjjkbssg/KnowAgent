@@ -4,6 +4,8 @@ export function renderMarkdownLite(text) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     return `<pre><code class="lang-${lang || 'text'}">${code.trim()}</code></pre>`
@@ -21,7 +23,11 @@ export function renderMarkdownLite(text) {
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
 
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+  html = html.replace(/\[([^\]]+)\]\(((?:[^()]|\([^()]*\))*)\)/g, (_match, label, rawUrl) => {
+    const url = rawUrl.trim()
+    if (!/^(https?:\/\/|mailto:|\/|#)/i.test(url)) return label
+    return `<a href="${url}" target="_blank" rel="noopener">${label}</a>`
+  })
 
   html = html.replace(/(^|\n)([*-] .+(?:\n[*-] .+)*)/g, (_match, prefix, list) => {
     const items = list.split('\n').map((line) => `<li>${line.replace(/^[*-] /, '')}</li>`).join('')
