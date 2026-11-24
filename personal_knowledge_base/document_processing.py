@@ -254,7 +254,11 @@ def _structured_pdf_units(parsed, minimum_pdf_segment: int):
                 current_last = events[index + 1]["block"]
             index += 2 if consumed else 1
             continue
-        append_line(line, block, heading_stack)
+        append_line(
+            line,
+            block,
+            [title for _, title in heading_stack],
+        )
         index += 1
     flush()
     return units

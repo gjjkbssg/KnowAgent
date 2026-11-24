@@ -343,14 +343,20 @@ class PdfLayoutParsingTests(TestCase):
         _text(page, "A部分的正文内容，足以单独形成一个分块。", 40, 125)
         _text(page, "二、B", 40, 160)
         _text(page, "B部分的正文内容，足以单独形成一个分块。", 40, 185)
+        next_page = pdf.new_page(width=400, height=500)
+        _text(next_page, "B部分跨页后的补充正文内容，也应保留当前标题路径。", 40, 120)
 
         parsed = parse_document("peer-headings.pdf", _pdf_bytes(pdf))
         chunks = create_text_chunks(self.create_knowledge(), parsed)
         first = next(chunk for chunk in chunks if "一、A" in chunk.content)
         second = next(chunk for chunk in chunks if "二、B" in chunk.content)
+        continued = next(
+            chunk for chunk in chunks if "B部分跨页后的补充正文" in chunk.content
+        )
 
         self.assertEqual(first.metadata["heading_path"], ["一、A"])
         self.assertEqual(second.metadata["heading_path"], ["二、B"])
+        self.assertEqual(continued.metadata["heading_path"], ["二、B"])
 
     def test_oversized_table_rows_keep_headers_and_key_cells_in_each_piece(self):
         knowledge = self.create_knowledge(chunk_size=256)
