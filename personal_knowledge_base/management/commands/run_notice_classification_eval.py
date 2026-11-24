@@ -14,6 +14,7 @@ from personal_knowledge_base.extraction.classify import (
     classify_llm,
     classify_rules,
     predict_tfidf,
+    strip_title,
     top_features,
     train_tfidf,
 )
@@ -248,12 +249,21 @@ class Command(BaseCommand):
         if options["cv"] and needs_tfidf:
             needed_ids.update(row["doc_id"] for row in documents)
         text_by_id = {}
+        title_line_removal = {
+            split_name: {"loaded_documents": 0, "affected_documents": 0}
+            for split_name in ("dev", "test")
+        }
         for row in documents:
             if row["doc_id"] not in needed_ids:
                 continue
             path = _document_path(repo, row["doc_id"], row["label"])
             try:
-                text_by_id[row["doc_id"]] = path.read_text(encoding="utf-8")[:3000]
+                body = path.read_text(encoding="utf-8")
+                cleaned_body = strip_title(body, row.get("title") or "")
+                title_line_removal[row["split"]]["loaded_documents"] += 1
+                if cleaned_body != body:
+                    title_line_removal[row["split"]]["affected_documents"] += 1
+                text_by_id[row["doc_id"]] = cleaned_body[:3000]
             except OSError as exc:
                 raise CommandError(f"Unable to read notice {row['doc_id']}: {exc}") from exc
 
@@ -390,6 +400,17 @@ class Command(BaseCommand):
                 "requested_split": split,
                 "dev_documents": len(dev),
                 "evaluation_documents": len(selected),
+                "title_line_removal": {
+                    "rule": "drop lines equal to the title after removing whitespace",
+                    "affected_documents_by_split": {
+                        split_name: values["affected_documents"]
+                        for split_name, values in title_line_removal.items()
+                    },
+                    "loaded_documents_by_split": {
+                        split_name: values["loaded_documents"]
+                        for split_name, values in title_line_removal.items()
+                    },
+                },
             },
             "metrics": {},
             "cross_validation": {},
@@ -461,6 +482,18 @@ class Command(BaseCommand):
                 f"| {metrics['mean_tokens_per_doc']:.2f} "
                 f"| {'n/a' if evidence_rate is None else f'{evidence_rate:.4f}'} |"
             )
+        removal = summary["metadata"]["title_line_removal"]
+        lines.extend(
+            [
+                "",
+                "Title-only body lines removed (affected / loaded documents): "
+                + "; ".join(
+                    f"{split}: {removal['affected_documents_by_split'][split]} / "
+                    f"{removal['loaded_documents_by_split'][split]}"
+                    for split in ("dev", "test")
+                ),
+            ]
+        )
         for method, metrics in summary["metrics"].items():
             lines.extend(["", f"## {method}", "", "Per-class precision / recall / F1:", ""])
             lines.append("| Label | Precision | Recall | F1 | Support |")

@@ -414,27 +414,27 @@ python manage.py run_pdf_parsing_eval --modes legacy,structured --with-answers
 
 ### 公告类型分类与投标数据仓库
 
-公告类型分类使用 150 篇平台公告正文，类别代码为 `gkzb`、`zbgg`、`cjgg`、`gzgg`。其中 60 篇 `gkzb` 保留既有 dev/test 划分（20/40）；其余每类 30 篇按 doc ID 排序，前 10 篇进入 dev、其余 20 篇进入 test，最终为 50/100。标签是平台分类而非人工裁定的语义真值；标题仅作为仓库元数据，分类器只读取正文前 3000 字符。规则只使用 dev 正文编写和调整，test 在规则冻结后用于评测。
+公告类型分类使用 150 篇平台公告正文，类别代码为 `gkzb`、`zbgg`、`cjgg`、`gzgg`。其中 60 篇 `gkzb` 保留既有 dev/test 划分（20/40）；其余每类 30 篇按 doc ID 排序，前 10 篇进入 dev、其余 20 篇进入 test，最终为 50/100；test 中 `gkzb` 有 40 篇，其余类别各 20 篇。标签是平台分类而非人工裁定的语义真值。标题仅作为元数据；截取正文前 3000 字符前，评测会删除所有忽略空白后与标题相同的独立正文行，行内提及保留。本次 dev 受影响 9/50 篇、test 受影响 12/100 篇；12 篇受影响的 test 正文现均无独立标题行，且未发现行内标题出现。规则只使用 dev 正文编写和调整，test 在规则冻结后用于评测。
 
 | 方法 | Test accuracy | Macro-F1 | 覆盖率 | 平均延迟（ms/篇） | 平均 token/篇 | LLM 证据有效率 |
 |---|---:|---:|---:|---:|---:|---:|
-| Rules | 0.8100 | 0.8213 | 0.8700 | 0.11 | 0.00 | n/a |
-| TF-IDF char | 0.8800 | 0.8466 | 1.0000 | 1.64 | 0.00 | n/a |
-| TF-IDF word | 0.8800 | 0.8466 | 1.0000 | 4.15 | 0.00 | n/a |
-| LLM | 0.8600 | 0.8005 | 1.0000 | 11952.78 | 2145.27 | 1.0000 |
+| Rules | 0.8100 | 0.8262 | 0.8600 | 0.11 | 0.00 | n/a |
+| TF-IDF char | 0.8800 | 0.8466 | 1.0000 | 2.55 | 0.00 | n/a |
+| TF-IDF word | 0.8800 | 0.8466 | 1.0000 | 4.99 | 0.00 | n/a |
+| LLM | 0.8800 | 0.8389 | 0.9900 | 13040.91 | 2167.52 | 0.9800 |
 
-规则有 13/100 个 no-fire 结果，按要求计为错误，同时单独报告 87% 覆盖率。逐类 P/R/F1、混淆矩阵、证据有效率和逐篇预测见[分类评测报告](interview_materials/results/notice_cls/report.md)、[summary](interview_materials/results/notice_cls/summary.json)及[per-doc CSV](interview_materials/results/notice_cls/per_doc.csv)。100 篇 test 的 LLM 调用均返回结果，没有调用错误。
+规则有 14/100 个 no-fire 结果，按要求计为错误，同时单独报告 86% 覆盖率。逐类 P/R/F1、混淆矩阵、证据有效率和逐篇预测见[分类评测报告](interview_materials/results/notice_cls/report.md)、[summary](interview_materials/results/notice_cls/summary.json)及[per-doc CSV](interview_materials/results/notice_cls/per_doc.csv)。本次 live LLM 评测尝试了全部 100 篇，其中一次请求超时，故覆盖率为 99%；证据有效率为 98%。
 
 以下五折 StratifiedKFold 结果使用全部 150 篇数据，和上表的 test 结果分开报告；它不是独立留出集。
 
 | 方法 | CV accuracy（均值 ± 标准差） | CV macro-F1（均值 ± 标准差） |
 |---|---:|---:|
-| TF-IDF char | 0.8933 ± 0.0389 | 0.8623 ± 0.0531 |
+| TF-IDF char | 0.9000 ± 0.0365 | 0.8699 ± 0.0503 |
 | TF-IDF word | 0.9067 ± 0.0442 | 0.8811 ± 0.0560 |
 
-`zbgg` 与 `cjgg` 的正文经常出现“中标（成交）”等通用措辞，且部分正文没有明确采购方式。Test 中 char/word 模型将 9/20 篇 `zbgg` 判为 `cjgg`，并将 3/20 篇 `cjgg` 判为 `zbgg`；LLM 将 14/20 篇平台标记为 `zbgg` 的公告判为 `cjgg`。这些 LLM 结果的引文均通过“引文是否出现在正文中”的校验，但其中有评审人员名单里的“单一来源采购人员”、对磋商文件的附带引用等非判别性片段；证据存在不等于证据能区分类别。另有两篇平台标记为 `gkzb` 的公告因正文出现“更正公告”被规则判为 `gzgg`。评测保留原平台标签，没有根据模型输出或公告措辞改标。
+`zbgg` 与 `cjgg` 的正文经常出现“中标（成交）”等通用措辞，且部分正文没有明确采购方式。Test 中 char/word 模型各将 9/20 篇 `zbgg` 判为 `cjgg`，并将 3/20 篇 `cjgg` 判为 `zbgg`；LLM 将 11/20 篇平台标记为 `zbgg` 的公告判为 `cjgg`，另有一篇没有有效预测。规则有 14 篇 no-fire，另将两篇 `gkzb` 判为 `gzgg`。LLM 证据有效率是正文子串校验，不代表证据具有区分类别的判别力。评测保留原平台标签，没有根据模型输出或公告措辞改标。
 
-Dev 训练出的 TF-IDF top-feature 示例包括：`gzgg` 的“更正”“原 公告”、`gkzb` 的“投标”“资格”、`cjgg` 的“维修”“服务费”，以及 `zbgg` 的“南京市”。后者及部分字符 n-gram 可能反映站点模板或地域，而非稳定的类别语义；特征仅用于说明这个小样本上的模型行为，完整列表见 [`top_features.json`](interview_materials/results/notice_cls/top_features.json)。
+Dev 训练出的 TF-IDF top-feature 示例包括：`gzgg` 的“更正”“原 公告”、`gkzb` 的“资格 要求”“投标”、`cjgg` 的“维修”“服务费”，以及 `zbgg` 的“南京市”“序号”“025”“320100”。后者及部分字符 n-gram 可能反映站点模板或地域，而非稳定的类别语义；特征仅用于说明这个小样本上的模型行为，完整列表见 [`top_features.json`](interview_materials/results/notice_cls/top_features.json)。
 
 Tender warehouse 使用 SQLite `schema.sql` 和命名 SQL 分析查询，不创建 Django 数据模型；60 篇 `gkzb` 项目由提交的 tender LLM 原始响应离线回放并与规则合并提取，不发起模型请求。
 

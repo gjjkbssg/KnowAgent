@@ -14,6 +14,7 @@ from personal_knowledge_base.extraction.classify import (
     classify_llm,
     classify_rules,
     predict_tfidf,
+    strip_title,
     top_features,
     train_tfidf,
 )
@@ -48,6 +49,23 @@ class NoticeRuleTests(SimpleTestCase):
 
     def test_rules_return_none_when_no_ordered_rule_fires(self):
         self.assertEqual(classify_rules("本文件介绍项目背景和采购单位信息。"), (None, None))
+
+    def test_strip_title_removes_matching_lines_but_keeps_inline_mentions(self):
+        text = (
+            "正文第一行\n"
+            "  标题\t内容  \n"
+            "这一行引用标题内容，但不是标题行。\n"
+            "标题内容"
+        )
+
+        self.assertEqual(
+            strip_title(text, "标题 内 容"),
+            "正文第一行\n这一行引用标题内容，但不是标题行。\n",
+        )
+
+    def test_strip_title_with_empty_title_preserves_body(self):
+        text = "\n正文\n"
+        self.assertEqual(strip_title(text, " \t"), text)
 
 
 @unittest.skipUnless(importlib.util.find_spec("sklearn"), "scikit-learn is optional")

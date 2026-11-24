@@ -71,7 +71,7 @@ gzgg_t20261124_27747312,test,rules,gzgg,gzgg,True,原公告的采购项目编号
 gzgg_t20261124_27747318,test,rules,gzgg,gzgg,True,原公告的采购项目编号
 gzgg_t20261124_27747322,test,rules,gzgg,gzgg,True,原公告的采购项目编号
 gzgg_t20261124_27747333,test,rules,gzgg,gzgg,True,原公告的采购项目编号
-gzgg_t20261124_27747338,test,rules,gzgg,gzgg,True,更正公告
+gzgg_t20261124_27747338,test,rules,gzgg,gzgg,True,更正信息
 gzgg_t20261124_27747354,test,rules,gzgg,gzgg,True,原公告的采购项目编号
 gzgg_t20261124_27747355,test,rules,gzgg,gzgg,True,原公告的采购项目编号
 gzgg_t20261124_27747366,test,rules,gzgg,gzgg,True,原公告的采购项目编号
@@ -90,7 +90,7 @@ zbgg_t20261124_27747272,test,rules,zbgg,zbgg,True,中标结果
 zbgg_t20261124_27747274,test,rules,zbgg,,False,
 zbgg_t20261124_27747278,test,rules,zbgg,zbgg,True,中标结果
 zbgg_t20261124_27747291,test,rules,zbgg,zbgg,True,中标结果
-zbgg_t20261124_27747297,test,rules,zbgg,cjgg,False,成交结果
+zbgg_t20261124_27747297,test,rules,zbgg,,False,
 zbgg_t20261124_27747304,test,rules,zbgg,cjgg,False,成交结果
 zbgg_t20261124_27747311,test,rules,zbgg,zbgg,True,中标结果
 zbgg_t20261124_27747321,test,rules,zbgg,zbgg,True,中标结果
@@ -299,31 +299,31 @@ zbgg_t20261124_27747345,test,tfidf_word,zbgg,zbgg,True,
 zbgg_t20261124_27747349,test,tfidf_word,zbgg,zbgg,True,
 zbgg_t20261124_27747363,test,tfidf_word,zbgg,cjgg,False,
 zbgg_t20261124_27747365,test,tfidf_word,zbgg,cjgg,False,
-cjgg_t20261124_27747195,test,llm,cjgg,cjgg,True,评审专家（单一来源采购人员）名单：徐永华、许红敏（采购人代表）、李京桥
+cjgg_t20261124_27747195,test,llm,cjgg,cjgg,True,五、评审专家（单一来源采购人员）名单：
 cjgg_t20261124_27747197,test,llm,cjgg,cjgg,True,采购文件：【工程类-竞争性磋商文件】.doc
-cjgg_t20261124_27747202,test,llm,cjgg,cjgg,True,五、评审专家（单一来源采购人员）名单：
+cjgg_t20261124_27747202,test,llm,cjgg,cjgg,True,评审专家（单一来源采购人员）名单
 cjgg_t20261124_27747206,test,llm,cjgg,cjgg,True,五、评审专家（单一来源采购人员）名单：
 cjgg_t20261124_27747209,test,llm,cjgg,cjgg,True,五、评审专家（单一来源采购人员）名单：
 cjgg_t20261124_27747213,test,llm,cjgg,cjgg,True,云南省曲靖农业学校屋面防水及洗漱台维修改造项目-竞争性磋商文件.docx
-cjgg_t20261124_27747248,test,llm,cjgg,cjgg,True,评审专家（单一来源采购人员）名单
+cjgg_t20261124_27747248,test,llm,cjgg,cjgg,True,五、评审专家（单一来源采购人员）名单：
 cjgg_t20261124_27747257,test,llm,cjgg,cjgg,True,五、评审专家（单一来源采购人员）名单：
-cjgg_t20261124_27747269,test,llm,cjgg,cjgg,True,安康市区域经济高质量发展专题研究项目-竞争性磋商文件(2).docx
+cjgg_t20261124_27747269,test,llm,cjgg,cjgg,True,五、评审专家（单一来源采购人员）名单：
 cjgg_t20261124_27747270,test,llm,cjgg,cjgg,True,不通过磋商谈判审查
 cjgg_t20261124_27747275,test,llm,cjgg,cjgg,True,项目编号：[230001]ZBGJGC[CS]20260009
-cjgg_t20261124_27747277,test,llm,cjgg,cjgg,True,评审专家（单一来源采购人员）名单：
+cjgg_t20261124_27747277,test,llm,cjgg,cjgg,True,评审专家（单一来源采购人员）名单
 cjgg_t20261124_27747280,test,llm,cjgg,cjgg,True,采用单一来源采购方式的原因：只能从唯一供应商处采购
 cjgg_t20261124_27747295,test,llm,cjgg,cjgg,True,详见磋商文件
-cjgg_t20261124_27747301,test,llm,cjgg,cjgg,True,五、评审专家（单一来源采购人员）名单：
+cjgg_t20261124_27747301,test,llm,cjgg,cjgg,True,评审专家（单一来源采购人员）名单
 cjgg_t20261124_27747314,test,llm,cjgg,cjgg,True,3、采购方式：竞争性磋商
 cjgg_t20261124_27747335,test,llm,cjgg,cjgg,True,竞争性磋商采购项目于 2026-11-24 结束，现将中标（成交）结果公告如下
-cjgg_t20261124_27747353,test,llm,cjgg,cjgg,True,本项目单一来源采购邀请函发布时间：2026年11月17日
+cjgg_t20261124_27747353,test,llm,cjgg,cjgg,True,五、评审专家（单一来源采购人员）名单：
 cjgg_t20261124_27747357,test,llm,cjgg,cjgg,True,五、评审专家（单一来源采购人员）名单：
-cjgg_t20261124_27747361,test,llm,cjgg,cjgg,True,1.本项目单一来源采购邀请函发布时间：2026年11月17日。
+cjgg_t20261124_27747361,test,llm,cjgg,cjgg,True,本项目单一来源采购邀请函发布时间：2026年11月17日
 gkzb_t20261124_27747125,test,llm,gkzb,gkzb,True,招标项目的潜在投标人应在政采云平台http://www.zcygov.cn/（下载）招标文件
 gkzb_t20261124_27747126,test,llm,gkzb,gkzb,True,潜在投标人应在政采云平台线上获取获取招标文件，并于2026年12月15日 09:30（北京时间）前递交投标文件。
 gkzb_t20261124_27747130,test,llm,gkzb,gkzb,True,采购方式：公开招标
 gkzb_t20261124_27747132,test,llm,gkzb,gkzb,True,3、采购方式：公开招标
-gkzb_t20261124_27747138,test,llm,gkzb,gkzb,True,潜在投标人应在云南省政府采购电子交易平台（政采云https://www.zcygov.cn/）获取招标文件
+gkzb_t20261124_27747138,test,llm,gkzb,gkzb,True,获取招标文件，并于2026年12月15日 13:30（北京时间）前递交投标文件。
 gkzb_t20261124_27747139,test,llm,gkzb,gkzb,True,获取招标文件，并于2026年12月17日 09:30（北京时间）前递交投标文件。
 gkzb_t20261124_27747142,test,llm,gkzb,gkzb,True,采购方式：公开招标
 gkzb_t20261124_27747144,test,llm,gkzb,gkzb,True,采购方式：公开招标
@@ -333,18 +333,18 @@ gkzb_t20261124_27747153,test,llm,gkzb,gkzb,True,采购方式：公开招标
 gkzb_t20261124_27747165,test,llm,gkzb,gkzb,True,大连市第十三中学升级改造艺术教学器材采购项目招标项目的潜在投标人应在大连市政府采购云平台获取招标文件
 gkzb_t20261124_27747176,test,llm,gkzb,gkzb,True,4、采购方式：公开招标
 gkzb_t20261124_27747178,test,llm,gkzb,gkzb,True,采购方式：公开招标
-gkzb_t20261124_27747186,test,llm,gkzb,gkzb,True,潜在投标人应在政采云平台线上获取（下载）招标文件，并于2026年12月16日 09:00（北京时间）前递交（上传）投标文件。
+gkzb_t20261124_27747186,test,llm,gkzb,gkzb,True,2026年度林木良种培育项目招标项目的潜在投标人应在政采云平台线上获取（下载）招标文件
 gkzb_t20261124_27747198,test,llm,gkzb,gkzb,True,辽宁省考古研学旅游示范活动招标项目的潜在供应商应在辽宁政府采购网获取招标文件
 gkzb_t20261124_27747203,test,llm,gkzb,gkzb,True,"潜在供应商应在辽宁政府采购网获取招标文件,并于2026年12月15日 09时00分（北京时间）前递交投标文件。"
 gkzb_t20261124_27747207,test,llm,gkzb,gkzb,True,"招标项目的潜在供应商应在辽宁政府采购网获取招标文件,并于2026年12月16日 09时00分（北京时间）前递交投标文件。"
-gkzb_t20261124_27747211,test,llm,gkzb,gkzb,True,"获取招标文件,并于2026年12月15日 09时00分（北京时间）前递交投标文件。"
+gkzb_t20261124_27747211,test,llm,gkzb,gkzb,True,"潜在供应商应在辽宁政府采购网获取招标文件,并于2026年12月15日 09时00分（北京时间）前递交投标文件。"
 gkzb_t20261124_27747216,test,llm,gkzb,gkzb,True,采购方式：公开招标
-gkzb_t20261124_27747235,test,llm,gkzb,gkzb,True,湘潭大学的湘潭大学商学院2026年本科教学设备采购项目进行公开招标采购，现邀请合格投标人参加投标。
+gkzb_t20261124_27747235,test,llm,gkzb,gkzb,True,湘潭大学商学院2026年本科教学设备采购项目进行公开招标采购
 gkzb_t20261124_27747240,test,llm,gkzb,gkzb,True,招标项目的潜在投标人应在江苏政府采购“苏采云”系统 获取招标文件，并于2026-12-16 09:00 （北京时间）前递交投标文件。
-gkzb_t20261124_27747255,test,llm,gkzb,gkzb,True,侯马市人民医院健康体重管理中心购置设备项目招标项目的潜在投标人应在政采云平台线上获取获取招标文件
-gkzb_t20261124_27747258,test,llm,gkzb,gkzb,True,招标项目的潜在投标人应在优质采招标采购平台（www.yzczb.com）获取招标文件
+gkzb_t20261124_27747255,test,llm,gkzb,gkzb,True,招标项目的潜在投标人应在政采云平台线上获取获取招标文件，并于2026年12月15日 09:00
+gkzb_t20261124_27747258,test,llm,gkzb,gkzb,True,潜在投标人应在优质采招标采购平台（www.yzczb.com）获取招标文件，并于2026年12月14日14点30分（北京时间）前提交投标文件。
 gkzb_t20261124_27747282,test,llm,gkzb,gkzb,True,采购方式：公开招标
-gkzb_t20261124_27747285,test,llm,gkzb,gkzb,True,潜在投标人应在政采云平台线上获取获取招标文件，并于2026年12月14日 09:30（北京时间）前递交投标文件
+gkzb_t20261124_27747285,test,llm,gkzb,gkzb,True,潜在投标人应在政采云平台线上获取获取招标文件，并于2026年12月14日 09:30（北京时间）前递交投标文件。
 gkzb_t20261124_27747298,test,llm,gkzb,gkzb,True,四、提交投标文件截止时间、开标时间和地点
 gkzb_t20261124_27747299,test,llm,gkzb,gkzb,True,采购方式：公开招标
 gkzb_t20261124_27747305,test,llm,gkzb,gkzb,True,采购方式：公开招标
@@ -355,47 +355,47 @@ gkzb_t20261124_27747330,test,llm,gkzb,gkzb,True,采购方式：公开招标
 gkzb_t20261124_27747331,test,llm,gkzb,gkzb,True,采购方式：公开招标
 gkzb_t20261124_27747341,test,llm,gkzb,gkzb,True,4、采购方式：公开招标
 gkzb_t20261124_27747342,test,llm,gkzb,gkzb,True,4、采购方式：公开招标
-gkzb_t20261124_27747358,test,llm,gkzb,gkzb,True,潜在投标人应在政采云平台线上获取（下载）招标文件，并于2026年12月17日 13:30（北京时间）前递交（上传）投标文件
+gkzb_t20261124_27747358,test,llm,gkzb,gkzb,True,潜在投标人应在政采云平台线上获取（下载）招标文件，并于2026年12月17日 13:30（北京时间）前递交（上传）投标文件。
 gkzb_t20261124_27747359,test,llm,gkzb,gkzb,True,潜在投标人应在政采云平台线上获取（下载）招标文件，并于2026年12月14日 09:30（北京时间）前递交（上传）投标文件。
-gkzb_t20261124_27747364,test,llm,gkzb,gkzb,True,浙江大学医学院附属儿童医院三院区职工奶制品招标项目的潜在投标人应在政采云平台线上获取（下载）招标文件
-gkzb_t20261124_27747368,test,llm,gkzb,gkzb,True,招标项目的潜在投标人应在政采云平台线上获取（下载）招标文件
+gkzb_t20261124_27747364,test,llm,gkzb,gkzb,True,潜在投标人应在政采云平台线上获取（下载）招标文件，并于2026年12月17日 09:30（北京时间）前递交（上传）投标文件。
+gkzb_t20261124_27747368,test,llm,gkzb,gkzb,True,招标项目的潜在投标人应在政采云平台线上获取（下载）招标文件，并于2026年12月14日 13:30（北京时间）前递交（上传）投标文件。
 gzgg_t20261124_27747218,test,llm,gzgg,gzgg,True,更正事项：采购文件
 gzgg_t20261124_27747222,test,llm,gzgg,gzgg,True,更正事项：采购公告
 gzgg_t20261124_27747224,test,llm,gzgg,gzgg,True,更正事项：采购结果
 gzgg_t20261124_27747227,test,llm,gzgg,gzgg,True,更正事项：采购公告
 gzgg_t20261124_27747236,test,llm,gzgg,gzgg,True,更正事项：采购文件
 gzgg_t20261124_27747249,test,llm,gzgg,gzgg,True,更正事项：采购结果
-gzgg_t20261124_27747251,test,llm,gzgg,gzgg,True,二、更正信息
+gzgg_t20261124_27747251,test,llm,gzgg,gzgg,True,更正事项：采购结果
 gzgg_t20261124_27747284,test,llm,gzgg,gzgg,True,更正事项：采购结果
 gzgg_t20261124_27747312,test,llm,gzgg,gzgg,True,更正事项：采购文件
 gzgg_t20261124_27747318,test,llm,gzgg,gzgg,True,"更正事项：采购公告,谈判文件"
 gzgg_t20261124_27747322,test,llm,gzgg,gzgg,True,更正事项：采购文件
 gzgg_t20261124_27747333,test,llm,gzgg,gzgg,True,更正事项：采购文件
 gzgg_t20261124_27747338,test,llm,gzgg,gzgg,True,更正事项：□ 采购公告 ☑ 采购文件 □ 采购结果
-gzgg_t20261124_27747354,test,llm,gzgg,gzgg,True,更正事项：采购文件和采购公告
-gzgg_t20261124_27747355,test,llm,gzgg,gzgg,True,更正内容：原公告的响应文件提交截止时间：2026-11-25 09:30:00，更正为：2026-11-30 09:30:00。
+gzgg_t20261124_27747354,test,llm,gzgg,gzgg,True,本更正公告为招标文件的组成部分
+gzgg_t20261124_27747355,test,llm,gzgg,gzgg,True,更正事项：采购公告
 gzgg_t20261124_27747366,test,llm,gzgg,gzgg,True,更正事项：采购公告、采购文件
 gzgg_t20261124_27747367,test,llm,gzgg,gzgg,True,更正事项：采购结果
 gzgg_t20261124_27747369,test,llm,gzgg,gzgg,True,"更正事项：采购公告,磋商文件"
 gzgg_t20261124_27747370,test,llm,gzgg,gzgg,True,"更正事项：采购公告,采购文件"
 gzgg_t20261124_27747373,test,llm,gzgg,gzgg,True,更正事项：采购公告与采购文件
 zbgg_t20261124_27747250,test,llm,zbgg,zbgg,True,完成本项目公开招标文件中规定的服务要求
-zbgg_t20261124_27747254,test,llm,zbgg,cjgg,False,评审专家（单一来源采购人员）名单
+zbgg_t20261124_27747254,test,llm,zbgg,cjgg,False,五、评审专家（单一来源采购人员）名单：
 zbgg_t20261124_27747260,test,llm,zbgg,cjgg,False,五、评审专家（单一来源采购人员）名单：
-zbgg_t20261124_27747262,test,llm,zbgg,cjgg,False,五、评审专家（单一来源采购人员）名单：
+zbgg_t20261124_27747262,test,llm,zbgg,zbgg,True,代理服务费金额：合同包1：36500元。收取对象：中标人。
 zbgg_t20261124_27747264,test,llm,zbgg,cjgg,False,五、评审专家（单一来源采购人员）名单：
-zbgg_t20261124_27747265,test,llm,zbgg,zbgg,True,德宏州疾病预防控制中心理化试剂耗材及设备采购-公开招标文件.docx
+zbgg_t20261124_27747265,test,llm,zbgg,zbgg,True,中标结果：
 zbgg_t20261124_27747271,test,llm,zbgg,cjgg,False,具体内容详见《竞争性磋商文件》
 zbgg_t20261124_27747272,test,llm,zbgg,cjgg,False,五、评审专家（单一来源采购人员）名单
-zbgg_t20261124_27747274,test,llm,zbgg,cjgg,False,评审专家（单一来源采购人员）名单
-zbgg_t20261124_27747278,test,llm,zbgg,cjgg,False,满足磋商文件及国家、自治区相关规范的要求
-zbgg_t20261124_27747291,test,llm,zbgg,cjgg,False,五、评审专家（单一来源采购人员）名单
+zbgg_t20261124_27747274,test,llm,zbgg,cjgg,False,五、评审专家（单一来源采购人员）名单：
+zbgg_t20261124_27747278,test,llm,zbgg,cjgg,False,满足磋商文件及国家、自治区相关规范的要求。
+zbgg_t20261124_27747291,test,llm,zbgg,zbgg,True,货物类收费标准的60%计算招标代理服务费。
 zbgg_t20261124_27747297,test,llm,zbgg,cjgg,False,详见单一来源采购文件
-zbgg_t20261124_27747304,test,llm,zbgg,cjgg,False,各有关当事人对成交结果有异议的
-zbgg_t20261124_27747311,test,llm,zbgg,zbgg,True,1.中标结果：
-zbgg_t20261124_27747321,test,llm,zbgg,zbgg,True,投标总价：495800（元）
-zbgg_t20261124_27747326,test,llm,zbgg,cjgg,False,评审专家（单一来源采购人员）名单
+zbgg_t20261124_27747304,test,llm,zbgg,,False,
+zbgg_t20261124_27747311,test,llm,zbgg,zbgg,True,按国家《招标代理服务收费管理暂行办法》（计价格[2002]1980号），发改办价格[2003]857号货物类收费标准的60%计算招标代理服务费。
+zbgg_t20261124_27747321,test,llm,zbgg,cjgg,False,五、评审专家（单一来源采购人员）名单
+zbgg_t20261124_27747326,test,llm,zbgg,zbgg,True,招标代理服务费币种与中标通知书的中标金额的币种相同
 zbgg_t20261124_27747345,test,llm,zbgg,cjgg,False,第十二师三坪农场农产品晒场建设项目-中盛竞争性磋商文件（工程）.pdf
 zbgg_t20261124_27747349,test,llm,zbgg,cjgg,False,磋商总报价：240000（元）
-zbgg_t20261124_27747363,test,llm,zbgg,zbgg,True,本次招标向中标人收取中标服务费，按招标文件附件要求收取。
-zbgg_t20261124_27747365,test,llm,zbgg,zbgg,True,项目编号：150101-HSZC-GK-20260107
+zbgg_t20261124_27747363,test,llm,zbgg,zbgg,True,投标人对中标结果有异议的，可以在中标结果公告期限届满之日起7个工作日内以书面形式向采购代理机构
+zbgg_t20261124_27747365,test,llm,zbgg,zbgg,True,满足招标文件中所有服务要求

@@ -15,6 +15,18 @@ LABEL_NAMES = {
 }
 MAX_TEXT_CHARS = 3000
 
+
+def strip_title(text: str, title: str) -> str:
+    normalized_title = re.sub(r"\s+", "", title or "")
+    if not normalized_title:
+        return text or ""
+    return "".join(
+        line
+        for line in (text or "").splitlines(keepends=True)
+        if re.sub(r"\s+", "", line) != normalized_title
+    )
+
+
 _CORRECTION_RE = re.compile(
     r"原公告(?:的(?:采购项目编号|采购项目名称|内容)?|公告)?|"
     r"(?:更正|变更)(?:公告|事项|信息|内容|为|如下)|补充公告"
