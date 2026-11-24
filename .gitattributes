@@ -1,0 +1,2 @@
+# Preserve whitespace in verbatim source notices.
+interview_materials/tender_eval/docs/*.txt whitespace=-blank-at-eol
