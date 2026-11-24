@@ -400,11 +400,12 @@ class Command(BaseCommand):
                 method_predictions[method].append(prediction)
 
         output_dir.mkdir(parents=True, exist_ok=True)
-        with (output_dir / "llm_raw.jsonl").open(
-            "w", encoding="utf-8", newline=""
-        ) as raw_file:
-            for record in raw_records:
-                raw_file.write(json.dumps(record, ensure_ascii=False) + "\n")
+        if needs_llm and replay_records is None and raw_records:
+            with (output_dir / "llm_raw.jsonl").open(
+                "w", encoding="utf-8", newline=""
+            ) as raw_file:
+                for record in raw_records:
+                    raw_file.write(json.dumps(record, ensure_ascii=False) + "\n")
         summary_rows = []
         csv_rows = []
         for method, predictions in method_predictions.items():

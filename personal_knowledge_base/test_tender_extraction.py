@@ -620,15 +620,16 @@ class TenderReplayTests(SimpleTestCase):
                 json.dumps({"documents": documents}, ensure_ascii=False),
                 encoding="utf-8",
             )
-            replay_path = root / "llm_raw.jsonl"
-            replay_path.write_text(
+            output_dir = root / "results"
+            output_dir.mkdir()
+            replay_path = output_dir / "llm_raw.jsonl"
+            archive = (
                 "\n".join(
                     json.dumps(record, ensure_ascii=False) for record in raw_records
                 )
-                + "\n",
-                encoding="utf-8",
-            )
-            output_dir = root / "results"
+                + "\n"
+            ).encode("utf-8")
+            replay_path.write_bytes(archive)
             tenant = type("TenantFixture", (), {"pk": "tenant-1"})()
 
             with override_settings(BASE_DIR=root):
@@ -676,10 +677,57 @@ class TenderReplayTests(SimpleTestCase):
                 llm_predictions["doc-1"]["fields"]["project_code"],
                 "CODE-1",
             )
-            saved_records = [
-                json.loads(line)
-                for line in (output_dir / "llm_raw.jsonl")
-                .read_text(encoding="utf-8")
-                .splitlines()
-            ]
-            self.assertEqual(saved_records, raw_records)
+            self.assertEqual(replay_path.read_bytes(), archive)
+
+    def test_rules_only_run_preserves_existing_raw_response_archive(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            docs_dir = root / "interview_materials" / "tender_eval" / "docs"
+            docs_dir.mkdir(parents=True)
+            doc_id = "rules-doc"
+            (docs_dir / f"{doc_id}.txt").write_text("招标公告正文", encoding="utf-8")
+            fields = {
+                "project_name": "示例项目",
+                "project_code": "CODE-1",
+                "purchaser": "采购单位",
+                "agency": "代理单位",
+                "budget_yuan": 100000,
+                "bid_deadline": "2026-12-15 09:00",
+            }
+            (root / "interview_materials" / "tender_eval" / "gold.json").write_text(
+                json.dumps(
+                    {
+                        "documents": [
+                            {
+                                "doc_id": doc_id,
+                                "split": "dev",
+                                "fields": fields,
+                                "alternates": {},
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            output_dir = root / "results"
+            output_dir.mkdir()
+            archive_path = output_dir / "llm_raw.jsonl"
+            archive = b'{"preserve":"existing archive"}\n'
+            archive_path.write_bytes(archive)
+
+            with override_settings(BASE_DIR=root):
+                with patch(
+                    "personal_knowledge_base.management.commands."
+                    "run_tender_extraction_eval.Tenant.objects.order_by"
+                ) as order_by:
+                    order_by.return_value.first.return_value = None
+                    call_command(
+                        "run_tender_extraction_eval",
+                        methods="rules",
+                        split="all",
+                        output_dir=str(output_dir),
+                        stdout=StringIO(),
+                    )
+
+            self.assertEqual(archive_path.read_bytes(), archive)
