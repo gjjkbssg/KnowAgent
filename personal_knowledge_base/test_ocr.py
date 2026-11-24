@@ -7,7 +7,7 @@ from PIL import Image
 
 from personal_knowledge_base.document_parsing.types import ImageBlock
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
-from personal_knowledge_base.multimodal import process_document_images, recognize_image
+from personal_knowledge_base.multimodal import analyze_image, process_document_images, recognize_image
 from personal_knowledge_base.ocr import (
     OcrLine,
     OcrResult,
@@ -109,6 +109,24 @@ class OcrRoutingTests(TestCase):
         self.assertEqual(text, "paddle text")
         self.assertEqual(metadata["engine"], "paddle")
         vision.assert_not_called()
+
+    def test_paddle_receives_normalized_raster_bytes(self):
+        normalized = b"normalized-raster"
+        with (
+            override_settings(OCR_ENGINE="paddle"),
+            patch(
+                "personal_knowledge_base.multimodal.normalize_for_vlm",
+                return_value=(normalized, "image/jpeg", 64, 64),
+            ),
+            patch("personal_knowledge_base.multimodal.paddle_ocr", return_value=_result()) as paddle,
+            patch("personal_knowledge_base.multimodal.vision_completion", return_value="caption"),
+        ):
+            recognize_image(b"raw svg bytes", "image/svg+xml", self.knowledge)
+            analyze_image(b"raw svg bytes", "image/svg+xml", self.knowledge)
+
+        self.assertEqual(paddle.call_count, 2)
+        self.assertEqual(paddle.call_args_list[0].args[0], normalized)
+        self.assertEqual(paddle.call_args_list[1].args[0], normalized)
 
     def test_confidence_empty_and_exception_fallbacks(self):
         cases = [

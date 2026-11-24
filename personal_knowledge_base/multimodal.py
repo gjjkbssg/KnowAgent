@@ -149,7 +149,7 @@ def recognize_image(
     normalized, normalized_mime, _, _ = normalize_for_vlm(data, mime_type)
     data_url = f"data:{normalized_mime};base64,{base64.b64encode(normalized).decode('ascii')}"
     return _recognize_with_data_url(
-        data,
+        normalized,
         data_url,
         knowledge,
         (engine or settings.OCR_ENGINE).strip().lower(),
@@ -168,7 +168,7 @@ def analyze_image(
     data_url = f"data:{normalized_mime};base64,{base64.b64encode(normalized).decode('ascii')}"
     model_id = str((knowledge.knowledge_base.vlm_config or {}).get("model_id") or "")
     ocr_text, ocr_metadata, errors, circuit_error, _ = _recognize_with_data_url(
-        data,
+        normalized,
         data_url,
         knowledge,
         settings.OCR_ENGINE,
