@@ -151,12 +151,6 @@ def parse_pdf(name: str, data: bytes) -> ParsedDocument:
     return _parse_pdf_layout(name, data)
 
 
-_PDF_PAGE_NUMBER_PATTERNS = (
-    re.compile(r"^[—\-–]\s*\d+\s*[—\-–]$"),
-    re.compile(r"^第\s*\d+\s*页(\s*共\s*\d+\s*页)?$"),
-    re.compile(r"^\d+\s*/\s*\d+$"),
-    re.compile(r"^\d+$"),
-)
 _PDF_L1_HEADING_RE = re.compile(r"^第[一二三四五六七八九十百]+[章篇部分]")
 _CJK_CELL_CHAR_RE = re.compile(r"[\u3400-\u9fff]")
 
@@ -368,10 +362,7 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
             for item in record["text_items"]:
                 in_margin = _pdf_in_margin(item["bbox"], page_height)
                 value = item["text"].strip()
-                if in_margin and (
-                    any(pattern.fullmatch(value) for pattern in _PDF_PAGE_NUMBER_PATTERNS)
-                    or _pdf_header_key(value) in repeated_header_keys
-                ):
+                if in_margin and _pdf_header_key(value) in repeated_header_keys:
                     header_footer_removed += 1
                     continue
                 bbox = item["bbox"]

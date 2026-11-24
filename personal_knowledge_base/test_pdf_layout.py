@@ -106,6 +106,21 @@ class PdfLayoutParsingTests(TestCase):
             8,
         )
 
+    def test_single_page_bare_margin_amount_is_preserved(self):
+        pdf = fitz.open()
+        page = pdf.new_page(width=400, height=500)
+        _text(page, "本页预算总额为128000元，项目内容清晰完整。", 40, 130)
+        _text(page, "128000", 40, 490)
+
+        parsed = parse_document("single-page-amount.pdf", _pdf_bytes(pdf))
+        content = "\n".join(block.text for block in parsed.text_blocks)
+
+        self.assertIn("128000", content)
+        self.assertEqual(
+            parsed.metadata["pdf_layout"]["header_footer_removed"],
+            0,
+        )
+
     def test_tables_become_markdown_blocks_without_duplicate_text(self):
         pdf = fitz.open()
         page = pdf.new_page(width=400, height=500)
