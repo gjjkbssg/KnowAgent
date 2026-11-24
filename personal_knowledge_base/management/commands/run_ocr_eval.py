@@ -19,7 +19,23 @@ from personal_knowledge_base.ocr import character_error_rate, paddle_ocr
 
 PAGES = (3, 4, 5, 7, 8, 34, 35, 36, 48, 51, 52, 60, 70, 82, 86)
 FOOTER_RE = re.compile(r"(?m)^\s*[—–-]\s*\d+\s*[—–-]\s*$")
+CER_MARKERS = str.maketrans("", "", "|#*`-–—")
 ENGINES = ("paddle", "vlm", "paddle_vlm_fallback")
+CSV_FIELDNAMES = [
+    "engine",
+    "variant",
+    "page",
+    "cer",
+    "pages_sent_to_vlm",
+    "latency_ms",
+    "mean_score",
+    "low_score_ratio",
+    "fallback_reason",
+    "prompt_tokens",
+    "completion_tokens",
+    "total_tokens",
+    "errors",
+]
 
 
 def _resolve_path(value: str) -> Path:
@@ -27,12 +43,9 @@ def _resolve_path(value: str) -> Path:
     return path if path.is_absolute() else Path(settings.BASE_DIR) / path
 
 
-def _reference_text(text: str) -> str:
-    return FOOTER_RE.sub("", text or "")
-
-
-def _clean_vlm_text(text: str) -> str:
-    return re.sub(r"[|#*`-]", "", text or "")
+def _normalize_for_cer(text: str) -> str:
+    text = FOOTER_RE.sub("", text or "")
+    return "".join(text.translate(CER_MARKERS).split())
 
 
 def _render_page(page, dpi: int, quality: int, stamp: bool = False) -> bytes:
@@ -89,6 +102,51 @@ def _summarize(rows: list[dict]) -> dict:
     return summary
 
 
+def _load_raw_rows(raw_path: Path) -> tuple[list[dict], dict]:
+    try:
+        records = [
+            json.loads(line)
+            for line in raw_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CommandError(f"Could not read OCR raw results from {raw_path}: {exc}") from exc
+
+    metadata = next((record for record in records if record.get("record_type") == "metadata"), None)
+    page_records = [record for record in records if record.get("record_type") == "page"]
+    if metadata is None or not page_records:
+        raise CommandError(f"OCR raw results are missing page or metadata records: {raw_path}")
+
+    rows = []
+    for record in page_records:
+        row = {field: record.get(field) for field in CSV_FIELDNAMES if field != "cer"}
+        row["cer"] = character_error_rate(
+            _normalize_for_cer(record.get("reference_text", "")),
+            _normalize_for_cer(record.get("raw_hypothesis", "")),
+        )
+        rows.append(row)
+    return rows, metadata
+
+
+def _write_outputs(output_dir: Path, rows: list[dict], metadata: dict) -> dict:
+    summary = {
+        "source_pdf": metadata["source_pdf"],
+        "pages": metadata["pages"],
+        "variants": metadata["variants"],
+        "metrics": _summarize(rows),
+        "scanned_pdfs": metadata.get("scanned_pdfs", {}),
+    }
+    (output_dir / "summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    with (output_dir / "per_page.csv").open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=CSV_FIELDNAMES, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    return summary
+
+
 class Command(BaseCommand):
     help = "Evaluate PaddleOCR, VLM OCR, and confidence-triggered VLM fallback."
 
@@ -109,10 +167,24 @@ class Command(BaseCommand):
             "--output-dir",
             default="interview_materials/results/ocr",
         )
+        parser.add_argument(
+            "--rescore",
+            help="Recompute metrics from an existing ocr_raw.jsonl without calling OCR engines",
+        )
 
     def handle(self, *args, **options):
-        pdf_path = _resolve_path(options["pdf"])
         output_dir = _resolve_path(options["output_dir"])
+        output_dir.mkdir(parents=True, exist_ok=True)
+        if options["rescore"]:
+            raw_path = _resolve_path(options["rescore"])
+            if not raw_path.is_file():
+                raise CommandError(f"OCR raw results do not exist: {raw_path}")
+            rows, metadata = _load_raw_rows(raw_path)
+            summary = _write_outputs(output_dir, rows, metadata)
+            self.stdout.write(json.dumps(summary["metrics"], ensure_ascii=False, indent=2))
+            return
+
+        pdf_path = _resolve_path(options["pdf"])
         scan_paths = [_resolve_path(options["p4"]), _resolve_path(options["p7"])]
         if not pdf_path.is_file():
             raise CommandError(f"OCR evaluation PDF does not exist: {pdf_path}")
@@ -122,15 +194,16 @@ class Command(BaseCommand):
         tenant = Tenant.objects.order_by("created_at").first()
         if tenant is None:
             raise CommandError("No tenant exists in the OCR evaluation database")
-        output_dir.mkdir(parents=True, exist_ok=True)
         pages = fitz.open(pdf_path)
         rows = []
+        raw_records = []
         try:
             for page_number in PAGES:
                 if page_number > len(pages):
                     raise CommandError(f"PDF has no page {page_number}")
                 page = pages[page_number - 1]
-                reference = _reference_text(page.get_text("text"))
+                reference_text = page.get_text("text")
+                reference = _normalize_for_cer(reference_text)
                 for variant, dpi, quality, stamp in (
                     ("clean", 150, 90, False),
                     ("degraded", 100, 35, True),
@@ -150,22 +223,28 @@ class Command(BaseCommand):
                         )
                         usage = _usage_tokens(tenant, before_count)
                         actual_engine = metadata["engine"]
-                        hypothesis = _clean_vlm_text(text) if actual_engine == "vlm" else text
-                        rows.append(
+                        row = {
+                            "engine": engine,
+                            "variant": variant,
+                            "page": page_number,
+                            "cer": character_error_rate(reference, _normalize_for_cer(text)),
+                            "pages_sent_to_vlm": int(actual_engine == "vlm"),
+                            "latency_ms": round(recognition_ms or (time.perf_counter() - started) * 1000, 2),
+                            "mean_score": metadata["mean_score"],
+                            "low_score_ratio": metadata["low_score_ratio"],
+                            "fallback_reason": metadata["fallback_reason"],
+                            "prompt_tokens": usage["prompt_tokens"],
+                            "completion_tokens": usage["completion_tokens"],
+                            "total_tokens": usage["total_tokens"],
+                            "errors": "; ".join(errors),
+                        }
+                        rows.append(row)
+                        raw_records.append(
                             {
-                                "engine": engine,
-                                "variant": variant,
-                                "page": page_number,
-                                "cer": character_error_rate(reference, hypothesis),
-                                "pages_sent_to_vlm": int(actual_engine == "vlm"),
-                                "latency_ms": round(recognition_ms or (time.perf_counter() - started) * 1000, 2),
-                                "mean_score": metadata["mean_score"],
-                                "low_score_ratio": metadata["low_score_ratio"],
-                                "fallback_reason": metadata["fallback_reason"],
-                                "prompt_tokens": usage["prompt_tokens"],
-                                "completion_tokens": usage["completion_tokens"],
-                                "total_tokens": usage["total_tokens"],
-                                "errors": "; ".join(errors),
+                                "record_type": "page",
+                                "reference_text": reference_text,
+                                "raw_hypothesis": text,
+                                **row,
                             }
                         )
         finally:
@@ -195,37 +274,18 @@ class Command(BaseCommand):
                 "lowest_five_lines": sorted(scan_lines, key=lambda line: line["score"])[:5],
             }
 
-        summary = {
+        metadata = {
+            "record_type": "metadata",
             "source_pdf": pdf_path.name,
             "pages": list(PAGES),
             "variants": {
                 "clean": {"dpi": 150, "jpeg_quality": 90},
                 "degraded": {"dpi": 100, "jpeg_quality": 35, "center_stamp": "semi-transparent red circle"},
             },
-            "metrics": _summarize(rows),
             "scanned_pdfs": scan_results,
         }
-        (output_dir / "summary.json").write_text(
-            json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
-        fieldnames = [
-            "engine",
-            "variant",
-            "page",
-            "cer",
-            "pages_sent_to_vlm",
-            "latency_ms",
-            "mean_score",
-            "low_score_ratio",
-            "fallback_reason",
-            "prompt_tokens",
-            "completion_tokens",
-            "total_tokens",
-            "errors",
-        ]
-        with (output_dir / "per_page.csv").open("w", encoding="utf-8", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
-            writer.writeheader()
-            writer.writerows(rows)
+        with (output_dir / "ocr_raw.jsonl").open("w", encoding="utf-8") as handle:
+            for record in (*raw_records, metadata):
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+        summary = _write_outputs(output_dir, rows, metadata)
         self.stdout.write(json.dumps(summary["metrics"], ensure_ascii=False, indent=2))

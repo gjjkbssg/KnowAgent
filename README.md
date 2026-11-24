@@ -393,22 +393,24 @@ python manage.py run_pdf_parsing_eval --modes legacy,structured --with-answers
 
 `OCR_ENGINE` 支持 `vlm`（默认）、`paddle` 和 `paddle_vlm_fallback`。PaddleOCR 是可选依赖：`pip install -r requirements-ocr.txt`。低于 0.85 的平均置信度、低置信度行比例超过 0.20、空结果或 PaddleOCR 异常时，回退模式会将该页交给 VLM。
 
-在 2026 tender PDF 的 15 页上比较文本层参考 CER；每页另制作 100 dpi、JPEG 质量 35 并叠加红色半透明圆章的降质版本。文本层页面渲染成图片通常比真实扫描件干净；本基准仅覆盖一份文档的 15 页，不能代表一般扫描件。
+在 2026 tender PDF 的 15 页上比较文本层参考 CER；参考文本和所有 OCR 引擎的输出都使用相同的 CER 规范：移除独立页码页脚、Markdown 标记、连字符和空白。每页另制作 100 dpi、JPEG 质量 35 并叠加红色半透明圆章的降质版本。文本层页面渲染成图片通常比真实扫描件干净；本基准仅覆盖一份文档的 15 页，不能代表一般扫描件。
 
 | 引擎 | 变体 | 平均 CER | 中位 CER | 发送到 VLM 页数 | 平均延迟（ms/页） | VLM tokens |
 |---|---|---:|---:|---:|---:|---:|
-| PaddleOCR | 清晰 | 0.085771 | 0.061538 | 0 | 29,698.75 | 0 |
-| PaddleOCR | 降质 | 0.086503 | 0.072658 | 0 | 19,741.43 | 0 |
-| VLM | 清晰 | 0.107647 | 0.049399 | 15 | 24,714.59 | 39,239 |
-| VLM | 降质 | 0.089977 | 0.028966 | 15 | 16,995.69 | 21,721 |
-| Paddle + VLM fallback | 清晰 | 0.085771 | 0.061538 | 0 | 29,344.69 | 0 |
-| Paddle + VLM fallback | 降质 | 0.086503 | 0.072658 | 0 | 20,038.81 | 0 |
+| PaddleOCR | 清晰 | 0.078942 | 0.030769 | 0 | 27,142.19 | 0 |
+| PaddleOCR | 降质 | 0.077376 | 0.034003 | 0 | 18,321.39 | 0 |
+| VLM | 清晰 | 0.099137 | 0.044059 | 15 | 14,135.24 | 39,246 |
+| VLM | 降质 | 0.102034 | 0.038384 | 15 | 10,425.38 | 21,484 |
+| Paddle + VLM fallback | 清晰 | 0.078942 | 0.030769 | 0 | 27,384.42 | 0 |
+| Paddle + VLM fallback | 降质 | 0.077376 | 0.034003 | 0 | 18,473.07 | 0 |
+
+本次评测没有页面触发置信度回退，因此回退模式结果与 Paddle 相同、VLM 调用数为 0。
 
 两份真实扫描件结果：`p4.pdf` 83 行、平均置信度 0.9503；最低五行分数为 0.8488、0.8493、0.8549、0.8653、0.8722，主要是带括号的组件/产品编号。`p7.pdf` 68 行、平均置信度 0.9618；最低五行分数为 0.7411（单个句号）、0.8942、0.8961、0.9145、0.9161，主要是带括号的产品名、组件和工序字段。逐行文本见 summary JSON。
 
-结果文件为 [`interview_materials/results/ocr/summary.json`](interview_materials/results/ocr/summary.json) 和 [`per_page.csv`](interview_materials/results/ocr/per_page.csv)。两份真实扫描样例的行数、平均分和最低置信度行也保存在 summary 中，并随仓库提交。
+结果文件为 [`summary.json`](interview_materials/results/ocr/summary.json)、[`per_page.csv`](interview_materials/results/ocr/per_page.csv) 和 [`ocr_raw.jsonl`](interview_materials/results/ocr/ocr_raw.jsonl)。每次实时评测还会将原始参考文本和各引擎/变体的识别文本写入 `ocr_raw.jsonl`；可通过 `--rescore` 离线重算 CER 和汇总，而不调用识别引擎或改写原始 JSONL。自定义 `--p4`/`--p7` 输入只会从给定路径读取，不会覆盖仓库中的样例文件。两份真实扫描样例的行数、平均分和最低置信度行也保存在 summary 中，并随仓库提交。
 
-复现：`python manage.py run_ocr_eval --pdf interview_materials/pdf_eval/ahmu_tender_2026.pdf --output-dir interview_materials/results/ocr`（需配置 VLM API key 和包含 Tenant 的隔离评测数据库；不应对源评测数据库写入）。
+复现前先创建评测数据库副本并使用独立的媒体目录，然后配置模型环境，运行 `python manage.py run_ocr_eval --pdf interview_materials/pdf_eval/ahmu_tender_2026.pdf --p4 interview_materials/ocr_eval/p4.pdf --p7 interview_materials/ocr_eval/p7.pdf --output-dir interview_materials/results/ocr`。必须将 `APP_DB_PATH` 指向新副本；不要对源评测数据库写入。离线重算：`python manage.py run_ocr_eval --rescore interview_materials/results/ocr/ocr_raw.jsonl --output-dir interview_materials/results/ocr`。
 
 ## 快速开始
 
