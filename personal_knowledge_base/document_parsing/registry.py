@@ -152,6 +152,13 @@ def parse_pdf(name: str, data: bytes) -> ParsedDocument:
 
 
 _PDF_L1_HEADING_RE = re.compile(r"^第[一二三四五六七八九十百]+[章篇部分]")
+_PDF_L2_HEADING_RE = re.compile(r"^[一二三四五六七八九十]+、\S")
+_PDF_L3_HEADING_RE = re.compile(r"^（[一二三四五六七八九十]+）\S")
+_PDF_PAGE_NUMBER_PATTERNS = (
+    re.compile(r"^[-—–]\s*\d+\s*[-—–]$"),
+    re.compile(r"^第\s*\d+\s*页$"),
+    re.compile(r"^\d+\s*/\s*\d+$"),
+)
 _CJK_CELL_CHAR_RE = re.compile(r"[\u3400-\u9fff]")
 
 
@@ -160,11 +167,28 @@ def _pdf_in_margin(bbox, page_height: float) -> bool:
     return center_y <= page_height * 0.08 or center_y >= page_height * 0.92
 
 
-def _pdf_is_margin_text(item, page_height: float) -> bool:
+def _pdf_heading_line(text: str) -> bool:
+    value = text.strip()
+    return bool(
+        _PDF_L1_HEADING_RE.match(value)
+        or (len(value) <= 40 and _PDF_L2_HEADING_RE.match(value))
+        or (len(value) <= 40 and _PDF_L3_HEADING_RE.match(value))
+    )
+
+
+def _pdf_is_margin_text(item, page_height: float, repeated_header_keys) -> bool:
+    if (
+        item["kind"] != "text"
+        or item.get("bbox") is None
+        or not _pdf_in_margin(item["bbox"], page_height)
+    ):
+        return False
+    value = item["text"].strip()
+    if _pdf_heading_line(value):
+        return False
     return (
-        item["kind"] == "text"
-        and item.get("bbox") is not None
-        and _pdf_in_margin(item["bbox"], page_height)
+        any(pattern.match(value) for pattern in _PDF_PAGE_NUMBER_PATTERNS)
+        or _pdf_header_key(value) in repeated_header_keys
     )
 
 
@@ -422,6 +446,7 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
                     if not _pdf_is_margin_text(
                         previous_items[index],
                         previous_page_height,
+                        repeated_header_keys,
                     )
                 ),
                 None,
@@ -438,7 +463,11 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
                 (
                     index
                     for index, item in enumerate(current_items)
-                    if not _pdf_is_margin_text(item, current_page_height)
+                    if not _pdf_is_margin_text(
+                        item,
+                        current_page_height,
+                        repeated_header_keys,
+                    )
                 ),
                 None,
             )

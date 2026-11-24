@@ -191,6 +191,42 @@ class PdfLayoutParsingTests(TestCase):
         self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 1)
         self.assertEqual(parsed.metadata["pdf_layout"]["header_footer_removed"], 0)
 
+    def test_top_margin_section_heading_blocks_table_merge(self):
+        pdf = fitz.open()
+        first_page = pdf.new_page(width=400, height=500)
+        _draw_table(
+            first_page,
+            [
+                ["条款号", "名称", "内容"],
+                ["31.1", "履约保证金", "按招标文件执行"],
+            ],
+            y=380,
+        )
+        second_page = pdf.new_page(width=400, height=500)
+        _text(second_page, "第三章 采购需求", 40, 20)
+        _draw_table(
+            second_page,
+            [
+                ["条款号", "名称", "内容"],
+                ["1", "采购需求", "具体参数详见采购文件"],
+            ],
+        )
+
+        parsed = parse_document("heading-before-table.pdf", _pdf_bytes(pdf))
+        tables = [
+            block
+            for block in parsed.text_blocks
+            if block.metadata.get("block_type") == "table"
+        ]
+
+        self.assertEqual(len(tables), 2)
+        self.assertEqual(
+            [block.metadata["page_span"] for block in tables],
+            [[1, 1], [2, 2]],
+        )
+        self.assertIn("第三章 采购需求", "\n".join(b.text for b in parsed.text_blocks))
+        self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 0)
+
     def test_single_page_bare_margin_amount_is_preserved(self):
         pdf = fitz.open()
         page = pdf.new_page(width=400, height=500)
