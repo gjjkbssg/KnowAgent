@@ -185,3 +185,28 @@ class OcrRoutingTests(TestCase):
         self.assertEqual(ocr_chunk.metadata["ocr_fallback_reason"], "")
         self.assertEqual(warnings, [])
         self.assertEqual(Chunk.objects.filter(knowledge=self.knowledge).count(), 3)
+
+    def test_local_ocr_continues_after_caption_opens_vlm_circuit(self):
+        from personal_knowledge_base.model_providers import ModelAccessDeniedError
+
+        blocks = [
+            ImageBlock(self.image, "image/png", 128, 128, "standalone", f"scan-{index}.png", index)
+            for index in range(2)
+        ]
+        with (
+            override_settings(OCR_ENGINE="paddle"),
+            patch(
+                "personal_knowledge_base.multimodal.paddle_ocr",
+                side_effect=[_result("first paddle"), _result("second paddle")],
+            ) as paddle,
+            patch(
+                "personal_knowledge_base.multimodal.vision_completion",
+                side_effect=ModelAccessDeniedError(403, "AllocationQuota.FreeTierOnly", "denied"),
+            ) as vision,
+        ):
+            chunks, warnings = process_document_images(self.knowledge, blocks, [])
+
+        self.assertEqual(paddle.call_count, 2)
+        vision.assert_called_once()
+        self.assertTrue(any(chunk.content == "second paddle" for chunk in chunks))
+        self.assertTrue(any("denied" in warning["message"] for warning in warnings))

@@ -69,6 +69,8 @@ def _recognize_with_data_url(
     data_url: str,
     knowledge: Knowledge,
     engine: str,
+    allow_vlm: bool = True,
+    circuit_error: str = "",
 ):
     if engine not in {"vlm", "paddle", "paddle_vlm_fallback"}:
         raise ValueError(f"Unsupported OCR_ENGINE: {engine}")
@@ -82,6 +84,9 @@ def _recognize_with_data_url(
     }
     model_id = str((knowledge.knowledge_base.vlm_config or {}).get("model_id") or "")
     if engine == "vlm":
+        if not allow_vlm:
+            errors = [circuit_error] if circuit_error else []
+            return "", metadata, errors, circuit_error, (time.perf_counter() - started) * 1000
         text, errors, circuit_error = _vlm_ocr(data_url, knowledge, model_id)
         return (
             text,
@@ -110,13 +115,15 @@ def _recognize_with_data_url(
             elif paddle_result.low_score_ratio > settings.OCR_FALLBACK_RATIO:
                 fallback_reason = "low_score_ratio_above_threshold"
 
-    if not fallback_reason:
+    if not fallback_reason or not allow_vlm:
         metadata["engine"] = "paddle"
+        if circuit_error and circuit_error not in errors:
+            errors.append(circuit_error)
         return (
-            paddle_result.text,
+            paddle_result.text if paddle_result else "",
             metadata,
             errors,
-            "",
+            circuit_error,
             (time.perf_counter() - started) * 1000,
         )
 
@@ -149,7 +156,14 @@ def recognize_image(
     )
 
 
-def analyze_image(data: bytes, mime_type: str, knowledge: Knowledge):
+def analyze_image(
+    data: bytes,
+    mime_type: str,
+    knowledge: Knowledge,
+    *,
+    allow_vlm: bool = True,
+    circuit_error: str = "",
+):
     normalized, normalized_mime, _, _ = normalize_for_vlm(data, mime_type)
     data_url = f"data:{normalized_mime};base64,{base64.b64encode(normalized).decode('ascii')}"
     model_id = str((knowledge.knowledge_base.vlm_config or {}).get("model_id") or "")
@@ -158,8 +172,12 @@ def analyze_image(data: bytes, mime_type: str, knowledge: Knowledge):
         data_url,
         knowledge,
         settings.OCR_ENGINE,
+        allow_vlm=allow_vlm,
+        circuit_error=circuit_error,
     )
-    if circuit_error:
+    if circuit_error or not allow_vlm:
+        if circuit_error and circuit_error not in errors:
+            errors.append(circuit_error)
         return ocr_text, "", errors, circuit_error, ocr_metadata
     try:
         caption = vision_completion(knowledge.tenant, data_url, CAPTION_PROMPT, "image_caption", model_id).strip()
@@ -213,7 +231,16 @@ def process_document_images(knowledge: Knowledge, image_blocks, text_chunks: lis
         )
 
         if circuit_error:
-            analysis = "", "", [circuit_error], circuit_error, {}
+            if settings.OCR_ENGINE in {"paddle", "paddle_vlm_fallback"}:
+                analysis = analyze_image(
+                    block.data,
+                    block.mime_type,
+                    knowledge,
+                    allow_vlm=False,
+                    circuit_error=circuit_error,
+                )
+            else:
+                analysis = "", "", [circuit_error], circuit_error, {}
         else:
             analysis = analysis_cache.get(content_hash)
             if analysis is None:
