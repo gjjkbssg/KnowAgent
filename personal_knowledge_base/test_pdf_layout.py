@@ -227,6 +227,23 @@ class PdfLayoutParsingTests(TestCase):
         self.assertIn("第三章 采购需求", "\n".join(b.text for b in parsed.text_blocks))
         self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 0)
 
+    def test_margin_subtotals_are_kept_while_page_numbers_are_removed(self):
+        pdf = fitz.open()
+        amounts = ["12,345", "9,876", "15,432", "8,765"]
+        for page_number, amount in enumerate(amounts, start=1):
+            page = pdf.new_page(width=400, height=500)
+            _text(page, f"本页正文内容第{page_number}页，包含足够的采购信息。", 40, 130)
+            _text(page, f"本页小计：{amount}元", 40, 470)
+            _text(page, f"— {page_number} —", 40, 490)
+
+        parsed = parse_document("margin-subtotals.pdf", _pdf_bytes(pdf))
+        content = "\n".join(block.text for block in parsed.text_blocks)
+
+        for amount in amounts:
+            self.assertIn(f"本页小计：{amount}元", content)
+        self.assertNotRegex(content, r"—\s*\d+\s*—")
+        self.assertEqual(parsed.metadata["pdf_layout"]["header_footer_removed"], 4)
+
     def test_single_page_bare_margin_amount_is_preserved(self):
         pdf = fitz.open()
         page = pdf.new_page(width=400, height=500)

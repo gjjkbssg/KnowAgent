@@ -159,6 +159,7 @@ _PDF_PAGE_NUMBER_PATTERNS = (
     re.compile(r"^第\s*\d+\s*页$"),
     re.compile(r"^\d+\s*/\s*\d+$"),
 )
+_PDF_AMOUNT_MARKER_RE = re.compile(r"(?:元|￥|¥|%|合计|小计|总计)")
 _CJK_CELL_CHAR_RE = re.compile(r"[\u3400-\u9fff]")
 
 
@@ -184,7 +185,7 @@ def _pdf_is_margin_text(item, page_height: float, repeated_header_keys) -> bool:
     ):
         return False
     value = item["text"].strip()
-    if _pdf_heading_line(value):
+    if _pdf_heading_line(value) or _pdf_has_amount_marker(value):
         return False
     return (
         any(pattern.match(value) for pattern in _PDF_PAGE_NUMBER_PATTERNS)
@@ -194,6 +195,10 @@ def _pdf_is_margin_text(item, page_height: float, repeated_header_keys) -> bool:
 
 def _pdf_header_key(text: str) -> str:
     return re.sub(r"\s+", "", re.sub(r"\d+", "#", text))
+
+
+def _pdf_has_amount_marker(text: str) -> bool:
+    return bool(_PDF_AMOUNT_MARKER_RE.search(text))
 
 
 def _pdf_point_in_bbox(point, bbox) -> bool:
@@ -352,7 +357,10 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
             page_height = float(page.rect.height)
             page_candidate_keys = set()
             for item in text_items:
-                if _pdf_in_margin(item["bbox"], page_height):
+                if (
+                    _pdf_in_margin(item["bbox"], page_height)
+                    and not _pdf_has_amount_marker(item["text"])
+                ):
                     key = _pdf_header_key(item["text"])
                     if key:
                         page_candidate_keys.add(key)
@@ -394,7 +402,11 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
             for item in record["text_items"]:
                 in_margin = _pdf_in_margin(item["bbox"], page_height)
                 value = item["text"].strip()
-                if in_margin and _pdf_header_key(value) in repeated_header_keys:
+                if (
+                    in_margin
+                    and not _pdf_has_amount_marker(value)
+                    and _pdf_header_key(value) in repeated_header_keys
+                ):
                     header_footer_removed += 1
                     continue
                 bbox = item["bbox"]
