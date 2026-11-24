@@ -520,6 +520,39 @@ class PdfLayoutParsingTests(TestCase):
             self.assertNotIn(long_key, chunk.content)
             self.assertLessEqual(len(chunk.content), 256)
 
+    def test_short_oversized_key_is_not_repeated_in_its_own_piece(self):
+        knowledge = self.create_knowledge(chunk_size=256)
+        header = ["项目名称", "类型", "说明"]
+        key_text = "投标项目名称唯一识别码" * 2
+        other_long_cell = "用于测试键字段去重的详细描述内容" * 20
+        rows = [header, [key_text, "关键", other_long_cell]]
+        parsed = ParsedDocument(
+            text_blocks=[
+                TextBlock(
+                    "| 项目名称 | 类型 | 说明 |\n| --- | --- | --- |\n| 项目 | 关键 | 描述 |",
+                    0,
+                    page_index=0,
+                    metadata={
+                        "block_type": "table",
+                        "bbox": [20, 20, 300, 100],
+                        "header": header,
+                        "table_rows": rows,
+                        "page_span": [1, 1],
+                    },
+                )
+            ],
+            metadata={"pdf_layout": {"toc_pages": []}},
+        )
+
+        chunks = create_text_chunks(knowledge, parsed)
+
+        self.assertGreater(len(key_text), 20)
+        self.assertLessEqual(len(key_text), 256 // 4)
+        self.assertGreater(len(chunks), 1)
+        self.assertTrue(any(key_text in chunk.content for chunk in chunks))
+        for chunk in chunks:
+            self.assertLessEqual(chunk.content.count(key_text), 1)
+
     def test_disabling_layout_parser_matches_legacy_pdf_behavior(self):
         pdf = fitz.open()
         page = pdf.new_page(width=400, height=500)
