@@ -34,6 +34,7 @@ CSV_FIELDS = (
     "correct",
     "in_review",
     "source",
+    "evidence",
 )
 
 
@@ -185,6 +186,11 @@ def _field_rows(document: dict, prediction: dict, method: str) -> list[dict]:
                 "correct": _is_correct(field, predicted, document),
                 "in_review": field in needs_review,
                 "source": sources.get(field),
+                "evidence": json.dumps(
+                    prediction.get("evidence", {}).get(field),
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
             }
         )
     return rows
@@ -293,6 +299,7 @@ class Command(BaseCommand):
                     "doc_id": doc_id,
                     "split": document["split"],
                     "fields": result["fields"],
+                    "evidence": result["evidence"],
                     "sources": result["sources"],
                     "needs_review": result["needs_review"],
                     "issues": result["issues"],
@@ -339,6 +346,11 @@ class Command(BaseCommand):
                 "tenant_id": str(tenant.pk) if tenant else None,
             },
             "results": summary_rows,
+            "per_document": [
+                {"method": method, **prediction}
+                for method, predictions in method_predictions.items()
+                for prediction in predictions
+            ],
             "errors": errors,
         }
         (output_dir / "summary.json").write_text(

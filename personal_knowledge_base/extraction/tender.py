@@ -26,19 +26,19 @@ FIELDS = (
 STRING_FIELDS = {"project_name", "project_code", "purchaser", "agency"}
 SYSTEM_PROMPT = """你是招标公告信息抽取器。只根据用户给出的公告正文抽取字段，并调用 submit_tender_fields 提交结果。
 规则：
-1. 每个字段同时给出 value 和 evidence。evidence 必须是从正文中原样复制的一段连续文字（不超过 80 字），能直接支持 value。
+1. 每个字段同时给出 value 和 evidence。除 budget_yuan 外，evidence 是从正文中原样复制的一段连续文字（不超过 80 字），且必须包含 value 本身。
 2. 正文中找不到的字段，value 和 evidence 都填 null，不要猜测。
 3. project_name：项目名称，不含“公开招标公告”等公告类型字样。
 4. project_code：项目编号；有多个编号时，取标注为“项目编号”的那个。
 5. purchaser：采购人（招标人）单位全称。agency：采购代理机构单位全称，没有代理机构时填 null。
-6. budget_yuan：项目预算总金额，换算成元，只输出数字；分多个包时为各包预算之和。
+6. budget_yuan：项目预算总金额，换算成元，只输出数字。evidence 是字符串数组：有项目总预算时，给出写有总预算的 1 段原文；只有各包预算时，给出每个包预算的原文各 1 段，value 为各包之和。
 7. bid_deadline：提交投标文件截止时间，格式 YYYY-MM-DD HH:MM；不要误取获取招标文件的时间或投标文件递交的开始时间。"""
 
 
 @dataclass
 class FieldValue:
     value: Any
-    evidence: str | None
+    evidence: str | list[str] | None
     source: str
 
 
@@ -128,7 +128,14 @@ TOOL = {
                     "type": "object",
                     "properties": {
                         "value": {"type": list(_AMOUNT_VALUE_TYPES[field])},
-                        "evidence": {"type": ["string", "null"]},
+                        "evidence": (
+                            {
+                                "type": ["array", "null"],
+                                "items": {"type": "string"},
+                            }
+                            if field == "budget_yuan"
+                            else {"type": ["string", "null"]}
+                        ),
                     },
                     "required": ["value", "evidence"],
                     "additionalProperties": False,
@@ -437,11 +444,17 @@ def extract_llm(text: str, tenant) -> tuple[dict[str, FieldValue], dict[str, int
         raw_value = entry.get("value")
         normalized = _normalize_value(field, raw_value)
         evidence = entry.get("evidence")
-        fields[field] = FieldValue(
-            normalized,
-            evidence if isinstance(evidence, str) else None,
-            "llm",
-        )
+        if field == "budget_yuan":
+            if isinstance(evidence, str):
+                evidence = [evidence]
+            elif not (
+                isinstance(evidence, list)
+                and all(isinstance(quote, str) for quote in evidence)
+            ):
+                evidence = None
+        elif not isinstance(evidence, str):
+            evidence = None
+        fields[field] = FieldValue(normalized, evidence, "llm")
     return fields, {
         key: int(usage.get(key, 0) or 0)
         for key in ("prompt_tokens", "completion_tokens", "total_tokens")
@@ -553,12 +566,17 @@ def _result(
     conflict_fields: list[str] | None = None,
 ) -> dict:
     values, sources = _values_and_sources(selected)
+    evidence = {
+        field: selected[field].evidence if field in selected else None
+        for field in FIELDS
+    }
     issues = validate(values)
     needs_review = set(conflict_fields or [])
     needs_review.update(issue.split(":", 1)[0] for issue in issues)
     needs_review.update(field for field, value in values.items() if value is None)
     return {
         "fields": values,
+        "evidence": evidence,
         "sources": sources,
         "needs_review": [field for field in FIELDS if field in needs_review],
         "issues": issues,

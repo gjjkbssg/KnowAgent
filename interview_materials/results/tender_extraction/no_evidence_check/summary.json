@@ -1,7 +1,7 @@
 {
   "metadata": {
     "dataset": "interview_materials/tender_eval/gold.json",
-    "generated_at": "2026-11-24T12:01:19.616525+00:00",
+    "generated_at": "2026-11-24T13:31:10.243008+00:00",
     "methods": [
       "llm"
     ],
@@ -17,68 +17,68 @@
       "documents": 20,
       "per_field": {
         "project_name": {
-          "tp": 19,
+          "tp": 20,
           "fp": 0,
-          "fn": 1,
+          "fn": 0,
           "precision": 1.0,
-          "recall": 0.95,
-          "f1": 0.9744
+          "recall": 1.0,
+          "f1": 1.0
         },
         "project_code": {
-          "tp": 19,
+          "tp": 20,
           "fp": 0,
-          "fn": 1,
+          "fn": 0,
           "precision": 1.0,
-          "recall": 0.95,
-          "f1": 0.9744
+          "recall": 1.0,
+          "f1": 1.0
         },
         "purchaser": {
-          "tp": 19,
+          "tp": 20,
           "fp": 0,
-          "fn": 1,
+          "fn": 0,
           "precision": 1.0,
-          "recall": 0.95,
-          "f1": 0.9744
+          "recall": 1.0,
+          "f1": 1.0
         },
         "agency": {
-          "tp": 19,
+          "tp": 20,
           "fp": 0,
-          "fn": 1,
+          "fn": 0,
           "precision": 1.0,
-          "recall": 0.95,
-          "f1": 0.9744
+          "recall": 1.0,
+          "f1": 1.0
         },
         "budget_yuan": {
-          "tp": 19,
+          "tp": 20,
           "fp": 0,
-          "fn": 1,
+          "fn": 0,
           "precision": 1.0,
-          "recall": 0.95,
-          "f1": 0.9744
+          "recall": 1.0,
+          "f1": 1.0
         },
         "bid_deadline": {
-          "tp": 19,
+          "tp": 20,
           "fp": 0,
-          "fn": 1,
+          "fn": 0,
           "precision": 1.0,
-          "recall": 0.95,
-          "f1": 0.9744
+          "recall": 1.0,
+          "f1": 1.0
         }
       },
       "micro": {
-        "tp": 114,
+        "tp": 120,
         "fp": 0,
-        "fn": 6,
+        "fn": 0,
         "precision": 1.0,
-        "recall": 0.95,
-        "f1": 0.9744
+        "recall": 1.0,
+        "f1": 1.0
       },
-      "document_exact_match_rate": 0.95,
-      "mean_latency_ms_per_doc": 19714.55,
-      "mean_tokens_per_doc": 3049.55,
+      "document_exact_match_rate": 1.0,
+      "mean_latency_ms_per_doc": 28448.22,
+      "mean_tokens_per_doc": 4081.2,
       "evidence_dropped_count": 0,
-      "review_rate": 0.05,
-      "review_catch_rate": 1.0
+      "review_rate": 0.0,
+      "review_catch_rate": null
     },
     {
       "method": "llm",
@@ -86,73 +86,2252 @@
       "documents": 40,
       "per_field": {
         "project_name": {
-          "tp": 40,
-          "fp": 0,
-          "fn": 0,
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "tp": 38,
+          "fp": 1,
+          "fn": 2,
+          "precision": 0.9744,
+          "recall": 0.95,
+          "f1": 0.962
         },
         "project_code": {
           "tp": 39,
-          "fp": 1,
+          "fp": 0,
           "fn": 1,
-          "precision": 0.975,
+          "precision": 1.0,
           "recall": 0.975,
-          "f1": 0.975
+          "f1": 0.9873
         },
         "purchaser": {
-          "tp": 40,
+          "tp": 39,
           "fp": 0,
-          "fn": 0,
+          "fn": 1,
           "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "recall": 0.975,
+          "f1": 0.9873
         },
         "agency": {
-          "tp": 40,
+          "tp": 39,
           "fp": 0,
-          "fn": 0,
+          "fn": 1,
           "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "recall": 0.975,
+          "f1": 0.9873
         },
         "budget_yuan": {
-          "tp": 40,
+          "tp": 39,
           "fp": 0,
-          "fn": 0,
+          "fn": 1,
           "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "recall": 0.975,
+          "f1": 0.9873
         },
         "bid_deadline": {
-          "tp": 40,
+          "tp": 39,
           "fp": 0,
-          "fn": 0,
+          "fn": 1,
           "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "recall": 0.975,
+          "f1": 0.9873
         }
       },
       "micro": {
-        "tp": 239,
+        "tp": 233,
         "fp": 1,
-        "fn": 1,
-        "precision": 0.9958,
-        "recall": 0.9958,
-        "f1": 0.9958
+        "fn": 7,
+        "precision": 0.9957,
+        "recall": 0.9708,
+        "f1": 0.9831
       },
-      "document_exact_match_rate": 0.975,
-      "mean_latency_ms_per_doc": 19961.89,
-      "mean_tokens_per_doc": 3913.8,
+      "document_exact_match_rate": 0.95,
+      "mean_latency_ms_per_doc": 27096.47,
+      "mean_tokens_per_doc": 4071.15,
       "evidence_dropped_count": 0,
-      "review_rate": 0.0,
-      "review_catch_rate": 0.0
+      "review_rate": 0.025,
+      "review_catch_rate": 0.8571
+    }
+  ],
+  "per_document": [
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747121",
+      "split": "dev",
+      "fields": {
+        "project_name": "重庆市医药卫生学校药剂专业软件采购",
+        "project_code": "FLQ26A00608",
+        "purchaser": "重庆市医药卫生学校",
+        "agency": "重庆市涪陵区公共资源交易中心",
+        "budget_yuan": 577200.0,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：重庆市医药卫生学校药剂专业软件采购",
+        "project_code": "项目号：FLQ26A00608",
+        "purchaser": "采购人：重庆市医药卫生学校",
+        "agency": "代理机构：重庆市涪陵区公共资源交易中心",
+        "budget_yuan": [
+          "预算金额：577,200.00元"
+        ],
+        "bid_deadline": "投标文件递交截止时间： 2026年12月15日 09:30"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 44031.50600998197,
+      "tokens": 4947
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747125",
+      "split": "test",
+      "fields": {
+        "project_name": "绍兴市越城区马山街道社区卫生服务中心2026年医用设备（康复设备）采购项目（重招）",
+        "project_code": "330602261291160000022-SXHY-2026CG-1117",
+        "purchaser": "绍兴市越城区马山街道社区卫生服务中心",
+        "agency": "绍兴衡业工程管理咨询有限公司",
+        "budget_yuan": 403000.0,
+        "bid_deadline": "2026-12-14 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：绍兴市越城区马山街道社区卫生服务中心2026年医用设备（康复设备）采购项目（重招）",
+        "project_code": "项目编号：330602261291160000022-SXHY-2026CG-1117",
+        "purchaser": "名 称：绍兴市越城区马山街道社区卫生服务中心",
+        "agency": "名 称：绍兴衡业工程管理咨询有限公司",
+        "budget_yuan": [
+          "预算金额（元）：403000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月14日 09:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 22773.124441999244,
+      "tokens": 4094
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747126",
+      "split": "test",
+      "fields": {
+        "project_name": "襄垣县2026年六座小型水库大坝防汛物资采购项目",
+        "project_code": "1404232026AGK00224",
+        "purchaser": "襄垣县水利局",
+        "agency": "山西建威兴盛工程项目管理有限公司",
+        "budget_yuan": 378400.0,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：襄垣县2026年六座小型水库大坝防汛物资采购项目",
+        "project_code": "项目编号：1404232026AGK00224",
+        "purchaser": "名 称：襄垣县水利局",
+        "agency": "名 称： 山西建威兴盛工程项目管理有限公司",
+        "budget_yuan": [
+          "预算金额（元）：378400"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 16750.519920984516,
+      "tokens": 2599
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747127",
+      "split": "dev",
+      "fields": {
+        "project_name": "闻喜县商汤文化博物馆建设项目空调设备采购项目",
+        "project_code": "1408232026AGK00209",
+        "purchaser": "闻喜县文化和旅游局",
+        "agency": "闻喜县政府采购中心",
+        "budget_yuan": 1268989.06,
+        "bid_deadline": "2026-12-17 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：闻喜县商汤文化博物馆建设项目空调设备采购项目",
+        "project_code": "项目编号：1408232026AGK00209",
+        "purchaser": "名 称：闻喜县文化和旅游局",
+        "agency": "名 称： 闻喜县政府采购中心",
+        "budget_yuan": [
+          "预算金额（元）：1268989.06"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月17日 09:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 17236.39912100043,
+      "tokens": 2595
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747130",
+      "split": "test",
+      "fields": {
+        "project_name": "临洮县畜牧兽医局2026年畜牧业发展肉牛肉羊增量提质项目",
+        "project_code": "GSMZY-202631-ZC",
+        "purchaser": "临洮县畜牧兽医局",
+        "agency": "甘肃铭智扬工程咨询有限公司",
+        "budget_yuan": 5028000.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：临洮县畜牧兽医局2026年畜牧业发展肉牛肉羊增量提质项目",
+        "project_code": "项目编号：GSMZY-202631-ZC",
+        "purchaser": "1.采购人信息 名称：临洮县畜牧兽医局",
+        "agency": "2.采购代理机构信息 名称：甘肃铭智扬工程咨询有限公司",
+        "budget_yuan": [
+          "预算金额：5,028,000.00元"
+        ],
+        "bid_deadline": "时间： 2026年12月15日 09时00分00秒 （北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 29959.831781015964,
+      "tokens": 4204
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747132",
+      "split": "test",
+      "fields": {
+        "project_name": "民权县南华街道办事处物业服务项目",
+        "project_code": "民财采招-2026-43",
+        "purchaser": "民权县南华街道办事处",
+        "agency": "安徽天瑜建设工程管理有限公司",
+        "budget_yuan": 2602790.0,
+        "bid_deadline": "2026-12-16 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：民权县南华街道办事处物业服务项目",
+        "project_code": "项目编号：民财采招-2026-43",
+        "purchaser": "名称：民权县南华街道办事处",
+        "agency": "名称：安徽天瑜建设工程管理有限公司",
+        "budget_yuan": [
+          "预算金额：2,602,790.00元"
+        ],
+        "bid_deadline": "2026年12月16日09时00分（北京时间）前递交投标文件"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 36359.02377901948,
+      "tokens": 4365
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747134",
+      "split": "dev",
+      "fields": {
+        "project_name": "山西省检验检测中心（山西省标准计量技术研究院）2027年检验检测保障服务项目",
+        "project_code": "1499002026CGK04205",
+        "purchaser": "山西省检验检测中心（山西省标准计量技术研究院）",
+        "agency": "并辉建设工程招标代理有限公司",
+        "budget_yuan": 30720000.0,
+        "bid_deadline": "2026-12-17 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：山西省检验检测中心（山西省标准计量技术研究院）2027年检验检测保障服务项目",
+        "project_code": "项目编号：1499002026CGK04205",
+        "purchaser": "名 称：山西省检验检测中心 （山西省标准计量技术研究院）",
+        "agency": "名 称： 并辉建设工程招标代理有限公司",
+        "budget_yuan": [
+          "预算金额（元）：30720000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月17日 09:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 22320.01745601883,
+      "tokens": 3280
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747138",
+      "split": "test",
+      "fields": {
+        "project_name": "开远市人民医院2026年第一批医疗设备采购项目（标段三）（二次）",
+        "project_code": "HHZC2026-G1-02660-YZGF-1856",
+        "purchaser": "开远市人民医院",
+        "agency": "云南招标股份有限公司",
+        "budget_yuan": 830000.0,
+        "bid_deadline": "2026-12-15 13:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：开远市人民医院2026年第一批医疗设备采购项目（标段三）（二次）",
+        "project_code": "项目编号：HHZC2026-G1-02660-YZGF-1856",
+        "purchaser": "名 称：开远市人民医院",
+        "agency": "名 称： 云南招标股份有限公司",
+        "budget_yuan": [
+          "预算金额（元）：830000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 13:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 25612.886160990456,
+      "tokens": 4238
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747139",
+      "split": "test",
+      "fields": {
+        "project_name": "云南省中医医院2026年第七十三批医疗设备采购项目",
+        "project_code": "YNZC2026-G1-07330-YYZX-0742",
+        "purchaser": "云南省中医医院",
+        "agency": "云南元大工程咨询有限责任公司",
+        "budget_yuan": 270000.0,
+        "bid_deadline": "2026-12-17 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：云南省中医医院2026年第七十三批医疗设备采购项目",
+        "project_code": "项目编号：YNZC2026-G1-07330-YYZX-0742",
+        "purchaser": "名 称：云南省中医医院",
+        "agency": "名 称： 云南元大工程咨询有限责任公司",
+        "budget_yuan": [
+          "预算金额（元）：270000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月17日 09:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 26357.228742999723,
+      "tokens": 3837
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747141",
+      "split": "dev",
+      "fields": {
+        "project_name": "2026年甘肃省庆阳市东南部陇东地区生态保护修复和水土流失综合治理项目合水县人工造林",
+        "project_code": "QYZC2026-0338",
+        "purchaser": "合水县自然资源局",
+        "agency": "甘肃荣瀚建设工程咨询有限公司",
+        "budget_yuan": 15246473.74,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：2026年甘肃省庆阳市东南部陇东地区生态保护修复和水土流失综合治理项目合水县人工造林",
+        "project_code": "项目编号：QYZC2026-0338",
+        "purchaser": "1.采购人信息 名称：合水县自然资源局",
+        "agency": "2.采购代理机构信息 名称：甘肃荣瀚建设工程咨询有限公司",
+        "budget_yuan": [
+          "预算金额：15,246,473.74元"
+        ],
+        "bid_deadline": "时间： 2026年12月15日 09时00分00秒 （北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 26219.14508700138,
+      "tokens": 5848
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747142",
+      "split": "test",
+      "fields": {
+        "project_name": "乌海市第七中学（乌海市第一中学分校）网络改造项目",
+        "project_code": "WHZCS-G-H-260091",
+        "purchaser": "乌海市第七中学（乌海市第一中学分校）",
+        "agency": "内蒙古华格项目管理咨询有限公司",
+        "budget_yuan": 1322713.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：乌海市第七中学(乌海市第一中学分校)网络改造项目",
+        "project_code": "项目编号：WHZCS-G-H-260091",
+        "purchaser": "1.采购人信息 名称：乌海市第七中学（乌海市第一中学分校）",
+        "agency": "2.采购代理机构信息 名称：内蒙古华格项目管理咨询有限公司",
+        "budget_yuan": [
+          "预算金额：1,322,713.00元"
+        ],
+        "bid_deadline": "2026年12月15日 09时00分00秒 （北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 39459.20187901356,
+      "tokens": 5234
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747144",
+      "split": "test",
+      "fields": {
+        "project_name": "坡头区市政综合服务市场化项目（园林市场化服务）",
+        "project_code": "GDWL-20260609GK",
+        "purchaser": "湛江市坡头区城市管理和综合执法局",
+        "agency": "广东威朗工程咨询有限公司",
+        "budget_yuan": 54702165.72,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：坡头区市政综合服务市场化项目（园林市场化服务）",
+        "project_code": "项目编号：GDWL-20260609GK",
+        "purchaser": "采购人信息 名 称：湛江市坡头区城市管理和综合执法局",
+        "agency": "采购代理机构信息 名 称：广东威朗工程咨询有限公司",
+        "budget_yuan": [
+          "预算金额：54,702,165.72元"
+        ],
+        "bid_deadline": "2026年12月15日 09时30分00秒 （北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 24011.97881597909,
+      "tokens": 3849
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747146",
+      "split": "dev",
+      "fields": {
+        "project_name": "武乡县2026年乡村批次建设用地报批项目",
+        "project_code": "1404292026CGK00106",
+        "purchaser": "武乡县自然资源局",
+        "agency": "山西麟越建设项目管理有限公司",
+        "budget_yuan": 3299009.81,
+        "bid_deadline": "2026-12-14 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：武乡县2026年乡村批次建设用地报批项目",
+        "project_code": "项目编号：1404292026CGK00106",
+        "purchaser": "名 称：武乡县自然资源局",
+        "agency": "名 称： 山西麟越建设项目管理有限公司",
+        "budget_yuan": [
+          "预算金额（元）：3299009.81"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月14日 09:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 28898.161318007624,
+      "tokens": 3878
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747147",
+      "split": "test",
+      "fields": {
+        "project_name": "放射诊断设备采购项目（二次）",
+        "project_code": "N5100012026002551",
+        "purchaser": "四川省骨科医院",
+        "agency": "四川国际招标有限责任公司",
+        "budget_yuan": 6000000.0,
+        "bid_deadline": "2026-12-17 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：放射诊断设备采购项目(二次)",
+        "project_code": "项目编号：N5100012026002551",
+        "purchaser": "1.采购人信息 名称：四川省骨科医院",
+        "agency": "2.采购代理机构信息 名称：四川国际招标有限责任公司",
+        "budget_yuan": [
+          "预算金额：6,000,000.00元"
+        ],
+        "bid_deadline": "时间：2026年12月17日 09时30分00秒（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 18343.24552002363,
+      "tokens": 3220
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747148",
+      "split": "test",
+      "fields": {
+        "project_name": "临夏市人民医院信息化软件订阅使用项目",
+        "project_code": "LXZC2122026398",
+        "purchaser": "临夏市人民医院",
+        "agency": "中公招采项目管理（甘肃）有限公司",
+        "budget_yuan": 2800000.0,
+        "bid_deadline": "2026-12-15 09:20"
+      },
+      "evidence": {
+        "project_name": "项目名称：临夏市人民医院信息化软件订阅使用项目",
+        "project_code": "项目编号：LXZC2122026398",
+        "purchaser": "采购人信息 名称：临夏市人民医院",
+        "agency": "采购代理机构信息 名称：中公招采项目管理（甘肃）有限公司",
+        "budget_yuan": [
+          "预算金额：2,800,000.00元"
+        ],
+        "bid_deadline": "2026年12月15日 09时20分00秒 （北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 25584.069592994638,
+      "tokens": 3154
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747151",
+      "split": "dev",
+      "fields": {
+        "project_name": "武乡县林业局森林草原消防专业队政府购买服务",
+        "project_code": "1404292026CGK00105",
+        "purchaser": "武乡县林业局",
+        "agency": "山西益正厚德工程项目管理有限公司",
+        "budget_yuan": 8644536.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：武乡县林业局森林草原消防专业队政府购买服务",
+        "project_code": "项目编号：1404292026CGK00105",
+        "purchaser": "名 称：武乡县林业局",
+        "agency": "名 称： 山西益正厚德工程项目管理有限公司",
+        "budget_yuan": [
+          "预算金额（元）：8644536"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 17267.291397001827,
+      "tokens": 2660
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747153",
+      "split": "test",
+      "fields": {
+        "project_name": "中心供氧、负压系统和微电脑呼叫系统拆除安装及改造等采购项目（二次）",
+        "project_code": "N5100012026003185",
+        "purchaser": "四川省骨科医院",
+        "agency": "四川国际招标有限责任公司",
+        "budget_yuan": 150000.0,
+        "bid_deadline": "2026-12-17 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：中心供氧、负压系统和微电脑呼叫系统拆除安装及改造等采购项目(二次)",
+        "project_code": "项目编号：N5100012026003185",
+        "purchaser": "1.采购人信息 名称：四川省骨科医院",
+        "agency": "2.采购代理机构信息 名称：四川国际招标有限责任公司",
+        "budget_yuan": [
+          "预算金额：150,000.00元"
+        ],
+        "bid_deadline": "时间：2026年12月17日 09时30分00秒（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 39124.305811012164,
+      "tokens": 4620
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747165",
+      "split": "test",
+      "fields": {
+        "project_name": "大连市第十三中学升级改造艺术教学器材采购项目",
+        "project_code": "TLCG2026-11002",
+        "purchaser": "大连市沙河口区教育局",
+        "agency": "通利晟信管理咨询有限公司",
+        "budget_yuan": 669900.0,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：大连市第十三中学升级改造艺术教学器材采购项目",
+        "project_code": "项目编号：TLCG2026-11002",
+        "purchaser": "名 称：大连市沙河口区教育局",
+        "agency": "名 称：通利晟信管理咨询有限公司",
+        "budget_yuan": [
+          "预算金额(元)：669900"
+        ],
+        "bid_deadline": "2026年12月15日 09:30(北京时间)"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 33413.23841799749,
+      "tokens": 3954
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747174",
+      "split": "dev",
+      "fields": {
+        "project_name": "2026年区域性福利院购买服务项目",
+        "project_code": "421224202601000441",
+        "purchaser": "通山县民政局",
+        "agency": "通山县民政局",
+        "budget_yuan": 2637200.0,
+        "bid_deadline": "2026-12-16 10:00"
+      },
+      "evidence": {
+        "project_name": "3、项目名称：2026年区域性福利院购买服务项目",
+        "project_code": "1、项目编号：421224202601000441",
+        "purchaser": "1、采购人信息\n 名 称：通山县民政局",
+        "agency": "2、采购代理机构信息\n 名 称：通山县民政局",
+        "budget_yuan": [
+          "5、预算金额：263.720000(万元)"
+        ],
+        "bid_deadline": "2、截止时间：2026年12月16日10点00分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 19077.698150998913,
+      "tokens": 3408
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747176",
+      "split": "test",
+      "fields": {
+        "project_name": "社区矫正、刑满释放安置帮教工作服务项目",
+        "project_code": "ZKQ2026-030804755ZF(W)",
+        "purchaser": "中共武汉东湖新技术开发区工作委员会政法委员会",
+        "agency": "中科器湖北有限公司",
+        "budget_yuan": 3700000.0,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "3、项目名称：社区矫正、刑满释放安置帮教工作服务项目",
+        "project_code": "1、项目编号：ZKQ2026-030804755ZF(W)",
+        "purchaser": "名 称：中共武汉东湖新技术开发区工作委员会政法委员会",
+        "agency": "名 称：中科器湖北有限公司",
+        "budget_yuan": [
+          "5、预算金额：370.000000(万元)"
+        ],
+        "bid_deadline": "2、截止时间：2026年12月15日09点30分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 32986.96175898658,
+      "tokens": 4232
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747178",
+      "split": "test",
+      "fields": {
+        "project_name": "天山区纪委监委大数据中心设备采购及安装项目",
+        "project_code": "2026-1123-165236458",
+        "purchaser": "中国共产党乌鲁木齐市天山区纪律检查委员会",
+        "agency": "新疆城基宏业工程管理咨询有限公司",
+        "budget_yuan": 956791.02,
+        "bid_deadline": "2026-12-15 11:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：天山区纪委监委大数据中心设备采购及安装项目",
+        "project_code": "项目编号：2026-1123-165236458",
+        "purchaser": "名 称：中国共产党乌鲁木齐市天山区纪律检查委员会",
+        "agency": "名 称：新疆城基宏业工程管理咨询有限公司",
+        "budget_yuan": [
+          "预算金额（元）：956791.02"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 11:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 17797.351970046293,
+      "tokens": 3354
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747180",
+      "split": "dev",
+      "fields": {
+        "project_name": "空气质量监测设备采购项目",
+        "project_code": "1411222026AGK00108",
+        "purchaser": "吕梁市生态环境局交城分局",
+        "agency": "中盛远大工程项目管理（山西）有限公司",
+        "budget_yuan": 2538500.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：空气质量监测设备采购项目",
+        "project_code": "项目编号：1411222026AGK00108",
+        "purchaser": "名 称：吕梁市生态环境局交城分局",
+        "agency": "名 称： 中盛远大工程项目管理（山西）有限公司",
+        "budget_yuan": [
+          "预算金额（元）：2538500"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 37637.47966999654,
+      "tokens": 3820
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747186",
+      "split": "test",
+      "fields": {
+        "project_name": "2026年度林木良种培育项目",
+        "project_code": "330781263020090000006-ZJZLZC2026101",
+        "purchaser": "兰溪市林场",
+        "agency": "浙江中兰工程项目管理有限公司",
+        "budget_yuan": 954500.0,
+        "bid_deadline": "2026-12-16 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：2026年度林木良种培育项目",
+        "project_code": "项目编号：330781263020090000006-ZJZLZC2026101",
+        "purchaser": "名 称：兰溪市林场",
+        "agency": "名 称：浙江中兰工程项目管理有限公司",
+        "budget_yuan": [
+          "预算金额（元）：954500"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月16日 09:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 25342.915732006077,
+      "tokens": 4190
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747198",
+      "split": "test",
+      "fields": {
+        "project_name": "辽宁省考古研学旅游示范活动",
+        "project_code": "JH26-210000-84446",
+        "purchaser": "辽宁省文化和旅游厅",
+        "agency": "中招国际招标有限公司",
+        "budget_yuan": 2000000.0,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：辽宁省考古研学旅游示范活动",
+        "project_code": "项目编号：JH26-210000-84446",
+        "purchaser": "名 称： 辽宁省文化和旅游厅",
+        "agency": "名 称：中招国际招标有限公司",
+        "budget_yuan": [
+          "预算金额（元）：2000000"
+        ],
+        "bid_deadline": "2026年12月15日 09时30分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 14822.760101989843,
+      "tokens": 2905
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747199",
+      "split": "dev",
+      "fields": {
+        "project_name": "大红旗镇乔家窝堡村购买农业机械设备出租项目",
+        "project_code": "JH26-210181-00141",
+        "purchaser": "新民市大红旗镇人民政府",
+        "agency": "辽宁正润招标代理有限公司",
+        "budget_yuan": 1000000.0,
+        "bid_deadline": "2026-12-15 10:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：大红旗镇乔家窝堡村购买农业机械设备出租项目",
+        "project_code": "项目编号：JH26-210181-00141",
+        "purchaser": "名 称： 新民市大红旗镇人民政府",
+        "agency": "名 称：辽宁正润招标代理有限公司",
+        "budget_yuan": [
+          "预算金额（元）：130000",
+          "预算金额（元）：480000",
+          "预算金额（元）：390000"
+        ],
+        "bid_deadline": "2026年12月15日 10时00分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 36112.748004030436,
+      "tokens": 6310
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747203",
+      "split": "test",
+      "fields": {
+        "project_name": "辽宁中医药大学附属医院“沈阳市中医药传承创新发展示范项目”-第三包",
+        "project_code": "JH26-210000-79105",
+        "purchaser": "辽宁中医药大学附属医院",
+        "agency": "依诚招标有限公司",
+        "budget_yuan": 790000.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：辽宁中医药大学附属医院“沈阳市中医药传承创新发展示范项目”-第三包",
+        "project_code": "项目编号：JH26-210000-79105",
+        "purchaser": "名 称： 辽宁中医药大学附属医院",
+        "agency": "名 称：依诚招标有限公司",
+        "budget_yuan": [
+          "预算金额（元）：540000",
+          "预算金额（元）：250000"
+        ],
+        "bid_deadline": "2026年12月15日 09时00分"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 38091.34260896826,
+      "tokens": 8169
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747207",
+      "split": "test",
+      "fields": {
+        "project_name": "辽宁中医药大学附属医院\"中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目\"设备购置-第五包",
+        "project_code": "JH26-210000-79112",
+        "purchaser": "辽宁中医药大学附属医院",
+        "agency": "乔泰工程管理集团有限公司",
+        "budget_yuan": 1228000.0,
+        "bid_deadline": "2026-12-16 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：辽宁中医药大学附属医院\"中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目\"设备购置-第五包",
+        "project_code": "项目编号：JH26-210000-79112",
+        "purchaser": "名 称： 辽宁中医药大学附属医院",
+        "agency": "名 称：乔泰工程管理集团有限公司",
+        "budget_yuan": [
+          "预算金额（元）：628000",
+          "预算金额（元）：600000"
+        ],
+        "bid_deadline": "2026年12月16日 09时00分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 31395.104702038225,
+      "tokens": 10374
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747208",
+      "split": "dev",
+      "fields": {
+        "project_name": "辽宁中医药大学附属医院“中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目”设备购置-第七包",
+        "project_code": "JH26-210000-79116",
+        "purchaser": "辽宁中医药大学附属医院",
+        "agency": "乔泰工程管理集团有限公司",
+        "budget_yuan": 500000.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：辽宁中医药大学附属医院“中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目”设备购置-第七包",
+        "project_code": "项目编号：JH26-210000-79116",
+        "purchaser": "名 称： 辽宁中医药大学附属医院",
+        "agency": "名 称：乔泰工程管理集团有限公司",
+        "budget_yuan": [
+          "预算金额（元）：240000",
+          "预算金额（元）：260000"
+        ],
+        "bid_deadline": "2026年12月15日 09时00分"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 52667.37905499758,
+      "tokens": 7637
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747211",
+      "split": "test",
+      "fields": {
+        "project_name": null,
+        "project_code": null,
+        "purchaser": null,
+        "agency": null,
+        "budget_yuan": null,
+        "bid_deadline": null
+      },
+      "evidence": {
+        "project_name": null,
+        "project_code": null,
+        "purchaser": null,
+        "agency": null,
+        "budget_yuan": null,
+        "bid_deadline": null
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [
+        "project_name",
+        "project_code",
+        "purchaser",
+        "agency",
+        "budget_yuan",
+        "bid_deadline"
+      ],
+      "issues": [
+        "budget_yuan: must be in (0, 100000000000)",
+        "bid_deadline: must parse to a date in 2020–2035",
+        "purchaser: must be non-empty",
+        "project_name: must be non-empty"
+      ],
+      "evidence_dropped": [],
+      "latency_ms": 60047.013583010994,
+      "tokens": 0
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747216",
+      "split": "test",
+      "fields": {
+        "project_name": "2027年精河县政府机关食堂和县级周转楼食堂餐饮服务项目",
+        "project_code": "JHXZHJGK2026-024",
+        "purchaser": "精河县机关事务服务中心",
+        "agency": "中环建（北京）工程管理有限责任公司",
+        "budget_yuan": 4000000.0,
+        "bid_deadline": "2026-12-14 11:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：2027年精河县政府机关食堂和县级周转楼食堂餐饮服务项目",
+        "project_code": "项目编号：JHXZHJGK2026-024",
+        "purchaser": "名 称：精河县机关事务服务中心",
+        "agency": "名 称：中环建（北京）工程管理有限责任公司",
+        "budget_yuan": [
+          "预算金额（元）：4000000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月14日 11:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 17060.883565049153,
+      "tokens": 3265
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747234",
+      "split": "dev",
+      "fields": {
+        "project_name": "湘潭大学机力院先进制造与智能化控制实验平台建设项目",
+        "project_code": "CGXM2026430000006314",
+        "purchaser": "湘潭大学",
+        "agency": "湖南建业管理咨询有限公司",
+        "budget_yuan": 1565195.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "采购项目名称：湘潭大学机力院先进制造与智能化控制实验平台建设项目",
+        "project_code": "采购项目编号：CGXM2026430000006314",
+        "purchaser": "名称：湘潭大学",
+        "agency": "名称：湖南建业管理咨询有限公司",
+        "budget_yuan": [
+          "湘潭大学机力院先进制造与智能化控制实验平台建设项目 1565195 其他仪器仪表 详见招标文件 1 1565195"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09点00分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 29651.33856999455,
+      "tokens": 3990
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747235",
+      "split": "test",
+      "fields": {
+        "project_name": "湘潭大学商学院2026年本科教学设备采购项目",
+        "project_code": "CGXM2026430000006297",
+        "purchaser": "湘潭大学",
+        "agency": "湖南建业管理咨询有限公司",
+        "budget_yuan": 886730.1,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "采购项目名称：湘潭大学商学院2026年本科教学设备采购项目",
+        "project_code": "采购项目编号：CGXM2026430000006297",
+        "purchaser": "名称：湘潭大学",
+        "agency": "名称：湖南建业管理咨询有限公司",
+        "budget_yuan": [
+          "湘潭大学商学院2026年本科教学设备采购项目 886730.1 教学设备 详见招标文件 1 886730.1"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09点00分"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 28353.213531023357,
+      "tokens": 3914
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747240",
+      "split": "test",
+      "fields": {
+        "project_name": "人工智能学院网络技术实训室建设项目",
+        "project_code": "JSZC-320000-JTTZ-G2026-0031",
+        "purchaser": "江苏农牧科技职业学院",
+        "agency": "江苏建泰工程项目管理有限公司",
+        "budget_yuan": 1560000.0,
+        "bid_deadline": "2026-12-16 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：人工智能学院网络技术实训室建设项目",
+        "project_code": "项目编号：JSZC-320000-JTTZ-G2026-0031",
+        "purchaser": "单位名称：江苏农牧科技职业学院",
+        "agency": "单位名称：江苏建泰工程项目管理有限公司",
+        "budget_yuan": [
+          "预算金额：156.000000万元"
+        ],
+        "bid_deadline": "并于2026-12-16 09:00 （北京时间）前递交投标文件"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 20357.543609978165,
+      "tokens": 3076
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747245",
+      "split": "dev",
+      "fields": {
+        "project_name": "巴里坤县基础教育提质项目-人工智能融合教室设备采购",
+        "project_code": "GGZY-(GK)CG2026039",
+        "purchaser": "巴里坤哈萨克自治县教育局",
+        "agency": "哈密市公共资源交易服务中心（巴里坤县）",
+        "budget_yuan": 11206900.0,
+        "bid_deadline": "2026-12-15 10:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：巴里坤县基础教育提质项目-人工智能融合教室设备采购",
+        "project_code": "项目编号：GGZY-（GK）CG2026039",
+        "purchaser": "名 称：巴里坤哈萨克自治县教育局",
+        "agency": "名 称：哈密市公共资源交易服务中心(巴里坤县)",
+        "budget_yuan": [
+          "预算金额（元）：11206900"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 10:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 18693.024785025045,
+      "tokens": 3356
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747255",
+      "split": "test",
+      "fields": {
+        "project_name": "侯马市人民医院健康体重管理中心购置设备项目",
+        "project_code": "1410812026AGK00108",
+        "purchaser": "侯马市人民医院",
+        "agency": "山西华信伟业招标代理有限公司",
+        "budget_yuan": 1209900.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：侯马市人民医院健康体重管理中心购置设备项目",
+        "project_code": "项目编号：1410812026AGK00108",
+        "purchaser": "名 称：侯马市人民医院",
+        "agency": "名 称： 山西华信伟业招标代理有限公司",
+        "budget_yuan": [
+          "预算金额（元）：1209900"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 15653.11383799417,
+      "tokens": 2762
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747258",
+      "split": "test",
+      "fields": {
+        "project_name": "安徽医科大学新医科高能级产学研平台设备更新项目",
+        "project_code": "FSKY340001202610854号/ZF2026-35-1476",
+        "purchaser": "安徽医科大学",
+        "agency": "安徽省招标集团股份有限公司",
+        "budget_yuan": 6800000.0,
+        "bid_deadline": "2026-12-14 14:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：安徽医科大学新医科高能级产学研平台设备更新项目",
+        "project_code": "项目编号：FSKY340001202610854号/ZF2026-35-1476",
+        "purchaser": "名 称：安徽医科大学",
+        "agency": "名 称：安徽省招标集团股份有限公司",
+        "budget_yuan": [
+          "预算金额：680万元"
+        ],
+        "bid_deadline": "2026年12月14日14点30分（北京时间）前提交投标文件"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 27165.018839994445,
+      "tokens": 3697
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747259",
+      "split": "dev",
+      "fields": {
+        "project_name": "中医药传承创新发展示范项目设备一批",
+        "project_code": "[350401]FJBWZB[GK]2026001",
+        "purchaser": "三明市第一医院",
+        "agency": "福建骉旺招标代理有限公司",
+        "budget_yuan": 5160000.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：中医药传承创新发展示范项目设备一批",
+        "project_code": "项目编号：[350401]FJBWZB[GK]2026001",
+        "purchaser": "1.采购人信息 名称：三明市第一医院",
+        "agency": "2.采购代理机构信息（如有） 名称：福建骉旺招标代理有限公司",
+        "budget_yuan": [
+          "预算金额：5,160,000.00元"
+        ],
+        "bid_deadline": "2026-12-15 09:00:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 23728.011075989343,
+      "tokens": 3824
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747282",
+      "split": "test",
+      "fields": {
+        "project_name": "海南自由贸易港知识产权法院审判法庭综合大楼信息化建设项目",
+        "project_code": "HNGP2026-0167",
+        "purchaser": "海南自由贸易港知识产权法院",
+        "agency": "海南省政府采购中心",
+        "budget_yuan": 10223742.41,
+        "bid_deadline": "2026-12-15 08:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：海南自由贸易港知识产权法院审判法庭综合大楼信息化建设项目",
+        "project_code": "项目编号：HNGP2026-0167",
+        "purchaser": "采购人信息 名称：海南自由贸易港知识产权法院",
+        "agency": "采购代理机构信息（如有） 名称：海南省政府采购中心",
+        "budget_yuan": [
+          "预算金额：10,223,742.41元"
+        ],
+        "bid_deadline": "2026-12-15 08:30:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 26523.786560981534,
+      "tokens": 4975
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747285",
+      "split": "test",
+      "fields": {
+        "project_name": "平顺县退役军人事务局2027年春节优抚对象慰问品采购",
+        "project_code": "1404252026AGK00093",
+        "purchaser": "平顺县退役军人事务局",
+        "agency": "远瓴（北京）国际工程咨询有限公司",
+        "budget_yuan": 669800.0,
+        "bid_deadline": "2026-12-14 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：平顺县退役军人事务局2027年春节优抚对象慰问品采购",
+        "project_code": "项目编号：1404252026AGK00093",
+        "purchaser": "名 称：平顺县退役军人事务局",
+        "agency": "名 称： 远瓴（北京）国际工程咨询有限公司",
+        "budget_yuan": [
+          "预算金额（元）：669800"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月14日 09:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 33935.70160801755,
+      "tokens": 3745
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747294",
+      "split": "dev",
+      "fields": {
+        "project_name": "甘肃省人民检察院检察官法警服装采购项目",
+        "project_code": "甘财采备字[2026]15551号",
+        "purchaser": "甘肃省人民检察院",
+        "agency": "甘肃西招国际招标有限公司",
+        "budget_yuan": 1950232.8,
+        "bid_deadline": "2026-12-15 10:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：甘肃省人民检察院检察官法警服装采购项目",
+        "project_code": "项目编号：甘财采备字[2026]15551号",
+        "purchaser": "1.采购人信息 名称：甘肃省人民检察院",
+        "agency": "2.采购代理机构信息 名称：甘肃西招国际招标有限公司",
+        "budget_yuan": [
+          "预算金额：1,950,232.80元"
+        ],
+        "bid_deadline": "2026年12月15日 10时00分00秒 （北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 29016.328481025994,
+      "tokens": 3653
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747298",
+      "split": "test",
+      "fields": {
+        "project_name": "宁夏回族自治区宁东医院检验科相关设备采购项目",
+        "project_code": "ZJXD-2026/A-298",
+        "purchaser": "宁夏回族自治区宁东医院",
+        "agency": "宁夏中际信达项目管理有限公司",
+        "budget_yuan": 890000.0,
+        "bid_deadline": "2026-12-16 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称： 宁夏回族自治区宁东医院检验科相关设备采购项目",
+        "project_code": "项目编号： ZJXD-2026/A-298",
+        "purchaser": "名 称： 宁夏回族自治区宁东医院",
+        "agency": "名 称： 宁夏中际信达项目管理有限公司",
+        "budget_yuan": [
+          "预算金额（元）： 890000.00"
+        ],
+        "bid_deadline": "2026-12-16 09:00:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 20843.35576504236,
+      "tokens": 4091
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747299",
+      "split": "test",
+      "fields": {
+        "project_name": "先进能源科学与技术广东省实验室核孔膜终端自动化续接及转运系统采购项目",
+        "project_code": "OITC-G260884038",
+        "purchaser": "先进能源科学与技术广东省实验室",
+        "agency": "东方国际招标有限责任公司",
+        "budget_yuan": 6600000.0,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：先进能源科学与技术广东省实验室核孔膜终端自动化续接及转运系统采购项目",
+        "project_code": "项目编号：OITC-G260884038",
+        "purchaser": "名 称：先进能源科学与技术广东省实验室",
+        "agency": "名 称：东方国际招标有限责任公司",
+        "budget_yuan": [
+          "预算金额：6,600,000.00元"
+        ],
+        "bid_deadline": "2026年12月15日 09时30分00秒 （北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 19348.532251024153,
+      "tokens": 3504
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747300",
+      "split": "dev",
+      "fields": {
+        "project_name": "曲靖市妇幼保健院智慧医院信息化建设系统集成实施服务采购项目",
+        "project_code": "QJZC2026-G3-01831-YZGF-1803",
+        "purchaser": "曲靖市妇幼保健院",
+        "agency": "云南招标股份有限公司",
+        "budget_yuan": 28542500.0,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：曲靖市妇幼保健院智慧医院信息化建设系统集成实施服务采购项目",
+        "project_code": "项目编号：QJZC2026-G3-01831-YZGF-1803",
+        "purchaser": "名 称：曲靖市妇幼保健院",
+        "agency": "名 称： 云南招标股份有限公司",
+        "budget_yuan": [
+          "预算金额（元）：28542500"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 38936.17046601139,
+      "tokens": 4556
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747305",
+      "split": "test",
+      "fields": {
+        "project_name": "内蒙古自治区医疗保障信息平台运行维护（基础环境）",
+        "project_code": "NMGZC-G-F-260899",
+        "purchaser": "内蒙古自治区大数据中心",
+        "agency": "内蒙古自治区公共资源交易中心",
+        "budget_yuan": 15014500.0,
+        "bid_deadline": "2026-12-17 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：内蒙古自治区医疗保障信息平台运行维护（基础环境）",
+        "project_code": "项目编号：NMGZC-G-F-260899",
+        "purchaser": "名称：内蒙古自治区大数据中心",
+        "agency": "名称：内蒙古自治区公共资源交易中心",
+        "budget_yuan": [
+          "预算金额：15,014,500.00元"
+        ],
+        "bid_deadline": "2026年12月17日 09时30分00秒 （北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 15434.185509977397,
+      "tokens": 3475
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747308",
+      "split": "test",
+      "fields": {
+        "project_name": "广州市番禺区人民法院2027-2028年物业管理服务项目",
+        "project_code": "CZ2026-1530",
+        "purchaser": "广州市番禺区人民法院",
+        "agency": "广州市政府采购中心",
+        "budget_yuan": 10950000.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：广州市番禺区人民法院2027-2028年物业管理服务项目",
+        "project_code": "项目编号：CZ2026-1530",
+        "purchaser": "1.采购人信息 名 称：广州市番禺区人民法院",
+        "agency": "2.采购代理机构信息 名 称：广州市政府采购中心",
+        "budget_yuan": [
+          "预算金额：10,950,000.00元"
+        ],
+        "bid_deadline": "并于 2026年12月15日 09时00分 （北京时间）前递交投标文件"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 19826.986650004983,
+      "tokens": 3472
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747317",
+      "split": "dev",
+      "fields": {
+        "project_name": "昆明理工大学附属小学数智化校园平台升级建设项目",
+        "project_code": "YNZC2026-G1-07329-YNGH-0483",
+        "purchaser": "昆明理工大学附属小学",
+        "agency": "云南国合建设招标咨询有限公司",
+        "budget_yuan": 1193000.0,
+        "bid_deadline": "2026-12-17 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：昆明理工大学附属小学数智化校园平台升级建设项目",
+        "project_code": "项目编号：YNZC2026-G1-07329-YNGH-0483",
+        "purchaser": "名 称：昆明理工大学附属小学",
+        "agency": "名 称： 云南国合建设招标咨询有限公司",
+        "budget_yuan": [
+          "预算金额（元）：1193000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月17日 09:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 14061.335424950812,
+      "tokens": 3120
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747320",
+      "split": "test",
+      "fields": {
+        "project_name": "吉木萨尔县厦吉协作产业园建设项目（一期）",
+        "project_code": "JZZB-2026-67-HW",
+        "purchaser": "吉木萨尔县三台镇人民政府",
+        "agency": "新疆晶智工程项目管理有限公司",
+        "budget_yuan": 6049600.0,
+        "bid_deadline": "2026-12-15 11:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：吉木萨尔县厦吉协作产业园建设项目(一期)",
+        "project_code": "项目编号：JZZB-2026-67-HW",
+        "purchaser": "名 称：吉木萨尔县三台镇人民政府",
+        "agency": "名 称：新疆晶智工程项目管理有限公司",
+        "budget_yuan": [
+          "预算金额（元）：6049600"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 11:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 33221.89624502789,
+      "tokens": 4642
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747325",
+      "split": "test",
+      "fields": {
+        "project_name": "广州市珠江前航道边滩清淤项目施工",
+        "project_code": "440101-2026-18894",
+        "purchaser": "广州市珠江前后航道流域事务中心",
+        "agency": "广东粤信项目管理有限公司",
+        "budget_yuan": 26970746.69,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：广州市珠江前航道边滩清淤项目施工",
+        "project_code": "项目编号：440101-2026-18894",
+        "purchaser": "1.采购人信息 名 称：广州市珠江前后航道流域事务中心",
+        "agency": "2.采购代理机构信息 名 称：广东粤信项目管理有限公司",
+        "budget_yuan": [
+          "预算金额：26,970,746.69元"
+        ],
+        "bid_deadline": "2026年12月15日 09时30分00秒 （北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 30137.82459095819,
+      "tokens": 4245
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747327",
+      "split": "dev",
+      "fields": {
+        "project_name": "粤港澳大湾区（广东）创新创业孵化基地2027—2029年物业管理服务项目",
+        "project_code": "CZ2026-1737",
+        "purchaser": "广州市天河区人力资源和社会保障局",
+        "agency": "广州市政府采购中心",
+        "budget_yuan": 6000000.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：粤港澳大湾区（广东）创新创业孵化基地2027—2029年物业管理服务项目",
+        "project_code": "项目编号：CZ2026-1737",
+        "purchaser": "1.采购人信息 名 称：广州市天河区人力资源和社会保障局",
+        "agency": "2.采购代理机构信息 名 称：广州市政府采购中心",
+        "budget_yuan": [
+          "预算金额：6,000,000.00元"
+        ],
+        "bid_deadline": "2026年12月15日 09时00分"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 41483.56190696359,
+      "tokens": 4921
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747330",
+      "split": "test",
+      "fields": {
+        "project_name": "粤港澳大湾区（广东）创新创业孵化基地2027—2029年运营服务项目",
+        "project_code": "1210-2641YDZB10306",
+        "purchaser": "广州市天河区人力资源和社会保障局",
+        "agency": "广东有德招标采购有限公司",
+        "budget_yuan": 9000000.0,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：粤港澳大湾区（广东）创新创业孵化基地2027—2029年运营服务项目",
+        "project_code": "项目编号：1210-2641YDZB10306",
+        "purchaser": "1.采购人信息 名 称：广州市天河区人力资源和社会保障局",
+        "agency": "2.采购代理机构信息 名 称：广东有德招标采购有限公司",
+        "budget_yuan": [
+          "预算金额：9,000,000.00元"
+        ],
+        "bid_deadline": "2026年12月15日 09时30分00秒 （北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 22144.018166000023,
+      "tokens": 3767
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747331",
+      "split": "test",
+      "fields": {
+        "project_name": "酒泉市玄奘之路户外运动目的地（戈壁清泉）综合服务设施建设项目设计",
+        "project_code": "GZZFCG[2026]159号",
+        "purchaser": "瓜州县文体广电和旅游局",
+        "agency": "甘肃全标项目管理有限公司",
+        "budget_yuan": 2120000.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：酒泉市玄奘之路户外运动目的地（戈壁清泉）综合服务设施建设项目设计",
+        "project_code": "项目编号：GZZFCG[2026]159号",
+        "purchaser": "采购人信息 名称：瓜州县文体广电和旅游局",
+        "agency": "采购代理机构信息 名称：甘肃全标项目管理有限公司",
+        "budget_yuan": [
+          "预算金额：2,120,000.00元"
+        ],
+        "bid_deadline": "2026年12月15日 09时00分 （北京时间）前递交投标文件"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 41670.96096399473,
+      "tokens": 5286
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747334",
+      "split": "dev",
+      "fields": {
+        "project_name": "祁县机关事务服务中心办公用房及其附属用房租赁服务项目（三次）",
+        "project_code": "1407272026CGK00112",
+        "purchaser": "祁县机关事务服务中心",
+        "agency": "中招神舟项目管理有限公司",
+        "budget_yuan": 8190000.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：祁县机关事务服务中心办公用房及其附属用房租赁服务项目（三次）",
+        "project_code": "项目编号：1407272026CGK00112",
+        "purchaser": "名 称：祁县机关事务服务中心",
+        "agency": "名 称： 中招神舟项目管理有限公司",
+        "budget_yuan": [
+          "预算金额（元）：8190000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09:00（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 19127.790087019093,
+      "tokens": 2807
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747341",
+      "split": "test",
+      "fields": {
+        "project_name": "宜昌市住房和城市更新局宜昌市城市更新行动技术咨询服务采购项目",
+        "project_code": "420501202601000864",
+        "purchaser": "宜昌市住房和城市更新局本级",
+        "agency": "湖北聚信建设工程项目管理有限公司",
+        "budget_yuan": 21981000.0,
+        "bid_deadline": "2026-12-15 10:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：宜昌市住房和城市更新局宜昌市城市更新行动技术咨询服务采购项目",
+        "project_code": "项目编号：420501202601000864",
+        "purchaser": "名 称：宜昌市住房和城市更新局本级",
+        "agency": "名 称：湖北聚信建设工程项目管理有限公司",
+        "budget_yuan": [
+          "预算金额：2198.1000000000(万元)"
+        ],
+        "bid_deadline": "截止时间：2026年12月15日10点00分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 33117.48119397089,
+      "tokens": 4244
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747342",
+      "split": "test",
+      "fields": {
+        "project_name": "湖北省高级人民法院审判法庭和诉讼服务综合楼信息化建设项目第二包",
+        "project_code": "EZC-2026-ZX1140-02",
+        "purchaser": "湖北省高级人民法院",
+        "agency": "湖北省公共资源交易中心（湖北省政府采购中心）",
+        "budget_yuan": 25432476.53,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "3、项目名称：湖北省高级人民法院审判法庭和诉讼服务综合楼信息化建设项目第二包",
+        "project_code": "1、项目编号：EZC-2026-ZX1140-02",
+        "purchaser": "名 称：湖北省高级人民法院",
+        "agency": "名 称：湖北省公共资源交易中心（湖北省政府采购中心）",
+        "budget_yuan": [
+          "5、预算金额：2543.247653(万元)"
+        ],
+        "bid_deadline": "2、截止时间：2026年12月15日09点30分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 40035.71848903084,
+      "tokens": 4507
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747344",
+      "split": "dev",
+      "fields": {
+        "project_name": "湖北省高级人民法院审判法庭和诉讼服务综合楼信息化建设项目第一包",
+        "project_code": "EZC-2026-ZX1140-01",
+        "purchaser": "湖北省高级人民法院",
+        "agency": "湖北省公共资源交易中心（湖北省政府采购中心）",
+        "budget_yuan": 24856523.47,
+        "bid_deadline": "2026-12-15 09:30"
+      },
+      "evidence": {
+        "project_name": "3、项目名称：湖北省高级人民法院审判法庭和诉讼服务综合楼信息化建设项目第一包",
+        "project_code": "1、项目编号：EZC-2026-ZX1140-01",
+        "purchaser": "名 称：湖北省高级人民法院",
+        "agency": "名 称：湖北省公共资源交易中心（湖北省政府采购中心）",
+        "budget_yuan": [
+          "5、预算金额：2485.652347(万元)"
+        ],
+        "bid_deadline": "2、截止时间：2026年12月15日09点30分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 27782.889269001316,
+      "tokens": 3722
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747358",
+      "split": "test",
+      "fields": {
+        "project_name": "浙江大学医学院附属儿童医院一次性奶瓶奶嘴",
+        "project_code": "330000263210180000205-ZJ-2633715",
+        "purchaser": "浙江大学医学院附属儿童医院",
+        "agency": "浙江国际招投标有限公司",
+        "budget_yuan": 1400000.0,
+        "bid_deadline": "2026-12-17 13:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：浙江大学医学院附属儿童医院一次性奶瓶奶嘴",
+        "project_code": "项目编号：330000263210180000205-ZJ-2633715",
+        "purchaser": "名 称：浙江大学医学院附属儿童医院",
+        "agency": "名 称：浙江国际招投标有限公司",
+        "budget_yuan": [
+          "预算金额（元）：1400000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月17日 13:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 13232.0088709821,
+      "tokens": 3515
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747359",
+      "split": "test",
+      "fields": {
+        "project_name": "杭州技师学院新能源汽车检测与维修专业实训设备采购",
+        "project_code": "330100264120150000034",
+        "purchaser": "杭州技师学院（杭州交通高级技工学校）",
+        "agency": "浙江天成项目管理有限公司",
+        "budget_yuan": 2200000.0,
+        "bid_deadline": "2026-12-14 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：杭州技师学院新能源汽车检测与维修专业实训设备采购",
+        "project_code": "项目编号：330100264120150000034",
+        "purchaser": "名 称：杭州技师学院（杭州交通高级技工学校）",
+        "agency": "名 称：浙江天成项目管理有限公司",
+        "budget_yuan": [
+          "预算金额（元）：2200000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月14日 09:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 19513.82948301034,
+      "tokens": 3505
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747360",
+      "split": "dev",
+      "fields": {
+        "project_name": "合肥幼儿师范高等专科学校少荃湖校区数智康养实训中心建设项目",
+        "project_code": "2026BFFHZ51201",
+        "purchaser": "合肥幼儿师范高等专科学校",
+        "agency": "合肥市政府采购中心",
+        "budget_yuan": 3100000.0,
+        "bid_deadline": "2026-12-14 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：合肥幼儿师范高等专科学校少荃湖校区数智康养实训中心建设项目",
+        "project_code": "项目编号：2026BFFHZ51201",
+        "purchaser": "名称：合肥幼儿师范高等专科学校",
+        "agency": "名称：合肥市政府采购中心",
+        "budget_yuan": [
+          "第1包100万元",
+          "第2包150万元",
+          "第3包60万元"
+        ],
+        "bid_deadline": "时间：2026年12月14日09点30分"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 25016.15939498879,
+      "tokens": 3292
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747364",
+      "split": "test",
+      "fields": {
+        "project_name": "浙江大学医学院附属儿童医院三院区职工奶制品",
+        "project_code": "330000263210180000204-ZJ-2633716",
+        "purchaser": "浙江大学医学院附属儿童医院",
+        "agency": "浙江国际招投标有限公司",
+        "budget_yuan": 1600000.0,
+        "bid_deadline": "2026-12-17 09:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：浙江大学医学院附属儿童医院三院区职工奶制品",
+        "project_code": "项目编号：330000263210180000204-ZJ-2633716",
+        "purchaser": "名 称：浙江大学医学院附属儿童医院",
+        "agency": "名 称：浙江国际招投标有限公司",
+        "budget_yuan": [
+          "预算金额（元）：1600000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月17日 09:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 26032.072336995043,
+      "tokens": 4294
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747368",
+      "split": "test",
+      "fields": {
+        "project_name": "事故勘查及物证鉴定技术研究设备（原位探针质谱系统）采购项目",
+        "project_code": "330000263710070000238-ZJ-2663667",
+        "purchaser": "浙江省应急管理科学研究院",
+        "agency": "浙江国际招投标有限公司",
+        "budget_yuan": 1600000.0,
+        "bid_deadline": "2026-12-14 13:30"
+      },
+      "evidence": {
+        "project_name": "项目名称：事故勘查及物证鉴定技术研究设备 （原位探针质谱系统）采购项目",
+        "project_code": "项目编号：330000263710070000238-ZJ-2663667",
+        "purchaser": "名 称：浙江省应急管理科学研究院",
+        "agency": "名 称：浙江国际招投标有限公司",
+        "budget_yuan": [
+          "预算金额（元）：1600000"
+        ],
+        "bid_deadline": "提交投标文件截止时间：2026年12月14日 13:30（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 22018.752437958028,
+      "tokens": 4273
     }
   ],
   "errors": [
     {
-      "doc_id": "gkzb_t20261124_27747208",
+      "doc_id": "gkzb_t20261124_27747211",
       "method": "llm",
       "error": "HTTPSConnectionPool(host='llm-szgb63ufrao5dpts.cn-beijing.maas.aliyuncs.com', port=443): Read timed out. (read timeout=60)"
     }

@@ -16,6 +16,7 @@ from personal_knowledge_base.extraction.tender import (
     FieldValue,
     SYSTEM_PROMPT,
     TOOL,
+    build_extraction_result,
     extract,
     extract_llm,
     extract_rules,
@@ -23,6 +24,7 @@ from personal_knowledge_base.extraction.tender import (
     verify_evidence,
 )
 from personal_knowledge_base.management.commands.run_tender_extraction_eval import (
+    _field_rows,
     _is_correct,
     score_predictions,
 )
@@ -253,6 +255,28 @@ class TenderRuleTests(SimpleTestCase):
 
 
 class TenderLLMTests(SimpleTestCase):
+    def test_budget_evidence_schema_and_prompt(self):
+        properties = TOOL["function"]["parameters"]["properties"]
+        self.assertEqual(
+            properties["budget_yuan"]["properties"]["evidence"],
+            {"type": ["array", "null"], "items": {"type": "string"}},
+        )
+        self.assertEqual(
+            properties["project_name"]["properties"]["evidence"],
+            {"type": ["string", "null"]},
+        )
+        self.assertIn(
+            "1. 每个字段同时给出 value 和 evidence。除 budget_yuan 外，"
+            "evidence 是从正文中原样复制的一段连续文字（不超过 80 字），且必须包含 value 本身。",
+            SYSTEM_PROMPT,
+        )
+        self.assertIn(
+            "6. budget_yuan：项目预算总金额，换算成元，只输出数字。evidence 是字符串数组："
+            "有项目总预算时，给出写有总预算的 1 段原文；只有各包预算时，给出每个包预算的原文各 1 段，"
+            "value 为各包之和。",
+            SYSTEM_PROMPT,
+        )
+
     @patch("personal_knowledge_base.extraction.tender.model_providers.chat_completion_raw")
     def test_llm_uses_function_call_and_normalizes_values(self, chat_completion_raw):
         values = {
@@ -294,9 +318,73 @@ class TenderLLMTests(SimpleTestCase):
         self.assertEqual(fields["project_name"].value, "ABC项目")
         self.assertEqual(fields["project_code"].value, "ABC123")
         self.assertEqual(fields["budget_yuan"].value, 2637200.0)
+        self.assertEqual(
+            fields["budget_yuan"].evidence,
+            ["预算金额：263.72万元"],
+        )
         self.assertEqual(fields["bid_deadline"].value, "2026-12-15 09:30")
         self.assertEqual(fields["project_code"].source, "llm")
         self.assertEqual(usage["total_tokens"], 0)
+
+    @patch("personal_knowledge_base.extraction.tender.model_providers.chat_completion_raw")
+    def test_llm_preserves_package_budget_evidence_array(self, chat_completion_raw):
+        quotes = ["第1包预算金额：100万元", "第2包预算金额：250万元"]
+        values = {
+            field: {"value": None, "evidence": None}
+            for field in FIELDS
+        }
+        values["budget_yuan"] = {"value": 3500000, "evidence": quotes}
+        chat_completion_raw.return_value = {
+            "content": None,
+            "tool_calls": [
+                {
+                    "function": {
+                        "name": "submit_tender_fields",
+                        "arguments": json.dumps(values, ensure_ascii=False),
+                    }
+                }
+            ],
+        }
+
+        fields, _ = extract_llm("\n".join(quotes), None)
+        verified, dropped = verify_evidence(fields, "\n".join(quotes))
+
+        self.assertEqual(fields["budget_yuan"].evidence, quotes)
+        self.assertEqual(verified["budget_yuan"].value, 3500000.0)
+        self.assertEqual(dropped, [])
+
+    def test_budget_evidence_is_serialized_in_json_and_csv_rows(self):
+        quotes = ["第1包预算金额：100万元", "第2包预算金额：250万元"]
+        result = build_extraction_result(
+            "llm",
+            llm_fields={"budget_yuan": FieldValue(3500000.0, quotes, "llm")},
+        )
+        serialized = json.dumps(result, ensure_ascii=False)
+        self.assertEqual(
+            json.loads(serialized)["evidence"]["budget_yuan"],
+            quotes,
+        )
+
+        document = {
+            "doc_id": "toy",
+            "split": "dev",
+            "fields": {"budget_yuan": 3500000.0},
+        }
+        prediction = {
+            "fields": result["fields"],
+            "evidence": result["evidence"],
+            "needs_review": result["needs_review"],
+            "sources": result["sources"],
+        }
+        budget_row = next(
+            row
+            for row in _field_rows(document, prediction, "llm")
+            if row["field"] == "budget_yuan"
+        )
+        self.assertEqual(
+            json.loads(budget_row["evidence"]),
+            quotes,
+        )
 
     @patch("personal_knowledge_base.extraction.tender.model_providers.chat_completion_raw")
     def test_llm_falls_back_to_json_content_without_tool_call(self, chat_completion_raw):
