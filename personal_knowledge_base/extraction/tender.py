@@ -6,6 +6,8 @@ from typing import Any
 
 from personal_knowledge_base import model_providers
 from personal_knowledge_base.extraction.normalize import (
+    DATE_RE,
+    _to_halfwidth,
     normalize_amount,
     normalize_code,
     normalize_datetime,
@@ -84,6 +86,10 @@ _PACKAGE_MARKER_RE = re.compile(
 _BUDGET_TOKEN_RE = re.compile(
     r"(?<![\d第])(?:[￥¥]\s*)?\d[\d,，]*(?:\.\d+)?\s*"
     r"(?:[（(]\s*(?:亿元|万元|元)\s*[）)]|亿元|万元|元)?"
+)
+_EVIDENCE_BUDGET_UNIT_RE = re.compile(
+    r"[^：:\r\n]{0,20}预算(?:总)?金额\s*[（(]\s*(?P<unit>亿元|万元|元)\s*[）)]"
+    r"\s*[：:]\s*"
 )
 _EXPLICIT_DEADLINE_RE = re.compile(
     r"(?m)^[ \t]*(?:\d+\s*[、.．]\s*)?"
@@ -212,6 +218,33 @@ def _budget_values(value_text: str, label: str) -> list[float]:
         return values
     amount = normalize_amount(value_text, default_unit=default_unit)
     return [amount] if amount is not None else []
+
+
+def _evidence_amounts(quote: str) -> list[float]:
+    budget_lines = list(_BUDGET_LINE_RE.finditer(quote))
+    if budget_lines:
+        return [
+            amount
+            for match in budget_lines
+            for amount in _budget_values(match.group("value"), match.group("label"))
+        ]
+
+    unit_label = _EVIDENCE_BUDGET_UNIT_RE.search(quote)
+    if unit_label:
+        value_text = quote[unit_label.end() :]
+        tokens = [match.group(0).strip() for match in _BUDGET_TOKEN_RE.finditer(value_text)]
+        amounts = [
+            amount
+            for token in tokens
+            if (amount := normalize_amount(token, default_unit=unit_label.group("unit")))
+            is not None
+        ]
+        if amounts:
+            return amounts
+        amount = normalize_amount(value_text, default_unit=unit_label.group("unit"))
+        return [amount] if amount is not None else []
+
+    return _budget_values(quote, "")
 
 
 def _budget_value(text: str) -> FieldValue | None:
@@ -426,12 +459,54 @@ def verify_evidence(
             kept[field] = field_value
             continue
         evidence = field_value.evidence
-        whitespace_free_evidence = re.sub(r"\s+", "", evidence or "")
-        valid = bool(whitespace_free_evidence) and whitespace_free_evidence in whitespace_free_text
+        if field == "budget_yuan":
+            quotes = [evidence] if isinstance(evidence, str) else evidence
+            valid_quotes = isinstance(quotes, list) and all(
+                isinstance(quote, str) for quote in quotes
+            )
+        else:
+            quotes = [evidence] if isinstance(evidence, str) else []
+            valid_quotes = bool(quotes)
+        quotes = quotes if valid_quotes else []
+        whitespace_free_quotes = [
+            re.sub(r"\s+", "", quote) for quote in quotes
+        ]
+        valid = bool(whitespace_free_quotes) and all(
+            quote and quote in whitespace_free_text for quote in whitespace_free_quotes
+        )
         if valid and field in STRING_FIELDS:
             normalizer = normalize_code if field == "project_code" else normalize_name
             value = normalizer(str(field_value.value))
-            valid = bool(value) and value in normalizer(text)
+            normalized_evidence = normalizer(quotes[0])
+            valid = bool(value) and value in normalized_evidence
+            if valid and field == "project_code":
+                bounded_value = re.compile(
+                    rf"(?<![A-Za-z0-9\-_/]){re.escape(value)}(?![A-Za-z0-9\-_/])"
+                )
+                valid = bounded_value.search(normalized_evidence) is not None
+        if valid and field == "bid_deadline":
+            expected = normalize_datetime(str(field_value.value))
+            evidence_datetimes = [
+                normalized
+                for quote in quotes
+                for match in DATE_RE.finditer(_to_halfwidth(quote))
+                if (normalized := normalize_datetime(match.group(0))) is not None
+            ]
+            valid = expected is not None and expected in evidence_datetimes
+        if valid and field == "budget_yuan":
+            expected = _normalize_value(field, field_value.value)
+            quote_amounts = [_evidence_amounts(quote) for quote in quotes]
+            amounts = [amount for values in quote_amounts for amount in values]
+            valid = expected is not None and any(
+                abs(expected - amount) < 0.01 for amount in amounts
+            )
+            if (
+                not valid
+                and expected is not None
+                and len(quote_amounts) >= 2
+                and all(quote_amounts)
+            ):
+                valid = abs(expected - sum(values[0] for values in quote_amounts)) < 0.01
         if valid:
             kept[field] = field_value
         else:

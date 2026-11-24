@@ -144,14 +144,91 @@ class TenderRuleTests(SimpleTestCase):
         self.assertIsNone(kept["project_name"].value)
         self.assertEqual(dropped, ["project_name"])
 
+    def test_evidence_verification_drops_truncated_project_code(self):
+        quote = "项目编号：ABC1234"
+        fields = {"project_code": FieldValue("ABC123", quote, "llm")}
+
+        kept, dropped = verify_evidence(fields, quote)
+
+        self.assertIsNone(kept["project_code"].value)
+        self.assertEqual(dropped, ["project_code"])
+
+    def test_evidence_verification_drops_deadline_not_in_quote(self):
+        quote = "提交投标文件截止时间：2026年12月15日10时00分"
+        fields = {
+            "bid_deadline": FieldValue("2026-12-15 09:00", quote, "llm"),
+        }
+
+        kept, dropped = verify_evidence(fields, quote)
+
+        self.assertIsNone(kept["bid_deadline"].value)
+        self.assertEqual(dropped, ["bid_deadline"])
+
+    def test_evidence_verification_accepts_hubei_cutoff_after_start_time(self):
+        quote = (
+            "1、开始时间：2026年11月25日00点00分（北京时间）"
+            "2、截止时间：2026年12月16日10点00分（北京时间）"
+        )
+        fields = {
+            "bid_deadline": FieldValue("2026-12-16 10:00", quote, "llm"),
+        }
+
+        kept, dropped = verify_evidence(fields, quote)
+
+        self.assertEqual(kept["bid_deadline"].value, "2026-12-16 10:00")
+        self.assertEqual(dropped, [])
+
+    def test_evidence_verification_accepts_budget_sum_from_package_quotes(self):
+        quotes = ["第1包预算金额：100万元", "第2包预算金额：250万元"]
+        fields = {
+            "budget_yuan": FieldValue(3500000.0, quotes, "llm"),
+        }
+
+        kept, dropped = verify_evidence(fields, "\n".join(quotes))
+
+        self.assertEqual(kept["budget_yuan"].value, 3500000.0)
+        self.assertEqual(dropped, [])
+
+    def test_evidence_verification_requires_each_budget_quote_in_body(self):
+        fields = {
+            "budget_yuan": FieldValue(
+                3500000.0,
+                ["第1包预算金额：100万元", "第2包预算金额：250万元"],
+                "llm",
+            ),
+        }
+
+        kept, dropped = verify_evidence(fields, "第1包预算金额：100万元")
+
+        self.assertIsNone(kept["budget_yuan"].value)
+        self.assertEqual(dropped, ["budget_yuan"])
+
+    def test_evidence_verification_drops_budget_not_in_quote(self):
+        quote = "预算金额（元）：100"
+        fields = {"budget_yuan": FieldValue(200.0, quote, "llm")}
+
+        kept, dropped = verify_evidence(fields, quote)
+
+        self.assertIsNone(kept["budget_yuan"].value)
+        self.assertEqual(dropped, ["budget_yuan"])
+
+    def test_evidence_verification_accepts_string_budget_evidence(self):
+        quote = "预算金额（元）：100"
+        fields = {"budget_yuan": FieldValue(100.0, quote, "llm")}
+
+        kept, dropped = verify_evidence(fields, quote)
+
+        self.assertEqual(kept["budget_yuan"].value, 100.0)
+        self.assertEqual(dropped, [])
+
     @patch("personal_knowledge_base.extraction.tender.extract_llm")
     def test_hybrid_keeps_rule_on_conflict_and_requests_review(self, extract_llm_mock):
-        text = "预算金额（元）：100"
+        text = "预算金额（元）：100\n项目预算金额（元）：200"
         extract_llm_mock.return_value = (
             {
                 "budget_yuan": FieldValue(
                     200.0,
-                    "预算金额（元）：100",
+                    "项目预算金额（元）：200",
                     "llm",
                 )
             },
