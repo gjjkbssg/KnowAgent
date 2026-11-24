@@ -2,7 +2,6 @@ import csv
 import io
 import json
 import re
-import shutil
 import statistics
 import time
 from pathlib import Path
@@ -173,12 +172,7 @@ class Command(BaseCommand):
             pages.close()
 
         scan_results = {}
-        copy_dir = Path(settings.BASE_DIR) / "interview_materials" / "ocr_eval"
-        copy_dir.mkdir(parents=True, exist_ok=True)
         for scan_path in scan_paths:
-            copy_path = copy_dir / scan_path.name
-            if scan_path.resolve() != copy_path.resolve():
-                shutil.copy2(scan_path, copy_path)
             document = fitz.open(scan_path)
             scan_lines = []
             try:
