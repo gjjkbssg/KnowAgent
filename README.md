@@ -332,6 +332,36 @@ DuRetrieval 子集（5,489 个 Chunk）：
 
 复现：`python manage.py run_agent_eval --output-dir interview_materials/results/agent_eval/baseline`（需先准备领域集、人物多跳库和 DuRetrieval 子集）。
 
+### 招标公告结构化字段抽取
+
+使用真实模型 qwen3.7-plus 比较规则、函数调用 LLM 和规则 + LLM 混合抽取；混合方法与 LLM 方法共用同一份逐公告模型响应。主评测温度为 0，另有不做证据校验的 LLM 消融结果。指标按 dev（20 篇）和 test（40 篇）分别报告。逐字段证据保存在 CSV 和 summary JSON 的逐文档明细中；多包预算证据以字符串数组保存。原始 LLM 返回保存在各输出目录的 `llm_raw.jsonl`；可用 `--replay-llm <文件>` 离线重算字段解析和证据校验，不重新调用模型，并沿用保存的延迟和 token 数。
+
+| 方法 | Split | Micro P/R/F1 | 文档完全匹配率 | 平均延迟（ms/篇） | 平均 token/篇 | 证据丢弃数 | Review 率 | Review 命中率 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| Rules | dev | 1.0 / 1.0 / 1.0 | 1.0 | 0.19 | 0.0 | 0 | 0.0 | n/a |
+| Rules | test | 1.0 / 0.9958 / 0.9979 | 0.975 | 0.23 | 0.0 | 0 | 0.0042 | 1.0 |
+| LLM | dev | 1.0 / 0.8917 / 0.9427 | 0.85 | 27112.26 | 3303.3 | 1 | 0.1083 | 1.0 |
+| LLM | test | 1.0 / 0.9958 / 0.9979 | 0.975 | 26894.23 | 4431.7 | 1 | 0.0042 | 1.0 |
+| Rules + LLM | dev | 1.0 / 1.0 / 1.0 | 1.0 | 27112.45 | 3303.3 | 1 | 0.0 | n/a |
+| Rules + LLM | test | 1.0 / 1.0 / 1.0 | 1.0 | 26894.46 | 4431.7 | 1 | 0.0 | n/a |
+| LLM（无证据校验） | dev | 0.9912 / 0.9417 / 0.9658 | 0.9 | 25229.67 | 3540.1 | 0 | 0.05 | 0.8571 |
+| LLM（无证据校验） | test | 1.0 / 0.95 / 0.9744 | 0.95 | 26903.85 | 4094.82 | 0 | 0.05 | 1.0 |
+
+逐字段 P/R/F1 和逐文档预测见[主评测结果](interview_materials/results/tender_extraction/summary.json)、[主评测明细](interview_materials/results/tender_extraction/per_doc.csv)、[消融结果](interview_materials/results/tender_extraction/no_evidence_check/summary.json)及[消融明细](interview_materials/results/tender_extraction/no_evidence_check/per_doc.csv)。Rules 的 dev 六个字段均为 1.0；test 仅 `bid_deadline` 为 1.0/0.975/0.9873。主评测 LLM 的 dev 中 `project_name`、`project_code`、`purchaser`、`agency` 和 `bid_deadline` 均为 1.0/0.9/0.9474，`budget_yuan` 为 1.0/0.85/0.9189；test 仅 `project_name` 为 1.0/0.975/0.9873，其余字段均为 1.0。混合方法六个字段均为 1.0。无证据校验消融的 dev 中 `project_name` 为 0.9474/0.9/0.9231，其余字段为 1.0/0.95/0.9744；test 六个字段均为 1.0/0.95/0.9744。
+
+标签由助手逐篇阅读公告正文生成，并以平台汇总表作为第二来源；所有分歧均经人工裁定。平台汇总表本身在 60 篇中有 6 篇错误：1 篇的预算或截止时间错误，另有 5 篇湖北公告把招标文件获取开始时间列为开标时间。规则仅基于 20 篇 dev 公告编写和调整；LLM prompt 的字段定义是在阅读公告后撰写的；40 篇 test 样本量较小，结果仅代表本数据集。规则在 dev 阶段冻结；未用 test 中 `gkzb_t20261124_27747132` 的截止时间漏提结果调规则，以避免测试集泄漏。
+
+本轮主评测的 LLM 请求在 `gkzb_t20261124_27747174` 和 `gkzb_t20261124_27747208` 上于 60 秒后超时；无证据校验消融在 `gkzb_t20261124_27747174` 和 `gkzb_t20261124_27747207` 上超时。严格校验因引号不一致丢弃了 `gkzb_t20261124_27747207` 的项目名称；`gkzb_t20261124_27747203` 本轮的引文与字段值均使用弯引号，因此验证通过。新增的裸金额解析使 `gkzb_t20261124_27747234`、`gkzb_t20261124_27747235` 的表格预算通过校验。`gkzb_t20261124_27747360` 的 310 万元预算只附了一段同时列出三包金额的引文，当前校验只对多段引文求和，因此该 LLM 值被丢弃，而 Rules/Hybrid 保留正确总额。规则在 test 的 `gkzb_t20261124_27747132` 仍未抽到截止时间；没有用该 test 结果调整规则，以避免测试集泄漏。消融中 `gkzb_t20261124_27747203` 本次返回六个空值、`gkzb_t20261124_27747211` 则从此前一轮超时变为六个字段正确；这些独立模型调用差异不能单独归因于证据校验。无证据校验的 `gkzb_t20261124_27747208` 仍有项目名称引号形式导致的匹配差异。
+
+复现命令（需配置模型 API key 和包含 Tenant 的评测数据库）：
+
+```bash
+python manage.py run_tender_extraction_eval --methods rules,llm,hybrid --split all --output-dir interview_materials/results/tender_extraction
+python manage.py run_tender_extraction_eval --methods llm --split all --no-evidence-check --output-dir interview_materials/results/tender_extraction/no_evidence_check
+python manage.py run_tender_extraction_eval --methods rules,llm,hybrid --split all --replay-llm interview_materials/results/tender_extraction/llm_raw.jsonl --output-dir interview_materials/results/tender_extraction/replayed
+```
+
+
 ### PDF 布局解析评测：legacy vs structured
 
 使用 1 份 94 页招标文件和 26 道问题。两种模式均通过正常入库流程处理文档，并调用常规 `hybrid_search` 检索 Top-10；检索命中要求同一结果包含该题全部 `must_contain` 字符串（忽略空白）。答案评测每题用 Top-5 片段调用一次模型，按 `answer_contains` 字符串判定。

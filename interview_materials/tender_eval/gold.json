@@ -1,0 +1,946 @@
+{
+ "fields": [
+  "project_name",
+  "project_code",
+  "purchaser",
+  "agency",
+  "budget_yuan",
+  "bid_deadline"
+ ],
+ "labeling": "Values read from the notice body. Platform summary table used as a second source; every disagreement and the Hubei start/deadline pattern were resolved by hand against the body. Multi-package budgets are the project total (sum of packages).",
+ "documents": [
+  {
+   "doc_id": "gkzb_t20261124_27747121",
+   "split": "dev",
+   "fields": {
+    "project_name": "重庆市医药卫生学校药剂专业软件采购",
+    "purchaser": "重庆市医药卫生学校",
+    "agency": "重庆市涪陵区公共资源交易中心",
+    "budget_yuan": 577200.0,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "FLQ26A00608"
+   },
+   "alternates": {
+    "project_code": [
+     "涪招采G2026-10号"
+    ]
+   },
+   "tags": [
+    "platform_summary_wrong"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747121.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747125",
+   "split": "test",
+   "fields": {
+    "project_name": "绍兴市越城区马山街道社区卫生服务中心2026年医用设备（康复设备）采购项目（重招）",
+    "purchaser": "绍兴市越城区马山街道社区卫生服务中心",
+    "agency": "绍兴衡业工程管理咨询有限公司",
+    "budget_yuan": 403000.0,
+    "bid_deadline": "2026-12-14 09:30",
+    "project_code": "330602261291160000022-SXHY-2026CG-1117"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747125.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747126",
+   "split": "test",
+   "fields": {
+    "project_name": "襄垣县2026年六座小型水库大坝防汛物资采购项目",
+    "purchaser": "襄垣县水利局",
+    "agency": "山西建威兴盛工程项目管理有限公司",
+    "budget_yuan": 378400.0,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "1404232026AGK00224"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747126.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747127",
+   "split": "dev",
+   "fields": {
+    "project_name": "闻喜县商汤文化博物馆建设项目空调设备采购项目",
+    "purchaser": "闻喜县文化和旅游局",
+    "agency": "闻喜县政府采购中心",
+    "budget_yuan": 1268989.06,
+    "bid_deadline": "2026-12-17 09:00",
+    "project_code": "1408232026AGK00209"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747127.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747130",
+   "split": "test",
+   "fields": {
+    "project_name": "临洮县畜牧兽医局2026年畜牧业发展肉牛肉羊增量提质项目",
+    "purchaser": "临洮县畜牧兽医局",
+    "agency": "甘肃铭智扬工程咨询有限公司",
+    "budget_yuan": 5028000.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "GSMZY-202631-ZC"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747130.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747132",
+   "split": "test",
+   "fields": {
+    "project_name": "民权县南华街道办事处物业服务项目",
+    "purchaser": "民权县南华街道办事处",
+    "agency": "安徽天瑜建设工程管理有限公司",
+    "budget_yuan": 2602790.0,
+    "bid_deadline": "2026-12-16 09:00",
+    "project_code": "民财采招-2026-43"
+   },
+   "alternates": {
+    "project_code": [
+     "商政采〔2026〕758号"
+    ]
+   },
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747132.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747134",
+   "split": "dev",
+   "fields": {
+    "project_name": "山西省检验检测中心（山西省标准计量技术研究院）2027年检验检测保障服务项目",
+    "purchaser": "山西省检验检测中心（山西省标准计量技术研究院）",
+    "agency": "并辉建设工程招标代理有限公司",
+    "budget_yuan": 30720000.0,
+    "bid_deadline": "2026-12-17 09:00",
+    "project_code": "1499002026CGK04205"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747134.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747138",
+   "split": "test",
+   "fields": {
+    "project_name": "开远市人民医院2026年第一批医疗设备采购项目（标段三）（二次）",
+    "purchaser": "开远市人民医院",
+    "agency": "云南招标股份有限公司",
+    "budget_yuan": 830000.0,
+    "bid_deadline": "2026-12-15 13:30",
+    "project_code": "HHZC2026-G1-02660-YZGF-1856"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747138.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747139",
+   "split": "test",
+   "fields": {
+    "project_name": "云南省中医医院2026年第七十三批医疗设备采购项目",
+    "purchaser": "云南省中医医院",
+    "agency": "云南元大工程咨询有限责任公司",
+    "budget_yuan": 270000.0,
+    "bid_deadline": "2026-12-17 09:30",
+    "project_code": "YNZC2026-G1-07330-YYZX-0742"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747139.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747141",
+   "split": "dev",
+   "fields": {
+    "project_name": "2026年甘肃省庆阳市东南部陇东地区生态保护修复和水土流失综合治理项目合水县人工造林",
+    "purchaser": "合水县自然资源局",
+    "agency": "甘肃荣瀚建设工程咨询有限公司",
+    "budget_yuan": 15246473.74,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "QYZC2026-0338"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747141.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747142",
+   "split": "test",
+   "fields": {
+    "project_name": "乌海市第七中学(乌海市第一中学分校)网络改造项目",
+    "purchaser": "乌海市第七中学（乌海市第一中学分校）",
+    "agency": "内蒙古华格项目管理咨询有限公司",
+    "budget_yuan": 1322713.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "WHZCS-G-H-260091"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747142.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747144",
+   "split": "test",
+   "fields": {
+    "project_name": "坡头区市政综合服务市场化项目（园林市场化服务）",
+    "purchaser": "湛江市坡头区城市管理和综合执法局",
+    "agency": "广东威朗工程咨询有限公司",
+    "budget_yuan": 54702165.72,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "GDWL-20260609GK"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747144.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747146",
+   "split": "dev",
+   "fields": {
+    "project_name": "武乡县2026年乡村批次建设用地报批项目",
+    "purchaser": "武乡县自然资源局",
+    "agency": "山西麟越建设项目管理有限公司",
+    "budget_yuan": 3299009.81,
+    "bid_deadline": "2026-12-14 09:30",
+    "project_code": "1404292026CGK00106"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747146.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747147",
+   "split": "test",
+   "fields": {
+    "project_name": "放射诊断设备采购项目(二次)",
+    "purchaser": "四川省骨科医院",
+    "agency": "四川国际招标有限责任公司",
+    "budget_yuan": 6000000.0,
+    "bid_deadline": "2026-12-17 09:30",
+    "project_code": "N5100012026002551"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747147.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747148",
+   "split": "test",
+   "fields": {
+    "project_name": "临夏市人民医院信息化软件订阅使用项目",
+    "purchaser": "临夏市人民医院",
+    "agency": "中公招采项目管理（甘肃）有限公司",
+    "budget_yuan": 2800000.0,
+    "bid_deadline": "2026-12-15 09:20",
+    "project_code": "LXZC2122026398"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747148.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747151",
+   "split": "dev",
+   "fields": {
+    "project_name": "武乡县林业局森林草原消防专业队政府购买服务",
+    "purchaser": "武乡县林业局",
+    "agency": "山西益正厚德工程项目管理有限公司",
+    "budget_yuan": 8644536.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "1404292026CGK00105"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747151.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747153",
+   "split": "test",
+   "fields": {
+    "project_name": "中心供氧、负压系统和微电脑呼叫系统拆除安装及改造等采购项目(二次)",
+    "purchaser": "四川省骨科医院",
+    "agency": "四川国际招标有限责任公司",
+    "budget_yuan": 150000.0,
+    "bid_deadline": "2026-12-17 09:30",
+    "project_code": "N5100012026003185"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747153.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747165",
+   "split": "test",
+   "fields": {
+    "project_name": "大连市第十三中学升级改造艺术教学器材采购项目",
+    "purchaser": "大连市沙河口区教育局",
+    "agency": "通利晟信管理咨询有限公司",
+    "budget_yuan": 669900.0,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "TLCG2026-11002"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747165.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747174",
+   "split": "dev",
+   "fields": {
+    "project_name": "2026年区域性福利院购买服务项目",
+    "purchaser": "通山县民政局",
+    "agency": "通山县民政局",
+    "budget_yuan": 2637200.0,
+    "bid_deadline": "2026-12-16 10:00",
+    "project_code": "421224202601000441"
+   },
+   "alternates": {},
+   "tags": [
+    "deadline_after_start_time"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747174.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747176",
+   "split": "test",
+   "fields": {
+    "project_name": "社区矫正、刑满释放安置帮教工作服务项目",
+    "purchaser": "中共武汉东湖新技术开发区工作委员会政法委员会",
+    "agency": "中科器湖北有限公司",
+    "budget_yuan": 3700000.0,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "ZKQ2026-030804755ZF(W)"
+   },
+   "alternates": {},
+   "tags": [
+    "deadline_after_start_time"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747176.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747178",
+   "split": "test",
+   "fields": {
+    "project_name": "天山区纪委监委大数据中心设备采购及安装项目",
+    "purchaser": "中国共产党乌鲁木齐市天山区纪律检查委员会",
+    "agency": "新疆城基宏业工程管理咨询有限公司",
+    "budget_yuan": 956791.02,
+    "bid_deadline": "2026-12-15 11:00",
+    "project_code": "2026-1123-165236458"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747178.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747180",
+   "split": "dev",
+   "fields": {
+    "project_name": "空气质量监测设备采购项目",
+    "purchaser": "吕梁市生态环境局交城分局",
+    "agency": "中盛远大工程项目管理（山西）有限公司",
+    "budget_yuan": 2538500.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "1411222026AGK00108"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747180.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747186",
+   "split": "test",
+   "fields": {
+    "project_name": "2026年度林木良种培育项目",
+    "purchaser": "兰溪市林场",
+    "agency": "浙江中兰工程项目管理有限公司",
+    "budget_yuan": 954500.0,
+    "bid_deadline": "2026-12-16 09:00",
+    "project_code": "330781263020090000006-ZJZLZC2026101"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747186.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747198",
+   "split": "test",
+   "fields": {
+    "project_name": "辽宁省考古研学旅游示范活动",
+    "purchaser": "辽宁省文化和旅游厅",
+    "agency": "中招国际招标有限公司",
+    "budget_yuan": 2000000.0,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "JH26-210000-84446"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747198.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747199",
+   "split": "dev",
+   "fields": {
+    "project_name": "大红旗镇乔家窝堡村购买农业机械设备出租项目",
+    "purchaser": "新民市大红旗镇人民政府",
+    "agency": "辽宁正润招标代理有限公司",
+    "budget_yuan": 1000000.0,
+    "bid_deadline": "2026-12-15 10:00",
+    "project_code": "JH26-210181-00141"
+   },
+   "alternates": {},
+   "tags": [
+    "budget_sum_of_packages"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747199.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747203",
+   "split": "test",
+   "fields": {
+    "project_name": "辽宁中医药大学附属医院“沈阳市中医药传承创新发展示范项目”-第三包",
+    "purchaser": "辽宁中医药大学附属医院",
+    "agency": "依诚招标有限公司",
+    "budget_yuan": 790000.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "JH26-210000-79105"
+   },
+   "alternates": {},
+   "tags": [
+    "budget_sum_of_packages"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747203.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747207",
+   "split": "test",
+   "fields": {
+    "project_name": "辽宁中医药大学附属医院“中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目”设备购置-第五包",
+    "purchaser": "辽宁中医药大学附属医院",
+    "agency": "乔泰工程管理集团有限公司",
+    "budget_yuan": 1228000.0,
+    "bid_deadline": "2026-12-16 09:00",
+    "project_code": "JH26-210000-79112"
+   },
+   "alternates": {},
+   "tags": [
+    "budget_sum_of_packages"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747207.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747208",
+   "split": "dev",
+   "fields": {
+    "project_name": "辽宁中医药大学附属医院“中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目”设备购置-第七包",
+    "purchaser": "辽宁中医药大学附属医院",
+    "agency": "乔泰工程管理集团有限公司",
+    "budget_yuan": 500000.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "JH26-210000-79116"
+   },
+   "alternates": {},
+   "tags": [
+    "budget_sum_of_packages"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747208.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747211",
+   "split": "test",
+   "fields": {
+    "project_name": "本溪市疾病预防控制中心（本溪市卫生监督所）仪器设备采购",
+    "purchaser": "本溪市疾病预防控制中心（本溪市卫生监督所）",
+    "agency": "中科高盛咨询集团有限公司",
+    "budget_yuan": 4220000.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "JH26-210500-04644"
+   },
+   "alternates": {},
+   "tags": [
+    "budget_sum_of_packages"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747211.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747216",
+   "split": "test",
+   "fields": {
+    "project_name": "2027年精河县政府机关食堂和县级周转楼食堂餐饮服务项目",
+    "purchaser": "精河县机关事务服务中心",
+    "agency": "中环建（北京）工程管理有限责任公司",
+    "budget_yuan": 4000000.0,
+    "bid_deadline": "2026-12-14 11:00",
+    "project_code": "JHXZHJGK2026-024"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747216.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747234",
+   "split": "dev",
+   "fields": {
+    "project_name": "湘潭大学机力院先进制造与智能化控制实验平台建设项目",
+    "purchaser": "湘潭大学",
+    "agency": "湖南建业管理咨询有限公司",
+    "budget_yuan": 1565195.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "CGXM2026430000006314"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747234.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747235",
+   "split": "test",
+   "fields": {
+    "project_name": "湘潭大学商学院2026年本科教学设备采购项目",
+    "purchaser": "湘潭大学",
+    "agency": "湖南建业管理咨询有限公司",
+    "budget_yuan": 886730.1,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "CGXM2026430000006297"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747235.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747240",
+   "split": "test",
+   "fields": {
+    "project_name": "人工智能学院网络技术实训室建设项目",
+    "purchaser": "江苏农牧科技职业学院",
+    "agency": "江苏建泰工程项目管理有限公司",
+    "budget_yuan": 1560000.0,
+    "bid_deadline": "2026-12-16 09:00",
+    "project_code": "JSZC-320000-JTTZ-G2026-0031"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747240.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747245",
+   "split": "dev",
+   "fields": {
+    "project_name": "巴里坤县基础教育提质项目-人工智能融合教室设备采购",
+    "purchaser": "巴里坤哈萨克自治县教育局",
+    "agency": "哈密市公共资源交易服务中心（巴里坤县）",
+    "budget_yuan": 11206900.0,
+    "bid_deadline": "2026-12-15 10:00",
+    "project_code": "GGZY-（GK）CG2026039"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747245.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747255",
+   "split": "test",
+   "fields": {
+    "project_name": "侯马市人民医院健康体重管理中心购置设备项目",
+    "purchaser": "侯马市人民医院",
+    "agency": "山西华信伟业招标代理有限公司",
+    "budget_yuan": 1209900.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "1410812026AGK00108"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747255.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747258",
+   "split": "test",
+   "fields": {
+    "project_name": "安徽医科大学新医科高能级产学研平台设备更新项目",
+    "purchaser": "安徽医科大学",
+    "agency": "安徽省招标集团股份有限公司",
+    "budget_yuan": 6800000.0,
+    "bid_deadline": "2026-12-14 14:30",
+    "project_code": "FSKY340001202610854号/ZF2026-35-1476"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747258.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747259",
+   "split": "dev",
+   "fields": {
+    "project_name": "中医药传承创新发展示范项目设备一批",
+    "purchaser": "三明市第一医院",
+    "agency": "福建骉旺招标代理有限公司",
+    "budget_yuan": 5160000.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "[350401]FJBWZB[GK]2026001"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747259.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747282",
+   "split": "test",
+   "fields": {
+    "project_name": "海南自由贸易港知识产权法院审判法庭综合大楼信息化建设项目",
+    "purchaser": "海南自由贸易港知识产权法院",
+    "agency": "海南省政府采购中心",
+    "budget_yuan": 10223742.41,
+    "bid_deadline": "2026-12-15 08:30",
+    "project_code": "HNGP2026-0167"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747282.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747285",
+   "split": "test",
+   "fields": {
+    "project_name": "平顺县退役军人事务局2027年春节优抚对象慰问品采购",
+    "purchaser": "平顺县退役军人事务局",
+    "agency": "远瓴（北京）国际工程咨询有限公司",
+    "budget_yuan": 669800.0,
+    "bid_deadline": "2026-12-14 09:30",
+    "project_code": "1404252026AGK00093"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747285.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747294",
+   "split": "dev",
+   "fields": {
+    "project_name": "甘肃省人民检察院检察官法警服装采购项目",
+    "purchaser": "甘肃省人民检察院",
+    "agency": "甘肃西招国际招标有限公司",
+    "budget_yuan": 1950232.8,
+    "bid_deadline": "2026-12-15 10:00",
+    "project_code": "甘财采备字[2026]15551号"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747294.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747298",
+   "split": "test",
+   "fields": {
+    "project_name": "宁夏回族自治区宁东医院检验科相关设备采购项目",
+    "purchaser": "宁夏回族自治区宁东医院",
+    "agency": "宁夏中际信达项目管理有限公司",
+    "budget_yuan": 890000.0,
+    "bid_deadline": "2026-12-16 09:00",
+    "project_code": "ZJXD-2026/A-298"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747298.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747299",
+   "split": "test",
+   "fields": {
+    "project_name": "先进能源科学与技术广东省实验室核孔膜终端自动化续接及转运系统采购项目",
+    "purchaser": "先进能源科学与技术广东省实验室",
+    "agency": "东方国际招标有限责任公司",
+    "budget_yuan": 6600000.0,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "OITC-G260884038"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747299.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747300",
+   "split": "dev",
+   "fields": {
+    "project_name": "曲靖市妇幼保健院智慧医院信息化建设系统集成实施服务采购项目",
+    "purchaser": "曲靖市妇幼保健院",
+    "agency": "云南招标股份有限公司",
+    "budget_yuan": 28542500.0,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "QJZC2026-G3-01831-YZGF-1803"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747300.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747305",
+   "split": "test",
+   "fields": {
+    "project_name": "内蒙古自治区医疗保障信息平台运行维护（基础环境）",
+    "purchaser": "内蒙古自治区大数据中心",
+    "agency": "内蒙古自治区公共资源交易中心",
+    "budget_yuan": 15014500.0,
+    "bid_deadline": "2026-12-17 09:30",
+    "project_code": "NMGZC-G-F-260899"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747305.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747308",
+   "split": "test",
+   "fields": {
+    "project_name": "广州市番禺区人民法院2027-2028年物业管理服务项目",
+    "purchaser": "广州市番禺区人民法院",
+    "agency": "广州市政府采购中心",
+    "budget_yuan": 10950000.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "CZ2026-1530"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747308.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747317",
+   "split": "dev",
+   "fields": {
+    "project_name": "昆明理工大学附属小学数智化校园平台升级建设项目",
+    "purchaser": "昆明理工大学附属小学",
+    "agency": "云南国合建设招标咨询有限公司",
+    "budget_yuan": 1193000.0,
+    "bid_deadline": "2026-12-17 09:30",
+    "project_code": "YNZC2026-G1-07329-YNGH-0483"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747317.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747320",
+   "split": "test",
+   "fields": {
+    "project_name": "吉木萨尔县厦吉协作产业园建设项目(一期)",
+    "purchaser": "吉木萨尔县三台镇人民政府",
+    "agency": "新疆晶智工程项目管理有限公司",
+    "budget_yuan": 6049600.0,
+    "bid_deadline": "2026-12-15 11:00",
+    "project_code": "JZZB-2026-67-HW"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747320.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747325",
+   "split": "test",
+   "fields": {
+    "project_name": "广州市珠江前航道边滩清淤项目施工",
+    "purchaser": "广州市珠江前后航道流域事务中心",
+    "agency": "广东粤信项目管理有限公司",
+    "budget_yuan": 26970746.69,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "440101-2026-18894"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747325.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747327",
+   "split": "dev",
+   "fields": {
+    "project_name": "粤港澳大湾区（广东）创新创业孵化基地2027—2029年物业管理服务项目",
+    "purchaser": "广州市天河区人力资源和社会保障局",
+    "agency": "广州市政府采购中心",
+    "budget_yuan": 6000000.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "CZ2026-1737"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747327.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747330",
+   "split": "test",
+   "fields": {
+    "project_name": "粤港澳大湾区（广东）创新创业孵化基地2027—2029年运营服务项目",
+    "purchaser": "广州市天河区人力资源和社会保障局",
+    "agency": "广东有德招标采购有限公司",
+    "budget_yuan": 9000000.0,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "1210-2641YDZB10306"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747330.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747331",
+   "split": "test",
+   "fields": {
+    "project_name": "酒泉市玄奘之路户外运动目的地（戈壁清泉）综合服务设施建设项目设计",
+    "purchaser": "瓜州县文体广电和旅游局",
+    "agency": "甘肃全标项目管理有限公司",
+    "budget_yuan": 2120000.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "GZZFCG[2026]159号"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747331.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747334",
+   "split": "dev",
+   "fields": {
+    "project_name": "祁县机关事务服务中心办公用房及其附属用房租赁服务项目（三次）",
+    "purchaser": "祁县机关事务服务中心",
+    "agency": "中招神舟项目管理有限公司",
+    "budget_yuan": 8190000.0,
+    "bid_deadline": "2026-12-15 09:00",
+    "project_code": "1407272026CGK00112"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747334.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747341",
+   "split": "test",
+   "fields": {
+    "project_name": "宜昌市住房和城市更新局宜昌市城市更新行动技术咨询服务采购项目",
+    "purchaser": "宜昌市住房和城市更新局本级",
+    "agency": "湖北聚信建设工程项目管理有限公司",
+    "budget_yuan": 21981000.0,
+    "bid_deadline": "2026-12-15 10:00",
+    "project_code": "420501202601000864"
+   },
+   "alternates": {},
+   "tags": [
+    "deadline_after_start_time"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747341.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747342",
+   "split": "test",
+   "fields": {
+    "project_name": "湖北省高级人民法院审判法庭和诉讼服务综合楼信息化建设项目第二包",
+    "purchaser": "湖北省高级人民法院",
+    "agency": "湖北省公共资源交易中心（湖北省政府采购中心）",
+    "budget_yuan": 25432476.53,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "EZC-2026-ZX1140-02"
+   },
+   "alternates": {},
+   "tags": [
+    "deadline_after_start_time"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747342.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747344",
+   "split": "dev",
+   "fields": {
+    "project_name": "湖北省高级人民法院审判法庭和诉讼服务综合楼信息化建设项目第一包",
+    "purchaser": "湖北省高级人民法院",
+    "agency": "湖北省公共资源交易中心（湖北省政府采购中心）",
+    "budget_yuan": 24856523.47,
+    "bid_deadline": "2026-12-15 09:30",
+    "project_code": "EZC-2026-ZX1140-01"
+   },
+   "alternates": {},
+   "tags": [
+    "deadline_after_start_time"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747344.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747358",
+   "split": "test",
+   "fields": {
+    "project_name": "浙江大学医学院附属儿童医院一次性奶瓶奶嘴",
+    "purchaser": "浙江大学医学院附属儿童医院",
+    "agency": "浙江国际招投标有限公司",
+    "budget_yuan": 1400000.0,
+    "bid_deadline": "2026-12-17 13:30",
+    "project_code": "330000263210180000205-ZJ-2633715"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747358.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747359",
+   "split": "test",
+   "fields": {
+    "project_name": "杭州技师学院新能源汽车检测与维修专业实训设备采购",
+    "purchaser": "杭州技师学院（杭州交通高级技工学校）",
+    "agency": "浙江天成项目管理有限公司",
+    "budget_yuan": 2200000.0,
+    "bid_deadline": "2026-12-14 09:30",
+    "project_code": "330100264120150000034"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747359.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747360",
+   "split": "dev",
+   "fields": {
+    "project_name": "合肥幼儿师范高等专科学校少荃湖校区数智康养实训中心建设项目",
+    "purchaser": "合肥幼儿师范高等专科学校",
+    "agency": "合肥市政府采购中心",
+    "budget_yuan": 3100000.0,
+    "bid_deadline": "2026-12-14 09:30",
+    "project_code": "2026BFFHZ51201"
+   },
+   "alternates": {},
+   "tags": [
+    "budget_sum_of_packages"
+   ],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747360.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747364",
+   "split": "test",
+   "fields": {
+    "project_name": "浙江大学医学院附属儿童医院三院区职工奶制品",
+    "purchaser": "浙江大学医学院附属儿童医院",
+    "agency": "浙江国际招投标有限公司",
+    "budget_yuan": 1600000.0,
+    "bid_deadline": "2026-12-17 09:30",
+    "project_code": "330000263210180000204-ZJ-2633716"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747364.htm"
+  },
+  {
+   "doc_id": "gkzb_t20261124_27747368",
+   "split": "test",
+   "fields": {
+    "project_name": "事故勘查及物证鉴定技术研究设备（原位探针质谱系统）采购项目",
+    "purchaser": "浙江省应急管理科学研究院",
+    "agency": "浙江国际招投标有限公司",
+    "budget_yuan": 1600000.0,
+    "bid_deadline": "2026-12-14 13:30",
+    "project_code": "330000263710070000238-ZJ-2663667"
+   },
+   "alternates": {},
+   "tags": [],
+   "url": "https://www.ccgp.gov.cn/cggg/dfgg/gkzb/202611/t20261124_27747368.htm"
+  }
+ ],
+ "source": "中国政府采购网 地方公告·公开招标公告 (www.ccgp.gov.cn/cggg/dfgg/gkzb/), fetched 2026-11-24; docs/<doc_id>.txt is the text of div.vF_detail_content (the platform summary table is excluded from the extractor input)."
+}
