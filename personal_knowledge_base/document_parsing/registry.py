@@ -3,6 +3,7 @@ import csv
 import io
 import json
 import re
+from threading import Lock
 from pathlib import Path
 
 from .images import ImageTooSmallError, InvalidImageError, guess_image_mime, inspect_image
@@ -14,6 +15,7 @@ IMAGE_TYPES = {"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg"}
 TEXT_TYPES = {"txt", "log", "py"}
 MARKDOWN_IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)", re.I)
 DATA_IMAGE_RE = re.compile(r"^data:(image/[^;,]+);base64,(.+)$", re.I | re.S)
+_PDF_TABLE_EXTRACTION_LOCK = Lock()
 
 
 def _image_block(data: bytes, mime_type: str, source_type: str, source_ref: str, block_index: int, page_index=None, metadata=None):
@@ -223,6 +225,7 @@ def _markdown_table(rows: list[list[str]]) -> str:
 
 
 def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
+    """Serialize table extraction because PyMuPDF table globals are shared across uploads."""
     import fitz
 
     document = ParsedDocument()
@@ -276,7 +279,11 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
 
             table_items = []
             try:
-                found_tables = page.find_tables().tables
+                with _PDF_TABLE_EXTRACTION_LOCK:
+                    found_tables = [
+                        (list(table.bbox), table.extract())
+                        for table in page.find_tables().tables
+                    ]
             except Exception as exc:
                 found_tables = []
                 _warning(
@@ -285,11 +292,10 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
                     str(exc),
                     source_ref=f"page:{page_index + 1}",
                 )
-            for table in found_tables:
-                rows = _normalize_table_rows(table.extract())
+            for bbox, extracted_rows in found_tables:
+                rows = _normalize_table_rows(extracted_rows)
                 if not rows:
                     continue
-                bbox = list(table.bbox)
                 table_items.append(
                     {
                         "kind": "table",
