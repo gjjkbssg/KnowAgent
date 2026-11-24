@@ -229,7 +229,10 @@ class Command(BaseCommand):
             "--docs-dir",
             default="interview_materials/tender_eval/docs",
         )
-        parser.add_argument("--summaries", default="/home/ubuntu/work/tender/summaries.json")
+        parser.add_argument(
+            "--summaries",
+            default="interview_materials/tender_warehouse/summaries.json",
+        )
         parser.add_argument(
             "--llm-raw",
             default="interview_materials/results/tender_extraction/llm_raw.jsonl",
