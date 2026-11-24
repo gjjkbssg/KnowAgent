@@ -448,9 +448,13 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
                 previous_metadata["header"],
             ):
                 continue
-            for row in continuation_rows:
+            for continuation_index, row in enumerate(continuation_rows):
                 row = (row + [""] * column_count)[:column_count]
-                if not row[0].strip() and len(merged_rows) > 1:
+                if (
+                    continuation_index == 0
+                    and not row[0].strip()
+                    and len(merged_rows) > 1
+                ):
                     merged_rows[-1] = [
                         _join_table_cell(old, new)
                         for old, new in zip(merged_rows[-1], row)

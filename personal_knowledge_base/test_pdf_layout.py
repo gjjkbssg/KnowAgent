@@ -219,6 +219,48 @@ class PdfLayoutParsingTests(TestCase):
         )
         self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 0)
 
+    def test_later_empty_first_cell_rows_remain_separate(self):
+        pdf = fitz.open()
+        first_page = pdf.new_page(width=400, height=500)
+        _draw_table(
+            first_page,
+            [
+                ["组别", "名称", "内容"],
+                ["A", "设备", "主项说明"],
+            ],
+            y=380,
+        )
+        second_page = pdf.new_page(width=400, height=500)
+        _draw_table(
+            second_page,
+            [
+                ["组别", "名称", "内容"],
+                ["", "", "续页说明"],
+                ["", "", "同组下一个独立项目"],
+                ["B", "另一设备", "另一组说明"],
+            ],
+        )
+
+        parsed = parse_document("grouped-rows.pdf", _pdf_bytes(pdf))
+        table = next(
+            block
+            for block in parsed.text_blocks
+            if block.metadata.get("block_type") == "table"
+        )
+
+        self.assertEqual(
+            table.metadata["table_rows"][1],
+            ["A", "设备", "主项说明续页说明"],
+        )
+        self.assertEqual(
+            table.metadata["table_rows"][2],
+            ["", "", "同组下一个独立项目"],
+        )
+        self.assertEqual(
+            table.metadata["table_rows"][3],
+            ["B", "另一设备", "另一组说明"],
+        )
+
     def test_toc_headings_are_ignored_and_content_gets_heading_paths(self):
         pdf = fitz.open()
         toc_page = pdf.new_page(width=400, height=600)
