@@ -23,6 +23,7 @@ from services.knowledge import delete_knowledge_content
 SYSTEM_PROMPT = "你是招标文件问答助手。只根据给出的资料回答问题，答案简短；资料中没有答案时回答“资料中未找到”。"
 FOOTER_RE = re.compile(r"—\s*\d+\s*—")
 TOKEN_FIELDS = ("prompt_tokens", "completion_tokens", "total_tokens")
+PDF_EVAL_KB_MARKER = "created_by=run_pdf_parsing_eval"
 
 
 def _compact(text):
@@ -83,14 +84,24 @@ def _tokens_after_call(tenant, count_before):
 
 
 def _cleanup_knowledge_base(tenant, name):
-    existing = KnowledgeBase.objects.filter(tenant=tenant, name=name).first()
-    if existing is None:
+    existing_bases = list(
+        KnowledgeBase.objects.filter(tenant=tenant, name=name)
+    )
+    if not existing_bases:
         return
-    for knowledge in Knowledge.objects.filter(knowledge_base=existing):
-        delete_knowledge_content(knowledge)
-        if knowledge.file_path and default_storage.exists(knowledge.file_path):
-            default_storage.delete(knowledge.file_path)
-    existing.delete()
+    if any(
+        not (knowledge_base.description or "").startswith(PDF_EVAL_KB_MARKER)
+        for knowledge_base in existing_bases
+    ):
+        raise CommandError(
+            f"Refusing to delete unmarked knowledge base named {name!r}"
+        )
+    for knowledge_base in existing_bases:
+        for knowledge in Knowledge.objects.filter(knowledge_base=knowledge_base):
+            delete_knowledge_content(knowledge)
+            if knowledge.file_path and default_storage.exists(knowledge.file_path):
+                default_storage.delete(knowledge.file_path)
+        knowledge_base.delete()
 
 
 def _create_knowledge_base(tenant, mode, pdf_path, pdf_data):
@@ -99,7 +110,7 @@ def _create_knowledge_base(tenant, mode, pdf_path, pdf_data):
     knowledge_base = KnowledgeBase.objects.create(
         tenant=tenant,
         name=name,
-        description=f"PDF parsing evaluation ({mode})",
+        description=f"{PDF_EVAL_KB_MARKER}; PDF parsing evaluation ({mode})",
         chunking_config={"chunk_size": 512, "chunk_overlap": 50},
         indexing_strategy={
             "vector_enabled": True,

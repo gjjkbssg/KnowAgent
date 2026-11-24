@@ -1,10 +1,14 @@
 import fitz
+from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 
 from personal_knowledge_base.document_parsing import parse_document
 from personal_knowledge_base.document_parsing.registry import _parse_pdf_legacy
 from personal_knowledge_base.document_parsing.types import ParsedDocument, TextBlock
 from personal_knowledge_base.document_processing import create_text_chunks
+from personal_knowledge_base.management.commands.run_pdf_parsing_eval import (
+    _cleanup_knowledge_base,
+)
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
 
 
@@ -371,3 +375,17 @@ class PdfLayoutParsingTests(TestCase):
         self.assertEqual(parsed.metadata, {})
         self.assertIn("采购文件第1号", "\n".join(block.text for block in parsed.text_blocks))
         self.assertEqual(Chunk.objects.count(), 0)
+
+    def test_eval_cleanup_refuses_same_named_unmarked_knowledge_base(self):
+        protected = KnowledgeBase.objects.create(
+            tenant=self.tenant,
+            name="pdf-eval-legacy",
+            description="An unrelated knowledge base",
+        )
+
+        with self.assertRaises(CommandError):
+            _cleanup_knowledge_base(self.tenant, "pdf-eval-legacy")
+
+        self.assertTrue(
+            KnowledgeBase.objects.filter(pk=protected.pk).exists()
+        )
