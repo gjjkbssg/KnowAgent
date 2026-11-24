@@ -331,6 +331,22 @@ class PdfLayoutParsingTests(TestCase):
             ["第一章 招标公告", "一、项目基本情况", "（一）采购方式"],
         )
 
+    def test_peer_level_two_headings_replace_the_previous_heading(self):
+        pdf = fitz.open()
+        page = pdf.new_page(width=400, height=500)
+        _text(page, "一、A", 40, 100)
+        _text(page, "A部分的正文内容，足以单独形成一个分块。", 40, 125)
+        _text(page, "二、B", 40, 160)
+        _text(page, "B部分的正文内容，足以单独形成一个分块。", 40, 185)
+
+        parsed = parse_document("peer-headings.pdf", _pdf_bytes(pdf))
+        chunks = create_text_chunks(self.create_knowledge(), parsed)
+        first = next(chunk for chunk in chunks if "一、A" in chunk.content)
+        second = next(chunk for chunk in chunks if "二、B" in chunk.content)
+
+        self.assertEqual(first.metadata["heading_path"], ["一、A"])
+        self.assertEqual(second.metadata["heading_path"], ["二、B"])
+
     def test_oversized_table_rows_keep_headers_and_key_cells_in_each_piece(self):
         knowledge = self.create_knowledge(chunk_size=256)
         header = ["序号", "名称", "说明"]

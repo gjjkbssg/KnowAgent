@@ -131,12 +131,15 @@ def _pdf_heading(line: str):
     return None
 
 
-def _pdf_heading_path(stack: list[str], level: int, heading: str) -> list[str]:
-    if level == 1:
-        return [heading]
-    if level == 2:
-        return [*stack[:1], heading]
-    return [*stack[:2], heading]
+def _pdf_heading_path(
+    stack: list[tuple[int, str]],
+    level: int,
+    heading: str,
+) -> list[tuple[int, str]]:
+    return [
+        *[entry for entry in stack if entry[0] < level],
+        (level, heading),
+    ]
 
 
 def _structured_pdf_units(parsed, minimum_pdf_segment: int):
@@ -211,7 +214,7 @@ def _structured_pdf_units(parsed, minimum_pdf_segment: int):
                     "type": "table",
                     "block": block,
                     "page_index": block.page_index,
-                    "heading_path": list(heading_stack),
+                    "heading_path": [title for _, title in heading_stack],
                 }
             )
             index += 1
@@ -242,7 +245,11 @@ def _structured_pdf_units(parsed, minimum_pdf_segment: int):
                     consumed = True
             flush()
             heading_stack = _pdf_heading_path(heading_stack, level, title)
-            append_line(title, block, heading_stack)
+            append_line(
+                title,
+                block,
+                [heading for _, heading in heading_stack],
+            )
             if consumed:
                 current_last = events[index + 1]["block"]
             index += 2 if consumed else 1
