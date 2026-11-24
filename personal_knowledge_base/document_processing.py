@@ -300,7 +300,7 @@ def _oversized_table_rows(header, row, prefix, chunking_config, chunk_size):
         for _, _, piece in split_text(str(row[long_index]), split_config):
             piece_row = list(key_row)
             if long_index in key_indices:
-                piece_row[long_index] = f"{piece_row[long_index]} {piece}".strip()
+                piece_row[long_index] = f"{piece_row[long_index]}{piece}"
             else:
                 piece_row[long_index] = piece
             chunks.append(piece_row)
