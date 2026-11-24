@@ -276,10 +276,15 @@ def _oversized_table_rows(header, row, prefix, chunking_config, chunk_size):
     if not long_indices:
         return [row]
 
-    key_row = [
-        cell if index in key_indices else ""
-        for index, cell in enumerate(row)
-    ]
+    key_row = []
+    for index, cell in enumerate(row):
+        value = str(cell or "")
+        if index not in key_indices:
+            key_row.append("")
+        elif len(value) > chunk_size // 4:
+            key_row.append(value[:40] + "…")
+        else:
+            key_row.append(value)
     overhead = len(_table_chunk_text(header, [key_row], prefix))
     split_config = dict(chunking_config)
     split_config["chunk_size"] = max(128, chunk_size - overhead)
@@ -287,7 +292,9 @@ def _oversized_table_rows(header, row, prefix, chunking_config, chunk_size):
     for long_index in long_indices:
         for _, _, piece in split_text(str(row[long_index]), split_config):
             piece_row = list(key_row)
-            if long_index not in key_indices:
+            if long_index in key_indices:
+                piece_row[long_index] = f"{piece_row[long_index]} {piece}".strip()
+            else:
                 piece_row[long_index] = piece
             chunks.append(piece_row)
     return chunks or [row]

@@ -374,6 +374,40 @@ class PdfLayoutParsingTests(TestCase):
             self.assertIn("| 序号 | 名称 | 说明 |", chunk.content)
             self.assertIn("| 1 | 关键条款 |", chunk.content)
 
+    def test_long_key_cell_uses_a_preview_and_is_split_into_distinct_chunks(self):
+        knowledge = self.create_knowledge(chunk_size=256)
+        header = ["项目名称", "类型", "说明"]
+        long_key = "第一列关键内容需要拆分并保留定位线索" * 30
+        rows = [header, [long_key, "关键", "简短说明"]]
+        parsed = ParsedDocument(
+            text_blocks=[
+                TextBlock(
+                    "| 项目名称 | 类型 | 说明 |\n| --- | --- | --- |\n| 项目 | 关键 | 简短说明 |",
+                    0,
+                    page_index=0,
+                    metadata={
+                        "block_type": "table",
+                        "bbox": [20, 20, 300, 100],
+                        "header": header,
+                        "table_rows": rows,
+                        "page_span": [1, 1],
+                    },
+                )
+            ],
+            metadata={"pdf_layout": {"toc_pages": []}},
+        )
+
+        chunks = create_text_chunks(knowledge, parsed)
+        preview = long_key[:40] + "…"
+        row_lines = [chunk.content.splitlines()[-1] for chunk in chunks]
+
+        self.assertGreater(len(chunks), 1)
+        self.assertEqual(len(set(row_lines)), len(row_lines))
+        for chunk in chunks:
+            self.assertIn(preview, chunk.content)
+            self.assertNotIn(long_key, chunk.content)
+            self.assertLessEqual(len(chunk.content), 256)
+
     def test_disabling_layout_parser_matches_legacy_pdf_behavior(self):
         pdf = fitz.open()
         page = pdf.new_page(width=400, height=500)
