@@ -223,6 +223,27 @@ class TenderRuleTests(SimpleTestCase):
         self.assertEqual(kept["budget_yuan"].value, 100.0)
         self.assertEqual(dropped, [])
 
+    def test_evidence_verification_accepts_bare_yuan_in_table_row(self):
+        quote = (
+            "湘潭大学机力院先进制造与智能化控制实验平台建设项目 "
+            "1565195 其他仪器仪表 详见招标文件 1 1565195"
+        )
+        fields = {"budget_yuan": FieldValue(1565195.0, quote, "llm")}
+
+        kept, dropped = verify_evidence(fields, quote)
+
+        self.assertEqual(kept["budget_yuan"].value, 1565195.0)
+        self.assertEqual(dropped, [])
+
+    def test_evidence_verification_rejects_unrelated_bare_table_amounts(self):
+        quote = "其他采购项目 886730.1 教学设备 详见招标文件 1 886730.1"
+        fields = {"budget_yuan": FieldValue(1565195.0, quote, "llm")}
+
+        kept, dropped = verify_evidence(fields, quote)
+
+        self.assertIsNone(kept["budget_yuan"].value)
+        self.assertEqual(dropped, ["budget_yuan"])
+
     @patch("personal_knowledge_base.extraction.tender.extract_llm")
     def test_hybrid_keeps_rule_on_conflict_and_requests_review(self, extract_llm_mock):
         text = "预算金额（元）：100\n项目预算金额（元）：200"

@@ -230,11 +230,13 @@ def _budget_values(value_text: str, label: str) -> list[float]:
 def _evidence_amounts(quote: str) -> list[float]:
     budget_lines = list(_BUDGET_LINE_RE.finditer(quote))
     if budget_lines:
-        return [
+        amounts = [
             amount
             for match in budget_lines
             for amount in _budget_values(match.group("value"), match.group("label"))
         ]
+        if amounts:
+            return amounts
 
     unit_label = _EVIDENCE_BUDGET_UNIT_RE.search(quote)
     if unit_label:
@@ -249,9 +251,18 @@ def _evidence_amounts(quote: str) -> list[float]:
         if amounts:
             return amounts
         amount = normalize_amount(value_text, default_unit=unit_label.group("unit"))
-        return [amount] if amount is not None else []
+        if amount is not None:
+            return [amount]
 
-    return _budget_values(quote, "")
+    amounts = _budget_values(quote, "")
+    if amounts:
+        return amounts
+    tokens = [match.group(0).strip() for match in _BUDGET_TOKEN_RE.finditer(quote)]
+    return [
+        amount
+        for token in tokens
+        if (amount := normalize_amount(token, default_unit="元")) is not None
+    ]
 
 
 def _budget_value(text: str) -> FieldValue | None:
