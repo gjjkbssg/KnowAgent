@@ -43,6 +43,7 @@ class ParsedDocument:
     text_blocks: list[TextBlock] = field(default_factory=list)
     images: list[ImageBlock] = field(default_factory=list)
     warnings: list[ParseWarning] = field(default_factory=list)
+    metadata: dict = field(default_factory=dict)
 
     @property
     def ordered_blocks(self) -> list[TextBlock | ImageBlock]:
