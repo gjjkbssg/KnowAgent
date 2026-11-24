@@ -1,7 +1,11 @@
 import json
+import tempfile
+from io import StringIO
+from pathlib import Path
 from unittest.mock import patch
 
-from django.test import SimpleTestCase
+from django.core.management import call_command
+from django.test import SimpleTestCase, override_settings
 
 from personal_knowledge_base.extraction.normalize import (
     chinese_amount_to_yuan,
@@ -535,3 +539,147 @@ class TenderScoringTests(SimpleTestCase):
             "alternates": {"project_code": ["ALT"]},
         }
         self.assertTrue(_is_correct("project_code", "ALT", document))
+
+
+class TenderReplayTests(SimpleTestCase):
+    def test_two_document_replay_copies_raw_response_latency_and_tokens(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            docs_dir = root / "interview_materials" / "tender_eval" / "docs"
+            docs_dir.mkdir(parents=True)
+            documents = []
+            raw_records = []
+            for index, split in ((1, "dev"), (2, "test")):
+                name = f"项目{index}"
+                code = f"CODE-{index}"
+                purchaser = f"采购人{index}公司"
+                agency = f"代理机构{index}公司"
+                budget = 100000 * index
+                deadline = f"2026-12-0{index} 09:00"
+                date_text = f"2026年12月0{index}日09时00分"
+                evidence = {
+                    "project_name": f"项目名称：{name}",
+                    "project_code": f"项目编号：{code}",
+                    "purchaser": f"采购人：{purchaser}",
+                    "agency": f"代理机构：{agency}",
+                    "budget_yuan": f"预算金额（元）：{budget}",
+                    "bid_deadline": f"提交投标文件截止时间：{date_text}",
+                }
+                values = {
+                    "project_name": name,
+                    "project_code": code,
+                    "purchaser": purchaser,
+                    "agency": agency,
+                    "budget_yuan": budget,
+                    "bid_deadline": deadline,
+                }
+                body = "\n".join(evidence.values())
+                doc_id = f"doc-{index}"
+                (docs_dir / f"{doc_id}.txt").write_text(body, encoding="utf-8")
+                documents.append(
+                    {
+                        "doc_id": doc_id,
+                        "split": split,
+                        "fields": values,
+                        "alternates": {},
+                    }
+                )
+                tool_fields = {
+                    field: {"value": values[field], "evidence": evidence[field]}
+                    for field in FIELDS
+                }
+                response = {
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "function": {
+                                "name": "submit_tender_fields",
+                                "arguments": json.dumps(tool_fields, ensure_ascii=False),
+                            }
+                        }
+                    ],
+                    "finish_reason": "tool_calls",
+                }
+                total_tokens = index * 100
+                raw_records.append(
+                    {
+                        "doc_id": doc_id,
+                        "response": response,
+                        "latency_ms": index * 12.5,
+                        "rule_latency_ms": index * 1.25,
+                        "usage": {
+                            "prompt_tokens": total_tokens - 10,
+                            "completion_tokens": 10,
+                            "total_tokens": total_tokens,
+                        },
+                    }
+                )
+
+            dataset_path = root / "interview_materials" / "tender_eval" / "gold.json"
+            dataset_path.write_text(
+                json.dumps({"documents": documents}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            replay_path = root / "llm_raw.jsonl"
+            replay_path.write_text(
+                "\n".join(
+                    json.dumps(record, ensure_ascii=False) for record in raw_records
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            output_dir = root / "results"
+            tenant = type("TenantFixture", (), {"pk": "tenant-1"})()
+
+            with override_settings(BASE_DIR=root):
+                with (
+                    patch(
+                        "personal_knowledge_base.management.commands."
+                        "run_tender_extraction_eval.Tenant.objects.order_by"
+                    ) as order_by,
+                    patch(
+                        "personal_knowledge_base.extraction.tender."
+                        "model_providers.chat_completion_raw"
+                    ) as chat_completion_raw,
+                ):
+                    order_by.return_value.first.return_value = tenant
+                    call_command(
+                        "run_tender_extraction_eval",
+                        methods="rules,llm,hybrid",
+                        split="all",
+                        output_dir=str(output_dir),
+                        replay_llm=str(replay_path),
+                        stdout=StringIO(),
+                    )
+
+            chat_completion_raw.assert_not_called()
+            summary = json.loads(
+                (output_dir / "summary.json").read_text(encoding="utf-8")
+            )
+            llm_predictions = {
+                prediction["doc_id"]: prediction
+                for prediction in summary["per_document"]
+                if prediction["method"] == "llm"
+            }
+            hybrid_predictions = {
+                prediction["doc_id"]: prediction
+                for prediction in summary["per_document"]
+                if prediction["method"] == "hybrid"
+            }
+            self.assertEqual(llm_predictions["doc-1"]["latency_ms"], 12.5)
+            self.assertEqual(llm_predictions["doc-2"]["latency_ms"], 25.0)
+            self.assertEqual(llm_predictions["doc-1"]["tokens"], 100)
+            self.assertEqual(llm_predictions["doc-2"]["tokens"], 200)
+            self.assertEqual(hybrid_predictions["doc-1"]["latency_ms"], 13.75)
+            self.assertEqual(hybrid_predictions["doc-2"]["latency_ms"], 27.5)
+            self.assertEqual(
+                llm_predictions["doc-1"]["fields"]["project_code"],
+                "CODE-1",
+            )
+            saved_records = [
+                json.loads(line)
+                for line in (output_dir / "llm_raw.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+            ]
+            self.assertEqual(saved_records, raw_records)

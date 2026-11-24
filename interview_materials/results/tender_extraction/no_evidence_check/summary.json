@@ -1,7 +1,7 @@
 {
   "metadata": {
     "dataset": "interview_materials/tender_eval/gold.json",
-    "generated_at": "2026-11-24T13:31:10.243008+00:00",
+    "generated_at": "2026-11-24T14:33:12.252422+00:00",
     "methods": [
       "llm"
     ],
@@ -17,68 +17,68 @@
       "documents": 20,
       "per_field": {
         "project_name": {
-          "tp": 20,
-          "fp": 0,
-          "fn": 0,
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "tp": 18,
+          "fp": 1,
+          "fn": 2,
+          "precision": 0.9474,
+          "recall": 0.9,
+          "f1": 0.9231
         },
         "project_code": {
-          "tp": 20,
+          "tp": 19,
           "fp": 0,
-          "fn": 0,
+          "fn": 1,
           "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "recall": 0.95,
+          "f1": 0.9744
         },
         "purchaser": {
-          "tp": 20,
+          "tp": 19,
           "fp": 0,
-          "fn": 0,
+          "fn": 1,
           "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "recall": 0.95,
+          "f1": 0.9744
         },
         "agency": {
-          "tp": 20,
+          "tp": 19,
           "fp": 0,
-          "fn": 0,
+          "fn": 1,
           "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "recall": 0.95,
+          "f1": 0.9744
         },
         "budget_yuan": {
-          "tp": 20,
+          "tp": 19,
           "fp": 0,
-          "fn": 0,
+          "fn": 1,
           "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "recall": 0.95,
+          "f1": 0.9744
         },
         "bid_deadline": {
-          "tp": 20,
+          "tp": 19,
           "fp": 0,
-          "fn": 0,
+          "fn": 1,
           "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0
+          "recall": 0.95,
+          "f1": 0.9744
         }
       },
       "micro": {
-        "tp": 120,
-        "fp": 0,
-        "fn": 0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0
+        "tp": 113,
+        "fp": 1,
+        "fn": 7,
+        "precision": 0.9912,
+        "recall": 0.9417,
+        "f1": 0.9658
       },
-      "document_exact_match_rate": 1.0,
-      "mean_latency_ms_per_doc": 28448.22,
-      "mean_tokens_per_doc": 4081.2,
+      "document_exact_match_rate": 0.9,
+      "mean_latency_ms_per_doc": 25229.67,
+      "mean_tokens_per_doc": 3540.1,
       "evidence_dropped_count": 0,
-      "review_rate": 0.0,
-      "review_catch_rate": null
+      "review_rate": 0.05,
+      "review_catch_rate": 0.8571
     },
     {
       "method": "llm",
@@ -87,67 +87,67 @@
       "per_field": {
         "project_name": {
           "tp": 38,
-          "fp": 1,
+          "fp": 0,
           "fn": 2,
-          "precision": 0.9744,
+          "precision": 1.0,
           "recall": 0.95,
-          "f1": 0.962
+          "f1": 0.9744
         },
         "project_code": {
-          "tp": 39,
+          "tp": 38,
           "fp": 0,
-          "fn": 1,
+          "fn": 2,
           "precision": 1.0,
-          "recall": 0.975,
-          "f1": 0.9873
+          "recall": 0.95,
+          "f1": 0.9744
         },
         "purchaser": {
-          "tp": 39,
+          "tp": 38,
           "fp": 0,
-          "fn": 1,
+          "fn": 2,
           "precision": 1.0,
-          "recall": 0.975,
-          "f1": 0.9873
+          "recall": 0.95,
+          "f1": 0.9744
         },
         "agency": {
-          "tp": 39,
+          "tp": 38,
           "fp": 0,
-          "fn": 1,
+          "fn": 2,
           "precision": 1.0,
-          "recall": 0.975,
-          "f1": 0.9873
+          "recall": 0.95,
+          "f1": 0.9744
         },
         "budget_yuan": {
-          "tp": 39,
+          "tp": 38,
           "fp": 0,
-          "fn": 1,
+          "fn": 2,
           "precision": 1.0,
-          "recall": 0.975,
-          "f1": 0.9873
+          "recall": 0.95,
+          "f1": 0.9744
         },
         "bid_deadline": {
-          "tp": 39,
+          "tp": 38,
           "fp": 0,
-          "fn": 1,
+          "fn": 2,
           "precision": 1.0,
-          "recall": 0.975,
-          "f1": 0.9873
+          "recall": 0.95,
+          "f1": 0.9744
         }
       },
       "micro": {
-        "tp": 233,
-        "fp": 1,
-        "fn": 7,
-        "precision": 0.9957,
-        "recall": 0.9708,
-        "f1": 0.9831
+        "tp": 228,
+        "fp": 0,
+        "fn": 12,
+        "precision": 1.0,
+        "recall": 0.95,
+        "f1": 0.9744
       },
       "document_exact_match_rate": 0.95,
-      "mean_latency_ms_per_doc": 27096.47,
-      "mean_tokens_per_doc": 4071.15,
+      "mean_latency_ms_per_doc": 26903.85,
+      "mean_tokens_per_doc": 4094.82,
       "evidence_dropped_count": 0,
-      "review_rate": 0.025,
-      "review_catch_rate": 0.8571
+      "review_rate": 0.05,
+      "review_catch_rate": 1.0
     }
   ],
   "per_document": [
@@ -184,8 +184,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 44031.50600998197,
-      "tokens": 4947
+      "latency_ms": 16477.83820301993,
+      "tokens": 3218
     },
     {
       "method": "llm",
@@ -220,8 +220,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 22773.124441999244,
-      "tokens": 4094
+      "latency_ms": 20713.421805005055,
+      "tokens": 3961
     },
     {
       "method": "llm",
@@ -256,8 +256,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 16750.519920984516,
-      "tokens": 2599
+      "latency_ms": 18465.62845801236,
+      "tokens": 2668
     },
     {
       "method": "llm",
@@ -292,8 +292,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17236.39912100043,
-      "tokens": 2595
+      "latency_ms": 17662.131439021323,
+      "tokens": 2544
     },
     {
       "method": "llm",
@@ -310,12 +310,12 @@
       "evidence": {
         "project_name": "项目名称：临洮县畜牧兽医局2026年畜牧业发展肉牛肉羊增量提质项目",
         "project_code": "项目编号：GSMZY-202631-ZC",
-        "purchaser": "1.采购人信息 名称：临洮县畜牧兽医局",
-        "agency": "2.采购代理机构信息 名称：甘肃铭智扬工程咨询有限公司",
+        "purchaser": "采购人信息 名称：临洮县畜牧兽医局",
+        "agency": "采购代理机构信息 名称：甘肃铭智扬工程咨询有限公司",
         "budget_yuan": [
           "预算金额：5,028,000.00元"
         ],
-        "bid_deadline": "时间： 2026年12月15日 09时00分00秒 （北京时间）"
+        "bid_deadline": "2026年12月15日 09时00分 （北京时间）前递交投标文件"
       },
       "sources": {
         "project_name": "llm",
@@ -328,8 +328,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 29959.831781015964,
-      "tokens": 4204
+      "latency_ms": 36178.919862024486,
+      "tokens": 4627
     },
     {
       "method": "llm",
@@ -351,7 +351,7 @@
         "budget_yuan": [
           "预算金额：2,602,790.00元"
         ],
-        "bid_deadline": "2026年12月16日09时00分（北京时间）前递交投标文件"
+        "bid_deadline": "时间：2026年12月16日09时00分（北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -364,8 +364,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 36359.02377901948,
-      "tokens": 4365
+      "latency_ms": 44420.08301301394,
+      "tokens": 4889
     },
     {
       "method": "llm",
@@ -400,8 +400,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 22320.01745601883,
-      "tokens": 3280
+      "latency_ms": 23593.562085996382,
+      "tokens": 3056
     },
     {
       "method": "llm",
@@ -436,8 +436,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25612.886160990456,
-      "tokens": 4238
+      "latency_ms": 22006.779884977732,
+      "tokens": 4009
     },
     {
       "method": "llm",
@@ -472,8 +472,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 26357.228742999723,
-      "tokens": 3837
+      "latency_ms": 21505.988365970552,
+      "tokens": 3586
     },
     {
       "method": "llm",
@@ -495,7 +495,7 @@
         "budget_yuan": [
           "预算金额：15,246,473.74元"
         ],
-        "bid_deadline": "时间： 2026年12月15日 09时00分00秒 （北京时间）"
+        "bid_deadline": "并于 2026年12月15日 09时00分 （北京时间）前递交投标文件"
       },
       "sources": {
         "project_name": "llm",
@@ -508,8 +508,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 26219.14508700138,
-      "tokens": 5848
+      "latency_ms": 22622.455212986097,
+      "tokens": 5509
     },
     {
       "method": "llm",
@@ -526,8 +526,8 @@
       "evidence": {
         "project_name": "项目名称：乌海市第七中学(乌海市第一中学分校)网络改造项目",
         "project_code": "项目编号：WHZCS-G-H-260091",
-        "purchaser": "1.采购人信息 名称：乌海市第七中学（乌海市第一中学分校）",
-        "agency": "2.采购代理机构信息 名称：内蒙古华格项目管理咨询有限公司",
+        "purchaser": "采购人信息 名称：乌海市第七中学（乌海市第一中学分校）",
+        "agency": "采购代理机构信息 名称：内蒙古华格项目管理咨询有限公司",
         "budget_yuan": [
           "预算金额：1,322,713.00元"
         ],
@@ -544,8 +544,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 39459.20187901356,
-      "tokens": 5234
+      "latency_ms": 44216.1559840315,
+      "tokens": 5569
     },
     {
       "method": "llm",
@@ -562,8 +562,8 @@
       "evidence": {
         "project_name": "项目名称：坡头区市政综合服务市场化项目（园林市场化服务）",
         "project_code": "项目编号：GDWL-20260609GK",
-        "purchaser": "采购人信息 名 称：湛江市坡头区城市管理和综合执法局",
-        "agency": "采购代理机构信息 名 称：广东威朗工程咨询有限公司",
+        "purchaser": "1.采购人信息 名 称：湛江市坡头区城市管理和综合执法局",
+        "agency": "2.采购代理机构信息 名 称：广东威朗工程咨询有限公司",
         "budget_yuan": [
           "预算金额：54,702,165.72元"
         ],
@@ -580,8 +580,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 24011.97881597909,
-      "tokens": 3849
+      "latency_ms": 15064.577725017443,
+      "tokens": 3259
     },
     {
       "method": "llm",
@@ -616,8 +616,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 28898.161318007624,
-      "tokens": 3878
+      "latency_ms": 26688.90846997965,
+      "tokens": 3750
     },
     {
       "method": "llm",
@@ -652,8 +652,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 18343.24552002363,
-      "tokens": 3220
+      "latency_ms": 30712.78721699491,
+      "tokens": 3961
     },
     {
       "method": "llm",
@@ -675,7 +675,7 @@
         "budget_yuan": [
           "预算金额：2,800,000.00元"
         ],
-        "bid_deadline": "2026年12月15日 09时20分00秒 （北京时间）"
+        "bid_deadline": "2026年12月15日 09时20分 （北京时间）前递交投标文件"
       },
       "sources": {
         "project_name": "llm",
@@ -688,8 +688,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25584.069592994638,
-      "tokens": 3154
+      "latency_ms": 29637.919537024572,
+      "tokens": 3415
     },
     {
       "method": "llm",
@@ -724,8 +724,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17267.291397001827,
-      "tokens": 2660
+      "latency_ms": 20733.401270990726,
+      "tokens": 2840
     },
     {
       "method": "llm",
@@ -742,12 +742,12 @@
       "evidence": {
         "project_name": "项目名称：中心供氧、负压系统和微电脑呼叫系统拆除安装及改造等采购项目(二次)",
         "project_code": "项目编号：N5100012026003185",
-        "purchaser": "1.采购人信息 名称：四川省骨科医院",
-        "agency": "2.采购代理机构信息 名称：四川国际招标有限责任公司",
+        "purchaser": "采购人信息 名称：四川省骨科医院",
+        "agency": "采购代理机构信息 名称：四川国际招标有限责任公司",
         "budget_yuan": [
           "预算金额：150,000.00元"
         ],
-        "bid_deadline": "时间：2026年12月17日 09时30分00秒（北京时间）"
+        "bid_deadline": "并于 2026年12月17日 09时30分 （北京时间）前递交投标文件"
       },
       "sources": {
         "project_name": "llm",
@@ -760,8 +760,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 39124.305811012164,
-      "tokens": 4620
+      "latency_ms": 37718.025463982485,
+      "tokens": 4420
     },
     {
       "method": "llm",
@@ -796,30 +796,28 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 33413.23841799749,
-      "tokens": 3954
+      "latency_ms": 27538.130011991598,
+      "tokens": 3571
     },
     {
       "method": "llm",
       "doc_id": "gkzb_t20261124_27747174",
       "split": "dev",
       "fields": {
-        "project_name": "2026年区域性福利院购买服务项目",
-        "project_code": "421224202601000441",
-        "purchaser": "通山县民政局",
-        "agency": "通山县民政局",
-        "budget_yuan": 2637200.0,
-        "bid_deadline": "2026-12-16 10:00"
+        "project_name": null,
+        "project_code": null,
+        "purchaser": null,
+        "agency": null,
+        "budget_yuan": null,
+        "bid_deadline": null
       },
       "evidence": {
-        "project_name": "3、项目名称：2026年区域性福利院购买服务项目",
-        "project_code": "1、项目编号：421224202601000441",
-        "purchaser": "1、采购人信息\n 名 称：通山县民政局",
-        "agency": "2、采购代理机构信息\n 名 称：通山县民政局",
-        "budget_yuan": [
-          "5、预算金额：263.720000(万元)"
-        ],
-        "bid_deadline": "2、截止时间：2026年12月16日10点00分（北京时间）"
+        "project_name": null,
+        "project_code": null,
+        "purchaser": null,
+        "agency": null,
+        "budget_yuan": null,
+        "bid_deadline": null
       },
       "sources": {
         "project_name": "llm",
@@ -829,11 +827,23 @@
         "budget_yuan": "llm",
         "bid_deadline": "llm"
       },
-      "needs_review": [],
-      "issues": [],
+      "needs_review": [
+        "project_name",
+        "project_code",
+        "purchaser",
+        "agency",
+        "budget_yuan",
+        "bid_deadline"
+      ],
+      "issues": [
+        "budget_yuan: must be in (0, 100000000000)",
+        "bid_deadline: must parse to a date in 2020–2035",
+        "purchaser: must be non-empty",
+        "project_name: must be non-empty"
+      ],
       "evidence_dropped": [],
-      "latency_ms": 19077.698150998913,
-      "tokens": 3408
+      "latency_ms": 60069.70846001059,
+      "tokens": 0
     },
     {
       "method": "llm",
@@ -868,8 +878,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 32986.96175898658,
-      "tokens": 4232
+      "latency_ms": 27963.257941999473,
+      "tokens": 3823
     },
     {
       "method": "llm",
@@ -904,8 +914,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17797.351970046293,
-      "tokens": 3354
+      "latency_ms": 25982.95195196988,
+      "tokens": 3865
     },
     {
       "method": "llm",
@@ -940,8 +950,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 37637.47966999654,
-      "tokens": 3820
+      "latency_ms": 17420.014683972113,
+      "tokens": 2604
     },
     {
       "method": "llm",
@@ -976,8 +986,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25342.915732006077,
-      "tokens": 4190
+      "latency_ms": 28923.59282099642,
+      "tokens": 4520
     },
     {
       "method": "llm",
@@ -1012,8 +1022,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 14822.760101989843,
-      "tokens": 2905
+      "latency_ms": 34578.36419797968,
+      "tokens": 4252
     },
     {
       "method": "llm",
@@ -1050,123 +1060,12 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 36112.748004030436,
-      "tokens": 6310
+      "latency_ms": 22402.309707016684,
+      "tokens": 5500
     },
     {
       "method": "llm",
       "doc_id": "gkzb_t20261124_27747203",
-      "split": "test",
-      "fields": {
-        "project_name": "辽宁中医药大学附属医院“沈阳市中医药传承创新发展示范项目”-第三包",
-        "project_code": "JH26-210000-79105",
-        "purchaser": "辽宁中医药大学附属医院",
-        "agency": "依诚招标有限公司",
-        "budget_yuan": 790000.0,
-        "bid_deadline": "2026-12-15 09:00"
-      },
-      "evidence": {
-        "project_name": "项目名称：辽宁中医药大学附属医院“沈阳市中医药传承创新发展示范项目”-第三包",
-        "project_code": "项目编号：JH26-210000-79105",
-        "purchaser": "名 称： 辽宁中医药大学附属医院",
-        "agency": "名 称：依诚招标有限公司",
-        "budget_yuan": [
-          "预算金额（元）：540000",
-          "预算金额（元）：250000"
-        ],
-        "bid_deadline": "2026年12月15日 09时00分"
-      },
-      "sources": {
-        "project_name": "llm",
-        "project_code": "llm",
-        "purchaser": "llm",
-        "agency": "llm",
-        "budget_yuan": "llm",
-        "bid_deadline": "llm"
-      },
-      "needs_review": [],
-      "issues": [],
-      "evidence_dropped": [],
-      "latency_ms": 38091.34260896826,
-      "tokens": 8169
-    },
-    {
-      "method": "llm",
-      "doc_id": "gkzb_t20261124_27747207",
-      "split": "test",
-      "fields": {
-        "project_name": "辽宁中医药大学附属医院\"中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目\"设备购置-第五包",
-        "project_code": "JH26-210000-79112",
-        "purchaser": "辽宁中医药大学附属医院",
-        "agency": "乔泰工程管理集团有限公司",
-        "budget_yuan": 1228000.0,
-        "bid_deadline": "2026-12-16 09:00"
-      },
-      "evidence": {
-        "project_name": "项目名称：辽宁中医药大学附属医院\"中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目\"设备购置-第五包",
-        "project_code": "项目编号：JH26-210000-79112",
-        "purchaser": "名 称： 辽宁中医药大学附属医院",
-        "agency": "名 称：乔泰工程管理集团有限公司",
-        "budget_yuan": [
-          "预算金额（元）：628000",
-          "预算金额（元）：600000"
-        ],
-        "bid_deadline": "2026年12月16日 09时00分（北京时间）"
-      },
-      "sources": {
-        "project_name": "llm",
-        "project_code": "llm",
-        "purchaser": "llm",
-        "agency": "llm",
-        "budget_yuan": "llm",
-        "bid_deadline": "llm"
-      },
-      "needs_review": [],
-      "issues": [],
-      "evidence_dropped": [],
-      "latency_ms": 31395.104702038225,
-      "tokens": 10374
-    },
-    {
-      "method": "llm",
-      "doc_id": "gkzb_t20261124_27747208",
-      "split": "dev",
-      "fields": {
-        "project_name": "辽宁中医药大学附属医院“中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目”设备购置-第七包",
-        "project_code": "JH26-210000-79116",
-        "purchaser": "辽宁中医药大学附属医院",
-        "agency": "乔泰工程管理集团有限公司",
-        "budget_yuan": 500000.0,
-        "bid_deadline": "2026-12-15 09:00"
-      },
-      "evidence": {
-        "project_name": "项目名称：辽宁中医药大学附属医院“中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目”设备购置-第七包",
-        "project_code": "项目编号：JH26-210000-79116",
-        "purchaser": "名 称： 辽宁中医药大学附属医院",
-        "agency": "名 称：乔泰工程管理集团有限公司",
-        "budget_yuan": [
-          "预算金额（元）：240000",
-          "预算金额（元）：260000"
-        ],
-        "bid_deadline": "2026年12月15日 09时00分"
-      },
-      "sources": {
-        "project_name": "llm",
-        "project_code": "llm",
-        "purchaser": "llm",
-        "agency": "llm",
-        "budget_yuan": "llm",
-        "bid_deadline": "llm"
-      },
-      "needs_review": [],
-      "issues": [],
-      "evidence_dropped": [],
-      "latency_ms": 52667.37905499758,
-      "tokens": 7637
-    },
-    {
-      "method": "llm",
-      "doc_id": "gkzb_t20261124_27747211",
       "split": "test",
       "fields": {
         "project_name": null,
@@ -1207,8 +1106,128 @@
         "project_name: must be non-empty"
       ],
       "evidence_dropped": [],
-      "latency_ms": 60047.013583010994,
+      "latency_ms": 20432.41691001458,
+      "tokens": 7158
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747207",
+      "split": "test",
+      "fields": {
+        "project_name": null,
+        "project_code": null,
+        "purchaser": null,
+        "agency": null,
+        "budget_yuan": null,
+        "bid_deadline": null
+      },
+      "evidence": {
+        "project_name": null,
+        "project_code": null,
+        "purchaser": null,
+        "agency": null,
+        "budget_yuan": null,
+        "bid_deadline": null
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [
+        "project_name",
+        "project_code",
+        "purchaser",
+        "agency",
+        "budget_yuan",
+        "bid_deadline"
+      ],
+      "issues": [
+        "budget_yuan: must be in (0, 100000000000)",
+        "bid_deadline: must parse to a date in 2020–2035",
+        "purchaser: must be non-empty",
+        "project_name: must be non-empty"
+      ],
+      "evidence_dropped": [],
+      "latency_ms": 60011.66568795452,
       "tokens": 0
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747208",
+      "split": "dev",
+      "fields": {
+        "project_name": "辽宁中医药大学附属医院\"中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目\"设备购置-第七包",
+        "project_code": "JH26-210000-79116",
+        "purchaser": "辽宁中医药大学附属医院",
+        "agency": "乔泰工程管理集团有限公司",
+        "budget_yuan": 500000.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：辽宁中医药大学附属医院\"中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目\"设备购置-第七包",
+        "project_code": "项目编号：JH26-210000-79116",
+        "purchaser": "名 称： 辽宁中医药大学附属医院",
+        "agency": "名 称：乔泰工程管理集团有限公司",
+        "budget_yuan": [
+          "预算金额（元）：240000",
+          "预算金额（元）：260000"
+        ],
+        "bid_deadline": "2026年12月15日 09时00分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 41605.377148021944,
+      "tokens": 6979
+    },
+    {
+      "method": "llm",
+      "doc_id": "gkzb_t20261124_27747211",
+      "split": "test",
+      "fields": {
+        "project_name": "本溪市疾病预防控制中心（本溪市卫生监督所）仪器设备采购",
+        "project_code": "JH26-210500-04644",
+        "purchaser": "本溪市疾病预防控制中心（本溪市卫生监督所）",
+        "agency": "中科高盛咨询集团有限公司",
+        "budget_yuan": 4220000.0,
+        "bid_deadline": "2026-12-15 09:00"
+      },
+      "evidence": {
+        "project_name": "项目名称：本溪市疾病预防控制中心（本溪市卫生监督所）仪器设备采购",
+        "project_code": "项目编号：JH26-210500-04644",
+        "purchaser": "名 称： 本溪市疾病预防控制中心（本溪市卫生监督所）",
+        "agency": "名 称：中科高盛咨询集团有限公司",
+        "budget_yuan": [
+          "预算金额（元）：4000000",
+          "预算金额（元）：220000"
+        ],
+        "bid_deadline": "2026年12月15日 09时00分（北京时间）"
+      },
+      "sources": {
+        "project_name": "llm",
+        "project_code": "llm",
+        "purchaser": "llm",
+        "agency": "llm",
+        "budget_yuan": "llm",
+        "bid_deadline": "llm"
+      },
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 29492.452790029347,
+      "tokens": 12712
     },
     {
       "method": "llm",
@@ -1243,8 +1262,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17060.883565049153,
-      "tokens": 3265
+      "latency_ms": 21400.153597991448,
+      "tokens": 3552
     },
     {
       "method": "llm",
@@ -1279,8 +1298,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 29651.33856999455,
-      "tokens": 3990
+      "latency_ms": 22130.30747801531,
+      "tokens": 3414
     },
     {
       "method": "llm",
@@ -1302,7 +1321,7 @@
         "budget_yuan": [
           "湘潭大学商学院2026年本科教学设备采购项目 886730.1 教学设备 详见招标文件 1 886730.1"
         ],
-        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09点00分"
+        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09点00分（北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -1315,8 +1334,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 28353.213531023357,
-      "tokens": 3914
+      "latency_ms": 18844.441269990057,
+      "tokens": 3296
     },
     {
       "method": "llm",
@@ -1338,7 +1357,7 @@
         "budget_yuan": [
           "预算金额：156.000000万元"
         ],
-        "bid_deadline": "并于2026-12-16 09:00 （北京时间）前递交投标文件"
+        "bid_deadline": "2026-12-16 09:00 （北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -1351,8 +1370,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 20357.543609978165,
-      "tokens": 3076
+      "latency_ms": 17953.878957021516,
+      "tokens": 2879
     },
     {
       "method": "llm",
@@ -1387,8 +1406,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 18693.024785025045,
-      "tokens": 3356
+      "latency_ms": 19769.682837999426,
+      "tokens": 3390
     },
     {
       "method": "llm",
@@ -1423,8 +1442,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 15653.11383799417,
-      "tokens": 2762
+      "latency_ms": 13800.966216018423,
+      "tokens": 2611
     },
     {
       "method": "llm",
@@ -1446,7 +1465,7 @@
         "budget_yuan": [
           "预算金额：680万元"
         ],
-        "bid_deadline": "2026年12月14日14点30分（北京时间）前提交投标文件"
+        "bid_deadline": "时间：2026年12月14日14点30分（北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -1459,8 +1478,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 27165.018839994445,
-      "tokens": 3697
+      "latency_ms": 23788.0060269963,
+      "tokens": 3392
     },
     {
       "method": "llm",
@@ -1477,8 +1496,8 @@
       "evidence": {
         "project_name": "项目名称：中医药传承创新发展示范项目设备一批",
         "project_code": "项目编号：[350401]FJBWZB[GK]2026001",
-        "purchaser": "1.采购人信息 名称：三明市第一医院",
-        "agency": "2.采购代理机构信息（如有） 名称：福建骉旺招标代理有限公司",
+        "purchaser": "采购人信息 名称：三明市第一医院",
+        "agency": "采购代理机构信息（如有） 名称：福建骉旺招标代理有限公司",
         "budget_yuan": [
           "预算金额：5,160,000.00元"
         ],
@@ -1495,8 +1514,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 23728.011075989343,
-      "tokens": 3824
+      "latency_ms": 23830.747740983497,
+      "tokens": 3803
     },
     {
       "method": "llm",
@@ -1513,8 +1532,8 @@
       "evidence": {
         "project_name": "项目名称：海南自由贸易港知识产权法院审判法庭综合大楼信息化建设项目",
         "project_code": "项目编号：HNGP2026-0167",
-        "purchaser": "采购人信息 名称：海南自由贸易港知识产权法院",
-        "agency": "采购代理机构信息（如有） 名称：海南省政府采购中心",
+        "purchaser": "1.采购人信息 名称：海南自由贸易港知识产权法院",
+        "agency": "2.采购代理机构信息（如有） 名称：海南省政府采购中心",
         "budget_yuan": [
           "预算金额：10,223,742.41元"
         ],
@@ -1531,8 +1550,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 26523.786560981534,
-      "tokens": 4975
+      "latency_ms": 24093.35852699587,
+      "tokens": 4788
     },
     {
       "method": "llm",
@@ -1567,8 +1586,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 33935.70160801755,
-      "tokens": 3745
+      "latency_ms": 24902.27700403193,
+      "tokens": 3159
     },
     {
       "method": "llm",
@@ -1585,12 +1604,12 @@
       "evidence": {
         "project_name": "项目名称：甘肃省人民检察院检察官法警服装采购项目",
         "project_code": "项目编号：甘财采备字[2026]15551号",
-        "purchaser": "1.采购人信息 名称：甘肃省人民检察院",
-        "agency": "2.采购代理机构信息 名称：甘肃西招国际招标有限公司",
+        "purchaser": "采购人信息 名称：甘肃省人民检察院",
+        "agency": "采购代理机构信息 名称：甘肃西招国际招标有限公司",
         "budget_yuan": [
           "预算金额：1,950,232.80元"
         ],
-        "bid_deadline": "2026年12月15日 10时00分00秒 （北京时间）"
+        "bid_deadline": "时间： 2026年12月15日 10时00分00秒 （北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -1603,8 +1622,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 29016.328481025994,
-      "tokens": 3653
+      "latency_ms": 36211.780079000164,
+      "tokens": 4093
     },
     {
       "method": "llm",
@@ -1639,8 +1658,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 20843.35576504236,
-      "tokens": 4091
+      "latency_ms": 25260.39019098971,
+      "tokens": 4263
     },
     {
       "method": "llm",
@@ -1657,12 +1676,12 @@
       "evidence": {
         "project_name": "项目名称：先进能源科学与技术广东省实验室核孔膜终端自动化续接及转运系统采购项目",
         "project_code": "项目编号：OITC-G260884038",
-        "purchaser": "名 称：先进能源科学与技术广东省实验室",
-        "agency": "名 称：东方国际招标有限责任公司",
+        "purchaser": "1.采购人信息 名 称：先进能源科学与技术广东省实验室",
+        "agency": "2.采购代理机构信息 名 称：东方国际招标有限责任公司",
         "budget_yuan": [
           "预算金额：6,600,000.00元"
         ],
-        "bid_deadline": "2026年12月15日 09时30分00秒 （北京时间）"
+        "bid_deadline": "并于 2026年12月15日 09时30分 （北京时间）前递交投标文件"
       },
       "sources": {
         "project_name": "llm",
@@ -1675,8 +1694,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19348.532251024153,
-      "tokens": 3504
+      "latency_ms": 22366.40617303783,
+      "tokens": 3622
     },
     {
       "method": "llm",
@@ -1711,8 +1730,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 38936.17046601139,
-      "tokens": 4556
+      "latency_ms": 21742.994718952104,
+      "tokens": 3420
     },
     {
       "method": "llm",
@@ -1729,8 +1748,8 @@
       "evidence": {
         "project_name": "项目名称：内蒙古自治区医疗保障信息平台运行维护（基础环境）",
         "project_code": "项目编号：NMGZC-G-F-260899",
-        "purchaser": "名称：内蒙古自治区大数据中心",
-        "agency": "名称：内蒙古自治区公共资源交易中心",
+        "purchaser": "采购人信息 名称：内蒙古自治区大数据中心",
+        "agency": "采购代理机构信息 名称：内蒙古自治区公共资源交易中心",
         "budget_yuan": [
           "预算金额：15,014,500.00元"
         ],
@@ -1747,8 +1766,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 15434.185509977397,
-      "tokens": 3475
+      "latency_ms": 29947.949557972606,
+      "tokens": 4281
     },
     {
       "method": "llm",
@@ -1765,12 +1784,12 @@
       "evidence": {
         "project_name": "项目名称：广州市番禺区人民法院2027-2028年物业管理服务项目",
         "project_code": "项目编号：CZ2026-1530",
-        "purchaser": "1.采购人信息 名 称：广州市番禺区人民法院",
-        "agency": "2.采购代理机构信息 名 称：广州市政府采购中心",
+        "purchaser": "采购人信息 名 称：广州市番禺区人民法院",
+        "agency": "采购代理机构信息 名 称：广州市政府采购中心",
         "budget_yuan": [
           "预算金额：10,950,000.00元"
         ],
-        "bid_deadline": "并于 2026年12月15日 09时00分 （北京时间）前递交投标文件"
+        "bid_deadline": "2026年12月15日 09时00分00秒 （北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -1783,8 +1802,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19826.986650004983,
-      "tokens": 3472
+      "latency_ms": 32216.445043042768,
+      "tokens": 4246
     },
     {
       "method": "llm",
@@ -1819,8 +1838,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 14061.335424950812,
-      "tokens": 3120
+      "latency_ms": 14613.672167004552,
+      "tokens": 3132
     },
     {
       "method": "llm",
@@ -1855,8 +1874,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 33221.89624502789,
-      "tokens": 4642
+      "latency_ms": 18544.43074000301,
+      "tokens": 3665
     },
     {
       "method": "llm",
@@ -1873,8 +1892,8 @@
       "evidence": {
         "project_name": "项目名称：广州市珠江前航道边滩清淤项目施工",
         "project_code": "项目编号：440101-2026-18894",
-        "purchaser": "1.采购人信息 名 称：广州市珠江前后航道流域事务中心",
-        "agency": "2.采购代理机构信息 名 称：广东粤信项目管理有限公司",
+        "purchaser": "名 称：广州市珠江前后航道流域事务中心",
+        "agency": "名 称：广东粤信项目管理有限公司",
         "budget_yuan": [
           "预算金额：26,970,746.69元"
         ],
@@ -1891,8 +1910,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 30137.82459095819,
-      "tokens": 4245
+      "latency_ms": 26233.59416105086,
+      "tokens": 3968
     },
     {
       "method": "llm",
@@ -1914,7 +1933,7 @@
         "budget_yuan": [
           "预算金额：6,000,000.00元"
         ],
-        "bid_deadline": "2026年12月15日 09时00分"
+        "bid_deadline": "2026年12月15日 09时00分 （北京时间）前递交投标文件"
       },
       "sources": {
         "project_name": "llm",
@@ -1927,8 +1946,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 41483.56190696359,
-      "tokens": 4921
+      "latency_ms": 19811.079845007043,
+      "tokens": 3461
     },
     {
       "method": "llm",
@@ -1963,8 +1982,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 22144.018166000023,
-      "tokens": 3767
+      "latency_ms": 14308.990943012759,
+      "tokens": 3236
     },
     {
       "method": "llm",
@@ -1981,12 +2000,12 @@
       "evidence": {
         "project_name": "项目名称：酒泉市玄奘之路户外运动目的地（戈壁清泉）综合服务设施建设项目设计",
         "project_code": "项目编号：GZZFCG[2026]159号",
-        "purchaser": "采购人信息 名称：瓜州县文体广电和旅游局",
-        "agency": "采购代理机构信息 名称：甘肃全标项目管理有限公司",
+        "purchaser": "1.采购人信息 名称：瓜州县文体广电和旅游局",
+        "agency": "2.采购代理机构信息 名称：甘肃全标项目管理有限公司",
         "budget_yuan": [
           "预算金额：2,120,000.00元"
         ],
-        "bid_deadline": "2026年12月15日 09时00分 （北京时间）前递交投标文件"
+        "bid_deadline": "时间： 2026年12月15日 09时00分00秒 （北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -1999,8 +2018,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 41670.96096399473,
-      "tokens": 5286
+      "latency_ms": 23380.648710997775,
+      "tokens": 4099
     },
     {
       "method": "llm",
@@ -2035,8 +2054,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19127.790087019093,
-      "tokens": 2807
+      "latency_ms": 38792.72910504369,
+      "tokens": 4026
     },
     {
       "method": "llm",
@@ -2056,7 +2075,7 @@
         "purchaser": "名 称：宜昌市住房和城市更新局本级",
         "agency": "名 称：湖北聚信建设工程项目管理有限公司",
         "budget_yuan": [
-          "预算金额：2198.1000000000(万元)"
+          "5、预算金额：2198.1000000000(万元)"
         ],
         "bid_deadline": "截止时间：2026年12月15日10点00分（北京时间）"
       },
@@ -2071,8 +2090,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 33117.48119397089,
-      "tokens": 4244
+      "latency_ms": 34814.563361986075,
+      "tokens": 4266
     },
     {
       "method": "llm",
@@ -2107,8 +2126,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 40035.71848903084,
-      "tokens": 4507
+      "latency_ms": 28518.165102985222,
+      "tokens": 3684
     },
     {
       "method": "llm",
@@ -2143,8 +2162,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 27782.889269001316,
-      "tokens": 3722
+      "latency_ms": 22929.308413993567,
+      "tokens": 3376
     },
     {
       "method": "llm",
@@ -2179,8 +2198,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 13232.0088709821,
-      "tokens": 3515
+      "latency_ms": 26168.086602992844,
+      "tokens": 4296
     },
     {
       "method": "llm",
@@ -2215,8 +2234,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19513.82948301034,
-      "tokens": 3505
+      "latency_ms": 21955.43677097885,
+      "tokens": 3659
     },
     {
       "method": "llm",
@@ -2236,9 +2255,7 @@
         "purchaser": "名称：合肥幼儿师范高等专科学校",
         "agency": "名称：合肥市政府采购中心",
         "budget_yuan": [
-          "第1包100万元",
-          "第2包150万元",
-          "第3包60万元"
+          "预算金额：第1包100万元；第2包150万元；第3包60万元"
         ],
         "bid_deadline": "时间：2026年12月14日09点30分"
       },
@@ -2253,8 +2270,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25016.15939498879,
-      "tokens": 3292
+      "latency_ms": 15485.30884901993,
+      "tokens": 2687
     },
     {
       "method": "llm",
@@ -2289,8 +2306,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 26032.072336995043,
-      "tokens": 4294
+      "latency_ms": 20821.704877947923,
+      "tokens": 3888
     },
     {
       "method": "llm",
@@ -2325,13 +2342,18 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 22018.752437958028,
-      "tokens": 4273
+      "latency_ms": 31271.011127042584,
+      "tokens": 4678
     }
   ],
   "errors": [
     {
-      "doc_id": "gkzb_t20261124_27747211",
+      "doc_id": "gkzb_t20261124_27747174",
+      "method": "llm",
+      "error": "HTTPSConnectionPool(host='llm-szgb63ufrao5dpts.cn-beijing.maas.aliyuncs.com', port=443): Read timed out. (read timeout=60)"
+    },
+    {
+      "doc_id": "gkzb_t20261124_27747207",
       "method": "llm",
       "error": "HTTPSConnectionPool(host='llm-szgb63ufrao5dpts.cn-beijing.maas.aliyuncs.com', port=443): Read timed out. (read timeout=60)"
     }

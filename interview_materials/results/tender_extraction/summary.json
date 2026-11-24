@@ -1,7 +1,7 @@
 {
   "metadata": {
     "dataset": "interview_materials/tender_eval/gold.json",
-    "generated_at": "2026-11-24T13:03:26.294575+00:00",
+    "generated_at": "2026-11-24T14:06:42.811172+00:00",
     "methods": [
       "rules",
       "llm",
@@ -76,7 +76,7 @@
         "f1": 1.0
       },
       "document_exact_match_rate": 1.0,
-      "mean_latency_ms_per_doc": 0.18,
+      "mean_latency_ms_per_doc": 0.19,
       "mean_tokens_per_doc": 0.0,
       "evidence_dropped_count": 0,
       "review_rate": 0.0,
@@ -145,7 +145,7 @@
         "f1": 0.9979
       },
       "document_exact_match_rate": 0.975,
-      "mean_latency_ms_per_doc": 0.17,
+      "mean_latency_ms_per_doc": 0.23,
       "mean_tokens_per_doc": 0.0,
       "evidence_dropped_count": 0,
       "review_rate": 0.0042,
@@ -165,30 +165,6 @@
           "f1": 0.9474
         },
         "project_code": {
-          "tp": 19,
-          "fp": 0,
-          "fn": 1,
-          "precision": 1.0,
-          "recall": 0.95,
-          "f1": 0.9744
-        },
-        "purchaser": {
-          "tp": 19,
-          "fp": 0,
-          "fn": 1,
-          "precision": 1.0,
-          "recall": 0.95,
-          "f1": 0.9744
-        },
-        "agency": {
-          "tp": 19,
-          "fp": 0,
-          "fn": 1,
-          "precision": 1.0,
-          "recall": 0.95,
-          "f1": 0.9744
-        },
-        "budget_yuan": {
           "tp": 18,
           "fp": 0,
           "fn": 2,
@@ -196,28 +172,52 @@
           "recall": 0.9,
           "f1": 0.9474
         },
-        "bid_deadline": {
-          "tp": 19,
+        "purchaser": {
+          "tp": 18,
           "fp": 0,
-          "fn": 1,
+          "fn": 2,
           "precision": 1.0,
-          "recall": 0.95,
-          "f1": 0.9744
+          "recall": 0.9,
+          "f1": 0.9474
+        },
+        "agency": {
+          "tp": 18,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.9,
+          "f1": 0.9474
+        },
+        "budget_yuan": {
+          "tp": 17,
+          "fp": 0,
+          "fn": 3,
+          "precision": 1.0,
+          "recall": 0.85,
+          "f1": 0.9189
+        },
+        "bid_deadline": {
+          "tp": 18,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.9,
+          "f1": 0.9474
         }
       },
       "micro": {
-        "tp": 112,
+        "tp": 107,
         "fp": 0,
-        "fn": 8,
+        "fn": 13,
         "precision": 1.0,
-        "recall": 0.9333,
-        "f1": 0.9655
+        "recall": 0.8917,
+        "f1": 0.9427
       },
       "document_exact_match_rate": 0.85,
-      "mean_latency_ms_per_doc": 28080.96,
-      "mean_tokens_per_doc": 3753.7,
-      "evidence_dropped_count": 2,
-      "review_rate": 0.0667,
+      "mean_latency_ms_per_doc": 27112.26,
+      "mean_tokens_per_doc": 3303.3,
+      "evidence_dropped_count": 1,
+      "review_rate": 0.1083,
       "review_catch_rate": 1.0
     },
     {
@@ -258,12 +258,12 @@
           "f1": 1.0
         },
         "budget_yuan": {
-          "tp": 39,
+          "tp": 40,
           "fp": 0,
-          "fn": 1,
+          "fn": 0,
           "precision": 1.0,
-          "recall": 0.975,
-          "f1": 0.9873
+          "recall": 1.0,
+          "f1": 1.0
         },
         "bid_deadline": {
           "tp": 40,
@@ -275,18 +275,18 @@
         }
       },
       "micro": {
-        "tp": 238,
+        "tp": 239,
         "fp": 0,
-        "fn": 2,
+        "fn": 1,
         "precision": 1.0,
-        "recall": 0.9917,
-        "f1": 0.9958
+        "recall": 0.9958,
+        "f1": 0.9979
       },
-      "document_exact_match_rate": 0.95,
-      "mean_latency_ms_per_doc": 26010.73,
-      "mean_tokens_per_doc": 4335.4,
-      "evidence_dropped_count": 2,
-      "review_rate": 0.0083,
+      "document_exact_match_rate": 0.975,
+      "mean_latency_ms_per_doc": 26894.23,
+      "mean_tokens_per_doc": 4431.7,
+      "evidence_dropped_count": 1,
+      "review_rate": 0.0042,
       "review_catch_rate": 1.0
     },
     {
@@ -352,9 +352,9 @@
         "f1": 1.0
       },
       "document_exact_match_rate": 1.0,
-      "mean_latency_ms_per_doc": 28081.14,
-      "mean_tokens_per_doc": 3753.7,
-      "evidence_dropped_count": 2,
+      "mean_latency_ms_per_doc": 27112.45,
+      "mean_tokens_per_doc": 3303.3,
+      "evidence_dropped_count": 1,
       "review_rate": 0.0,
       "review_catch_rate": null
     },
@@ -421,9 +421,9 @@
         "f1": 1.0
       },
       "document_exact_match_rate": 1.0,
-      "mean_latency_ms_per_doc": 26010.9,
-      "mean_tokens_per_doc": 4335.4,
-      "evidence_dropped_count": 2,
+      "mean_latency_ms_per_doc": 26894.46,
+      "mean_tokens_per_doc": 4431.7,
+      "evidence_dropped_count": 1,
       "review_rate": 0.0,
       "review_catch_rate": null
     }
@@ -460,7 +460,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.5763130029663444,
+      "latency_ms": 0.4543120157904923,
       "tokens": 0
     },
     {
@@ -494,7 +494,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.14514900976791978,
+      "latency_ms": 0.14120095875114202,
       "tokens": 0
     },
     {
@@ -528,7 +528,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.10556902270764112,
+      "latency_ms": 0.2149720094166696,
       "tokens": 0
     },
     {
@@ -562,7 +562,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1074190076906234,
+      "latency_ms": 0.12034695828333497,
       "tokens": 0
     },
     {
@@ -596,7 +596,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1813440176192671,
+      "latency_ms": 0.18590496620163321,
       "tokens": 0
     },
     {
@@ -633,7 +633,7 @@
         "bid_deadline: must parse to a date in 2020–2035"
       ],
       "evidence_dropped": [],
-      "latency_ms": 0.14998498954810202,
+      "latency_ms": 0.16737700207158923,
       "tokens": 0
     },
     {
@@ -667,7 +667,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.12734299525618553,
+      "latency_ms": 0.15036604600027204,
       "tokens": 0
     },
     {
@@ -701,7 +701,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.13184398994781077,
+      "latency_ms": 0.13969698920845985,
       "tokens": 0
     },
     {
@@ -735,7 +735,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.12400897685438395,
+      "latency_ms": 0.1650909543968737,
       "tokens": 0
     },
     {
@@ -769,7 +769,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.2621060120873153,
+      "latency_ms": 0.3525950014591217,
       "tokens": 0
     },
     {
@@ -803,7 +803,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1845430233515799,
+      "latency_ms": 0.18228800036013126,
       "tokens": 0
     },
     {
@@ -837,7 +837,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1767739886417985,
+      "latency_ms": 0.2007250441238284,
       "tokens": 0
     },
     {
@@ -871,7 +871,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.12046998017467558,
+      "latency_ms": 0.14616199769079685,
       "tokens": 0
     },
     {
@@ -905,7 +905,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.17746500088833272,
+      "latency_ms": 0.24715199833735824,
       "tokens": 0
     },
     {
@@ -939,7 +939,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1330579980276525,
+      "latency_ms": 0.14423602260649204,
       "tokens": 0
     },
     {
@@ -973,7 +973,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1074539904948324,
+      "latency_ms": 0.1144660054706037,
       "tokens": 0
     },
     {
@@ -1007,7 +1007,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1621559786144644,
+      "latency_ms": 0.26067596627399325,
       "tokens": 0
     },
     {
@@ -1041,7 +1041,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.13265400775708258,
+      "latency_ms": 0.14665996422991157,
       "tokens": 0
     },
     {
@@ -1075,7 +1075,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.17691298853605986,
+      "latency_ms": 0.19732897635549307,
       "tokens": 0
     },
     {
@@ -1109,7 +1109,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.24618799216113985,
+      "latency_ms": 0.24892500368878245,
       "tokens": 0
     },
     {
@@ -1143,7 +1143,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.14213600661605597,
+      "latency_ms": 0.14045496936887503,
       "tokens": 0
     },
     {
@@ -1177,7 +1177,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.10605598799884319,
+      "latency_ms": 0.13361097080633044,
       "tokens": 0
     },
     {
@@ -1211,7 +1211,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.13175199273973703,
+      "latency_ms": 0.1735069672577083,
       "tokens": 0
     },
     {
@@ -1245,7 +1245,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.14815200120210648,
+      "latency_ms": 0.15945598715916276,
       "tokens": 0
     },
     {
@@ -1265,7 +1265,11 @@
         "project_code": "项目编号：JH26-210181-00141",
         "purchaser": "名 称： 新民市大红旗镇人民政府",
         "agency": "名 称：辽宁正润招标代理有限公司",
-        "budget_yuan": "预算金额（元）：130000",
+        "budget_yuan": [
+          "预算金额（元）：130000",
+          "预算金额（元）：480000",
+          "预算金额（元）：390000"
+        ],
         "bid_deadline": "2026年12月15日 10时00分（北京时间）"
       },
       "sources": {
@@ -1279,7 +1283,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.24524301989004016,
+      "latency_ms": 0.30612898990511894,
       "tokens": 0
     },
     {
@@ -1299,7 +1303,10 @@
         "project_code": "项目编号：JH26-210000-79105",
         "purchaser": "名 称： 辽宁中医药大学附属医院",
         "agency": "名 称：依诚招标有限公司",
-        "budget_yuan": "预算金额（元）：540000",
+        "budget_yuan": [
+          "预算金额（元）：540000",
+          "预算金额（元）：250000"
+        ],
         "bid_deadline": "2026年12月15日 09时00分（北京时间）"
       },
       "sources": {
@@ -1313,7 +1320,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.3033149987459183,
+      "latency_ms": 0.37038896698504686,
       "tokens": 0
     },
     {
@@ -1333,7 +1340,10 @@
         "project_code": "项目编号：JH26-210000-79112",
         "purchaser": "名 称： 辽宁中医药大学附属医院",
         "agency": "名 称：乔泰工程管理集团有限公司",
-        "budget_yuan": "预算金额（元）：628000",
+        "budget_yuan": [
+          "预算金额（元）：628000",
+          "预算金额（元）：600000"
+        ],
         "bid_deadline": "2026年12月16日 09时00分（北京时间）"
       },
       "sources": {
@@ -1347,7 +1357,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.4731039807666093,
+      "latency_ms": 0.45218196464702487,
       "tokens": 0
     },
     {
@@ -1367,7 +1377,10 @@
         "project_code": "项目编号：JH26-210000-79116",
         "purchaser": "名 称： 辽宁中医药大学附属医院",
         "agency": "名 称：乔泰工程管理集团有限公司",
-        "budget_yuan": "预算金额（元）：240000",
+        "budget_yuan": [
+          "预算金额（元）：240000",
+          "预算金额（元）：260000"
+        ],
         "bid_deadline": "2026年12月15日 09时00分（北京时间）"
       },
       "sources": {
@@ -1381,7 +1394,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.258645013673231,
+      "latency_ms": 0.2865699934773147,
       "tokens": 0
     },
     {
@@ -1401,7 +1414,10 @@
         "project_code": "项目编号：JH26-210500-04644",
         "purchaser": "名 称： 本溪市疾病预防控制中心（本溪市卫生监督所）",
         "agency": "名 称：中科高盛咨询集团有限公司",
-        "budget_yuan": "预算金额（元）：4000000",
+        "budget_yuan": [
+          "预算金额（元）：4000000",
+          "预算金额（元）：220000"
+        ],
         "bid_deadline": "2026年12月15日 09时00分（北京时间）"
       },
       "sources": {
@@ -1415,7 +1431,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.382772006560117,
+      "latency_ms": 1.4295329456217587,
       "tokens": 0
     },
     {
@@ -1449,7 +1465,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.12710801092907786,
+      "latency_ms": 0.12481998419389129,
       "tokens": 0
     },
     {
@@ -1483,7 +1499,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.14411500887945294,
+      "latency_ms": 0.15048898058012128,
       "tokens": 0
     },
     {
@@ -1517,7 +1533,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.14444600674323738,
+      "latency_ms": 0.18373096827417612,
       "tokens": 0
     },
     {
@@ -1551,7 +1567,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.13724202290177345,
+      "latency_ms": 0.1725020119920373,
       "tokens": 0
     },
     {
@@ -1585,7 +1601,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.12720399536192417,
+      "latency_ms": 0.13154500629752874,
       "tokens": 0
     },
     {
@@ -1619,7 +1635,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.11218900908716023,
+      "latency_ms": 0.14254898997023702,
       "tokens": 0
     },
     {
@@ -1653,7 +1669,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.13914497685618699,
+      "latency_ms": 0.18282001838088036,
       "tokens": 0
     },
     {
@@ -1687,7 +1703,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.16941898502409458,
+      "latency_ms": 0.16911502461880445,
       "tokens": 0
     },
     {
@@ -1721,7 +1737,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.23422000231221318,
+      "latency_ms": 0.3155640442855656,
       "tokens": 0
     },
     {
@@ -1755,7 +1771,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.10778900468721986,
+      "latency_ms": 0.10956102050840855,
       "tokens": 0
     },
     {
@@ -1789,7 +1805,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.14496099902316928,
+      "latency_ms": 0.22173800971359015,
       "tokens": 0
     },
     {
@@ -1823,7 +1839,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1787859946489334,
+      "latency_ms": 0.217837980017066,
       "tokens": 0
     },
     {
@@ -1857,7 +1873,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.17994799418374896,
+      "latency_ms": 0.19043299835175276,
       "tokens": 0
     },
     {
@@ -1891,7 +1907,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.12156501179561019,
+      "latency_ms": 0.12257898924872279,
       "tokens": 0
     },
     {
@@ -1925,7 +1941,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.19227899610996246,
+      "latency_ms": 0.3430729848332703,
       "tokens": 0
     },
     {
@@ -1959,7 +1975,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.17459600348956883,
+      "latency_ms": 0.2220940077677369,
       "tokens": 0
     },
     {
@@ -1993,7 +2009,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1163769920822233,
+      "latency_ms": 0.11774897575378418,
       "tokens": 0
     },
     {
@@ -2027,7 +2043,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1285359903704375,
+      "latency_ms": 0.20027800928801298,
       "tokens": 0
     },
     {
@@ -2061,7 +2077,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.20433598547242582,
+      "latency_ms": 0.18830399494618177,
       "tokens": 0
     },
     {
@@ -2095,7 +2111,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.18307400750927627,
+      "latency_ms": 0.21371198818087578,
       "tokens": 0
     },
     {
@@ -2129,7 +2145,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1747559872455895,
+      "latency_ms": 0.22060697665438056,
       "tokens": 0
     },
     {
@@ -2163,7 +2179,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.17539900727570057,
+      "latency_ms": 0.1865510130301118,
       "tokens": 0
     },
     {
@@ -2197,7 +2213,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.11855701450258493,
+      "latency_ms": 0.11340499622747302,
       "tokens": 0
     },
     {
@@ -2231,7 +2247,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.18468897906132042,
+      "latency_ms": 0.19665202125906944,
       "tokens": 0
     },
     {
@@ -2265,7 +2281,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1946419943124056,
+      "latency_ms": 0.17818203195929527,
       "tokens": 0
     },
     {
@@ -2299,7 +2315,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.16056999447755516,
+      "latency_ms": 0.1903519732877612,
       "tokens": 0
     },
     {
@@ -2333,7 +2349,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.12623201473616064,
+      "latency_ms": 0.15084899496287107,
       "tokens": 0
     },
     {
@@ -2367,7 +2383,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.12249802239239216,
+      "latency_ms": 0.1529539586044848,
       "tokens": 0
     },
     {
@@ -2401,7 +2417,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1557229843456298,
+      "latency_ms": 0.14127499889582396,
       "tokens": 0
     },
     {
@@ -2435,7 +2451,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.12676601181738079,
+      "latency_ms": 0.15779101522639394,
       "tokens": 0
     },
     {
@@ -2469,7 +2485,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 0.1358760055154562,
+      "latency_ms": 0.13467500684782863,
       "tokens": 0
     },
     {
@@ -2505,8 +2521,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19627.574786980404,
-      "tokens": 3460
+      "latency_ms": 17277.569275989663,
+      "tokens": 3293
     },
     {
       "method": "llm",
@@ -2528,7 +2544,7 @@
         "budget_yuan": [
           "预算金额（元）：403000"
         ],
-        "bid_deadline": "提交投标文件截止时间：2026年12月14日 09:30"
+        "bid_deadline": "提交投标文件截止时间：2026年12月14日 09:30（北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -2541,8 +2557,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 48532.92215298279,
-      "tokens": 5638
+      "latency_ms": 16363.129990990274,
+      "tokens": 3691
     },
     {
       "method": "llm",
@@ -2577,8 +2593,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 14281.09482099535,
-      "tokens": 2418
+      "latency_ms": 22235.103223996703,
+      "tokens": 2971
     },
     {
       "method": "llm",
@@ -2613,8 +2629,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 18995.179367018864,
-      "tokens": 2718
+      "latency_ms": 13726.191197987646,
+      "tokens": 2403
     },
     {
       "method": "llm",
@@ -2631,12 +2647,12 @@
       "evidence": {
         "project_name": "项目名称：临洮县畜牧兽医局2026年畜牧业发展肉牛肉羊增量提质项目",
         "project_code": "项目编号：GSMZY-202631-ZC",
-        "purchaser": "名称：临洮县畜牧兽医局",
-        "agency": "名称：甘肃铭智扬工程咨询有限公司",
+        "purchaser": "1.采购人信息 名称：临洮县畜牧兽医局",
+        "agency": "2.采购代理机构信息 名称：甘肃铭智扬工程咨询有限公司",
         "budget_yuan": [
           "预算金额：5,028,000.00元"
         ],
-        "bid_deadline": "2026年12月15日 09时00分 （北京时间）前递交投标文件"
+        "bid_deadline": "时间： 2026年12月15日 09时00分00秒 （北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -2649,8 +2665,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 32431.949304009322,
-      "tokens": 4381
+      "latency_ms": 35919.66254502768,
+      "tokens": 4663
     },
     {
       "method": "llm",
@@ -2665,14 +2681,14 @@
         "bid_deadline": "2026-12-16 09:00"
       },
       "evidence": {
-        "project_name": "项目名称：民权县南华街道办事处物业服务项目",
-        "project_code": "项目编号：民财采招-2026-43",
+        "project_name": "2、项目名称：民权县南华街道办事处物业服务项目",
+        "project_code": "1、项目编号：民财采招-2026-43",
         "purchaser": "名称：民权县南华街道办事处",
         "agency": "名称：安徽天瑜建设工程管理有限公司",
         "budget_yuan": [
-          "预算金额：2,602,790.00元"
+          "4、预算金额：2,602,790.00元"
         ],
-        "bid_deadline": "并于2026年12月16日09时00分（北京时间）前递交投标文件"
+        "bid_deadline": "1.时间：2026年12月16日09时00分（北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -2685,8 +2701,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 23151.99863500311,
-      "tokens": 3587
+      "latency_ms": 44130.50141901476,
+      "tokens": 4935
     },
     {
       "method": "llm",
@@ -2721,8 +2737,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25423.152270988794,
-      "tokens": 3433
+      "latency_ms": 22158.663036010694,
+      "tokens": 3315
     },
     {
       "method": "llm",
@@ -2757,8 +2773,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19573.47015099367,
-      "tokens": 3908
+      "latency_ms": 19544.099930964876,
+      "tokens": 3938
     },
     {
       "method": "llm",
@@ -2793,8 +2809,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 28546.020429988857,
-      "tokens": 3959
+      "latency_ms": 17494.3413810106,
+      "tokens": 3391
     },
     {
       "method": "llm",
@@ -2816,7 +2832,7 @@
         "budget_yuan": [
           "预算金额：15,246,473.74元"
         ],
-        "bid_deadline": "2026年12月15日 09时00分"
+        "bid_deadline": "2026年12月15日 09时00分 （北京时间）前递交投标文件"
       },
       "sources": {
         "project_name": "llm",
@@ -2829,8 +2845,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 45653.0387539824,
-      "tokens": 6996
+      "latency_ms": 19639.976311998907,
+      "tokens": 5535
     },
     {
       "method": "llm",
@@ -2847,8 +2863,8 @@
       "evidence": {
         "project_name": "项目名称：乌海市第七中学(乌海市第一中学分校)网络改造项目",
         "project_code": "项目编号：WHZCS-G-H-260091",
-        "purchaser": "名称：乌海市第七中学（乌海市第一中学分校）",
-        "agency": "名称：内蒙古华格项目管理咨询有限公司",
+        "purchaser": "1.采购人信息 名称：乌海市第七中学（乌海市第一中学分校）",
+        "agency": "2.采购代理机构信息 名称：内蒙古华格项目管理咨询有限公司",
         "budget_yuan": [
           "预算金额：1,322,713.00元"
         ],
@@ -2865,8 +2881,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 50496.19287700625,
-      "tokens": 5699
+      "latency_ms": 19778.71145901736,
+      "tokens": 4074
     },
     {
       "method": "llm",
@@ -2901,8 +2917,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25533.508527994854,
-      "tokens": 3318
+      "latency_ms": 32878.35194898071,
+      "tokens": 4466
     },
     {
       "method": "llm",
@@ -2937,8 +2953,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 31508.297177992063,
-      "tokens": 3891
+      "latency_ms": 33621.650145971216,
+      "tokens": 4241
     },
     {
       "method": "llm",
@@ -2955,8 +2971,8 @@
       "evidence": {
         "project_name": "项目名称：放射诊断设备采购项目(二次)",
         "project_code": "项目编号：N5100012026002551",
-        "purchaser": "采购人信息 名称：四川省骨科医院",
-        "agency": "采购代理机构信息 名称：四川国际招标有限责任公司",
+        "purchaser": "1.采购人信息 名称：四川省骨科医院",
+        "agency": "2.采购代理机构信息 名称：四川国际招标有限责任公司",
         "budget_yuan": [
           "预算金额：6,000,000.00元"
         ],
@@ -2973,8 +2989,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 20696.83473499026,
-      "tokens": 3187
+      "latency_ms": 26401.898207026534,
+      "tokens": 3745
     },
     {
       "method": "llm",
@@ -2991,8 +3007,8 @@
       "evidence": {
         "project_name": "项目名称：临夏市人民医院信息化软件订阅使用项目",
         "project_code": "项目编号：LXZC2122026398",
-        "purchaser": "采购人信息 名称：临夏市人民医院",
-        "agency": "采购代理机构信息 名称：中公招采项目管理（甘肃）有限公司",
+        "purchaser": "1.采购人信息 名称：临夏市人民医院",
+        "agency": "2.采购代理机构信息 名称：中公招采项目管理（甘肃）有限公司",
         "budget_yuan": [
           "预算金额：2,800,000.00元"
         ],
@@ -3009,8 +3025,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17522.201189014595,
-      "tokens": 2535
+      "latency_ms": 22248.462788003962,
+      "tokens": 3009
     },
     {
       "method": "llm",
@@ -3045,8 +3061,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 23402.987575012958,
-      "tokens": 3023
+      "latency_ms": 16441.723266034387,
+      "tokens": 2649
     },
     {
       "method": "llm",
@@ -3081,8 +3097,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 16285.358697001357,
-      "tokens": 3153
+      "latency_ms": 19917.03623603098,
+      "tokens": 3463
     },
     {
       "method": "llm",
@@ -3117,8 +3133,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17067.542411998147,
-      "tokens": 2759
+      "latency_ms": 24690.13266498223,
+      "tokens": 3424
     },
     {
       "method": "llm",
@@ -3163,7 +3179,7 @@
         "project_name: must be non-empty"
       ],
       "evidence_dropped": [],
-      "latency_ms": 60014.34526400408,
+      "latency_ms": 60093.64726598142,
       "tokens": 0
     },
     {
@@ -3179,14 +3195,14 @@
         "bid_deadline": "2026-12-15 09:30"
       },
       "evidence": {
-        "project_name": "3、项目名称：社区矫正、刑满释放安置帮教工作服务项目",
-        "project_code": "1、项目编号：ZKQ2026-030804755ZF(W)",
+        "project_name": "项目名称：社区矫正、刑满释放安置帮教工作服务项目",
+        "project_code": "项目编号：ZKQ2026-030804755ZF(W)",
         "purchaser": "名 称：中共武汉东湖新技术开发区工作委员会政法委员会",
         "agency": "名 称：中科器湖北有限公司",
         "budget_yuan": [
-          "5、预算金额：370.000000(万元)"
+          "预算金额：370.000000(万元)"
         ],
-        "bid_deadline": "2、截止时间：2026年12月15日09点30分（北京时间）"
+        "bid_deadline": "截止时间：2026年12月15日09点30分（北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -3199,8 +3215,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 46896.98558798409,
-      "tokens": 4993
+      "latency_ms": 29871.73714902019,
+      "tokens": 3938
     },
     {
       "method": "llm",
@@ -3235,8 +3251,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 27906.180675985524,
-      "tokens": 3913
+      "latency_ms": 18985.037563950755,
+      "tokens": 3361
     },
     {
       "method": "llm",
@@ -3271,8 +3287,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 13187.246441986645,
-      "tokens": 2338
+      "latency_ms": 28712.271440017503,
+      "tokens": 3262
     },
     {
       "method": "llm",
@@ -3307,8 +3323,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 23839.24310398288,
-      "tokens": 4199
+      "latency_ms": 28866.362272994593,
+      "tokens": 4410
     },
     {
       "method": "llm",
@@ -3343,8 +3359,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 12829.611878987635,
-      "tokens": 2905
+      "latency_ms": 14022.006499988493,
+      "tokens": 2903
     },
     {
       "method": "llm",
@@ -3381,15 +3397,15 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 53142.35284799361,
-      "tokens": 7381
+      "latency_ms": 22829.862953047268,
+      "tokens": 5469
     },
     {
       "method": "llm",
       "doc_id": "gkzb_t20261124_27747203",
       "split": "test",
       "fields": {
-        "project_name": null,
+        "project_name": "辽宁中医药大学附属医院“沈阳市中医药传承创新发展示范项目”-第三包",
         "project_code": "JH26-210000-79105",
         "purchaser": "辽宁中医药大学附属医院",
         "agency": "依诚招标有限公司",
@@ -3397,7 +3413,7 @@
         "bid_deadline": "2026-12-15 09:00"
       },
       "evidence": {
-        "project_name": "项目名称：辽宁中医药大学附属医院\"沈阳市中医药传承创新发展示范项目\"-第三包",
+        "project_name": "项目名称：辽宁中医药大学附属医院“沈阳市中医药传承创新发展示范项目”-第三包",
         "project_code": "项目编号：JH26-210000-79105",
         "purchaser": "名 称： 辽宁中医药大学附属医院",
         "agency": "名 称：依诚招标有限公司",
@@ -3415,24 +3431,18 @@
         "budget_yuan": "llm",
         "bid_deadline": "llm"
       },
-      "needs_review": [
-        "project_name"
-      ],
-      "issues": [
-        "project_name: must be non-empty"
-      ],
-      "evidence_dropped": [
-        "project_name"
-      ],
-      "latency_ms": 46381.30707098753,
-      "tokens": 8742
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 33413.802917988505,
+      "tokens": 7769
     },
     {
       "method": "llm",
       "doc_id": "gkzb_t20261124_27747207",
       "split": "test",
       "fields": {
-        "project_name": "辽宁中医药大学附属医院“中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目”设备购置-第五包",
+        "project_name": null,
         "project_code": "JH26-210000-79112",
         "purchaser": "辽宁中医药大学附属医院",
         "agency": "乔泰工程管理集团有限公司",
@@ -3440,7 +3450,7 @@
         "bid_deadline": "2026-12-16 09:00"
       },
       "evidence": {
-        "project_name": "项目名称：辽宁中医药大学附属医院“中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目”设备购置-第五包",
+        "project_name": "项目名称：辽宁中医药大学附属医院\"中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目\"设备购置-第五包",
         "project_code": "项目编号：JH26-210000-79112",
         "purchaser": "名 称： 辽宁中医药大学附属医院",
         "agency": "名 称：乔泰工程管理集团有限公司",
@@ -3458,11 +3468,17 @@
         "budget_yuan": "llm",
         "bid_deadline": "llm"
       },
-      "needs_review": [],
-      "issues": [],
-      "evidence_dropped": [],
-      "latency_ms": 52670.03805399872,
-      "tokens": 11842
+      "needs_review": [
+        "project_name"
+      ],
+      "issues": [
+        "project_name: must be non-empty"
+      ],
+      "evidence_dropped": [
+        "project_name"
+      ],
+      "latency_ms": 56918.179183034226,
+      "tokens": 11921
     },
     {
       "method": "llm",
@@ -3470,22 +3486,19 @@
       "split": "dev",
       "fields": {
         "project_name": null,
-        "project_code": "JH26-210000-79116",
-        "purchaser": "辽宁中医药大学附属医院",
-        "agency": "乔泰工程管理集团有限公司",
-        "budget_yuan": 500000.0,
-        "bid_deadline": "2026-12-15 09:00"
+        "project_code": null,
+        "purchaser": null,
+        "agency": null,
+        "budget_yuan": null,
+        "bid_deadline": null
       },
       "evidence": {
-        "project_name": "项目名称：辽宁中医药大学附属医院\"中央财政医疗服务与保障能力提升补助资金（中医药事业传承与发展部分）项目\"设备购置-第七包",
-        "project_code": "项目编号：JH26-210000-79116",
-        "purchaser": "名 称： 辽宁中医药大学附属医院",
-        "agency": "名 称：乔泰工程管理集团有限公司",
-        "budget_yuan": [
-          "预算金额（元）：240000",
-          "预算金额（元）：260000"
-        ],
-        "bid_deadline": "2026年12月15日 09时00分（北京时间）"
+        "project_name": null,
+        "project_code": null,
+        "purchaser": null,
+        "agency": null,
+        "budget_yuan": null,
+        "bid_deadline": null
       },
       "sources": {
         "project_name": "llm",
@@ -3496,16 +3509,22 @@
         "bid_deadline": "llm"
       },
       "needs_review": [
-        "project_name"
+        "project_name",
+        "project_code",
+        "purchaser",
+        "agency",
+        "budget_yuan",
+        "bid_deadline"
       ],
       "issues": [
+        "budget_yuan: must be in (0, 100000000000)",
+        "bid_deadline: must parse to a date in 2020–2035",
+        "purchaser: must be non-empty",
         "project_name: must be non-empty"
       ],
-      "evidence_dropped": [
-        "project_name"
-      ],
-      "latency_ms": 46570.18543902086,
-      "tokens": 7319
+      "evidence_dropped": [],
+      "latency_ms": 60105.08469399065,
+      "tokens": 0
     },
     {
       "method": "llm",
@@ -3541,8 +3560,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 51060.81371300388,
-      "tokens": 14020
+      "latency_ms": 51409.61614000844,
+      "tokens": 14065
     },
     {
       "method": "llm",
@@ -3577,8 +3596,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 18556.20947299758,
-      "tokens": 3410
+      "latency_ms": 18515.6289350125,
+      "tokens": 3404
     },
     {
       "method": "llm",
@@ -3589,7 +3608,7 @@
         "project_code": "CGXM2026430000006314",
         "purchaser": "湘潭大学",
         "agency": "湖南建业管理咨询有限公司",
-        "budget_yuan": null,
+        "budget_yuan": 1565195.0,
         "bid_deadline": "2026-12-15 09:00"
       },
       "evidence": {
@@ -3610,17 +3629,11 @@
         "budget_yuan": "llm",
         "bid_deadline": "llm"
       },
-      "needs_review": [
-        "budget_yuan"
-      ],
-      "issues": [
-        "budget_yuan: must be in (0, 100000000000)"
-      ],
-      "evidence_dropped": [
-        "budget_yuan"
-      ],
-      "latency_ms": 13146.520246984437,
-      "tokens": 2965
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 24958.577262994368,
+      "tokens": 3701
     },
     {
       "method": "llm",
@@ -3631,18 +3644,18 @@
         "project_code": "CGXM2026430000006297",
         "purchaser": "湘潭大学",
         "agency": "湖南建业管理咨询有限公司",
-        "budget_yuan": null,
+        "budget_yuan": 886730.1,
         "bid_deadline": "2026-12-15 09:00"
       },
       "evidence": {
-        "project_name": "采购项目名称：湘潭大学商学院2026年本科教学设备采购项目",
-        "project_code": "采购项目编号：CGXM2026430000006297",
+        "project_name": "2、采购项目名称：湘潭大学商学院2026年本科教学设备采购项目",
+        "project_code": "1、采购项目编号：CGXM2026430000006297",
         "purchaser": "名称：湘潭大学",
         "agency": "名称：湖南建业管理咨询有限公司",
         "budget_yuan": [
           "湘潭大学商学院2026年本科教学设备采购项目 886730.1 教学设备 详见招标文件 1 886730.1"
         ],
-        "bid_deadline": "提交投标文件截止时间：2026年12月15日 09点00分（北京时间）"
+        "bid_deadline": "1、提交投标文件截止时间：2026年12月15日 09点00分（北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -3652,17 +3665,11 @@
         "budget_yuan": "llm",
         "bid_deadline": "llm"
       },
-      "needs_review": [
-        "budget_yuan"
-      ],
-      "issues": [
-        "budget_yuan: must be in (0, 100000000000)"
-      ],
-      "evidence_dropped": [
-        "budget_yuan"
-      ],
-      "latency_ms": 25752.54263402894,
-      "tokens": 3760
+      "needs_review": [],
+      "issues": [],
+      "evidence_dropped": [],
+      "latency_ms": 33622.77356197592,
+      "tokens": 4253
     },
     {
       "method": "llm",
@@ -3684,7 +3691,7 @@
         "budget_yuan": [
           "预算金额：156.000000万元"
         ],
-        "bid_deadline": "并于2026-12-16 09:00 （北京时间）前递交投标文件"
+        "bid_deadline": "2026-12-16 09:00 （北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -3697,8 +3704,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 24125.24357298389,
-      "tokens": 3282
+      "latency_ms": 16849.379068997223,
+      "tokens": 2854
     },
     {
       "method": "llm",
@@ -3733,8 +3740,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17380.219180020504,
-      "tokens": 3261
+      "latency_ms": 47821.788057044614,
+      "tokens": 5156
     },
     {
       "method": "llm",
@@ -3769,8 +3776,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 15150.239062000765,
-      "tokens": 2720
+      "latency_ms": 13243.356317048892,
+      "tokens": 2612
     },
     {
       "method": "llm",
@@ -3805,8 +3812,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25958.778847998474,
-      "tokens": 3634
+      "latency_ms": 27875.512976956088,
+      "tokens": 3736
     },
     {
       "method": "llm",
@@ -3841,8 +3848,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17643.682164984057,
-      "tokens": 3445
+      "latency_ms": 15817.073721031193,
+      "tokens": 3280
     },
     {
       "method": "llm",
@@ -3877,8 +3884,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 21677.60070800432,
-      "tokens": 4676
+      "latency_ms": 25545.63375597354,
+      "tokens": 4897
     },
     {
       "method": "llm",
@@ -3913,8 +3920,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25546.18395899888,
-      "tokens": 3189
+      "latency_ms": 22580.305645999033,
+      "tokens": 3016
     },
     {
       "method": "llm",
@@ -3949,8 +3956,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25909.780779998982,
-      "tokens": 3467
+      "latency_ms": 39461.74366801279,
+      "tokens": 4322
     },
     {
       "method": "llm",
@@ -3985,8 +3992,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 20992.65140897478,
-      "tokens": 4083
+      "latency_ms": 34503.49133799318,
+      "tokens": 4932
     },
     {
       "method": "llm",
@@ -4021,8 +4028,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 14016.771964001236,
-      "tokens": 3168
+      "latency_ms": 39193.99461301509,
+      "tokens": 4742
     },
     {
       "method": "llm",
@@ -4057,8 +4064,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19737.819720990956,
-      "tokens": 3349
+      "latency_ms": 21438.872594037093,
+      "tokens": 3435
     },
     {
       "method": "llm",
@@ -4075,8 +4082,8 @@
       "evidence": {
         "project_name": "项目名称：内蒙古自治区医疗保障信息平台运行维护（基础环境）",
         "project_code": "项目编号：NMGZC-G-F-260899",
-        "purchaser": "1.采购人信息 名称：内蒙古自治区大数据中心",
-        "agency": "2.采购代理机构信息 名称：内蒙古自治区公共资源交易中心",
+        "purchaser": "采购人信息 名称：内蒙古自治区大数据中心",
+        "agency": "采购代理机构信息 名称：内蒙古自治区公共资源交易中心",
         "budget_yuan": [
           "预算金额：15,014,500.00元"
         ],
@@ -4093,8 +4100,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 26152.455912990263,
-      "tokens": 4120
+      "latency_ms": 29419.99282699544,
+      "tokens": 4333
     },
     {
       "method": "llm",
@@ -4116,7 +4123,7 @@
         "budget_yuan": [
           "预算金额：10,950,000.00元"
         ],
-        "bid_deadline": "并于 2026年12月15日 09时00分 （北京时间）前递交投标文件"
+        "bid_deadline": "2026年12月15日 09时00分00秒 （北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -4129,8 +4136,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 16960.110791987972,
-      "tokens": 3301
+      "latency_ms": 39488.354008004535,
+      "tokens": 4711
     },
     {
       "method": "llm",
@@ -4165,8 +4172,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 29342.90301601868,
-      "tokens": 4066
+      "latency_ms": 19669.648187991697,
+      "tokens": 3473
     },
     {
       "method": "llm",
@@ -4201,8 +4208,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 18810.094635991845,
-      "tokens": 3709
+      "latency_ms": 13096.583619015291,
+      "tokens": 3378
     },
     {
       "method": "llm",
@@ -4237,8 +4244,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 18414.79641298065,
-      "tokens": 3505
+      "latency_ms": 34997.88948800415,
+      "tokens": 4530
     },
     {
       "method": "llm",
@@ -4260,7 +4267,7 @@
         "budget_yuan": [
           "预算金额：6,000,000.00元"
         ],
-        "bid_deadline": "2026年12月15日 09时00分00秒 （北京时间）"
+        "bid_deadline": "并于 2026年12月15日 09时00分 （北京时间）前递交投标文件"
       },
       "sources": {
         "project_name": "llm",
@@ -4273,8 +4280,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 15167.386636981973,
-      "tokens": 3289
+      "latency_ms": 15378.60840803478,
+      "tokens": 3274
     },
     {
       "method": "llm",
@@ -4296,7 +4303,7 @@
         "budget_yuan": [
           "预算金额：9,000,000.00元"
         ],
-        "bid_deadline": "2026年12月15日 09时30分00秒 （北京时间）"
+        "bid_deadline": "并于 2026年12月15日 09时30分 （北京时间）前递交投标文件"
       },
       "sources": {
         "project_name": "llm",
@@ -4309,8 +4316,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 13911.867732997052,
-      "tokens": 3239
+      "latency_ms": 19146.2624980486,
+      "tokens": 3596
     },
     {
       "method": "llm",
@@ -4332,7 +4339,7 @@
         "budget_yuan": [
           "预算金额：2,120,000.00元"
         ],
-        "bid_deadline": "2026年12月15日 09时00分00秒 （北京时间）"
+        "bid_deadline": "时间： 2026年12月15日 09时00分00秒 （北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -4345,8 +4352,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 39893.81246699486,
-      "tokens": 5155
+      "latency_ms": 20270.523714018054,
+      "tokens": 3913
     },
     {
       "method": "llm",
@@ -4381,8 +4388,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17554.27669599885,
-      "tokens": 2698
+      "latency_ms": 18039.514691976365,
+      "tokens": 2719
     },
     {
       "method": "llm",
@@ -4417,8 +4424,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 22188.390064024134,
-      "tokens": 3570
+      "latency_ms": 17109.34555705171,
+      "tokens": 3239
     },
     {
       "method": "llm",
@@ -4433,14 +4440,14 @@
         "bid_deadline": "2026-12-15 09:30"
       },
       "evidence": {
-        "project_name": "项目名称：湖北省高级人民法院审判法庭和诉讼服务综合楼信息化建设项目第二包",
-        "project_code": "项目编号：EZC-2026-ZX1140-02",
+        "project_name": "3、项目名称：湖北省高级人民法院审判法庭和诉讼服务综合楼信息化建设项目第二包",
+        "project_code": "1、项目编号：EZC-2026-ZX1140-02",
         "purchaser": "名 称：湖北省高级人民法院",
         "agency": "名 称：湖北省公共资源交易中心（湖北省政府采购中心）",
         "budget_yuan": [
-          "预算金额：2543.247653(万元)"
+          "5、预算金额：2543.247653(万元)"
         ],
-        "bid_deadline": "截止时间：2026年12月15日09点30分（北京时间）"
+        "bid_deadline": "2、截止时间：2026年12月15日09点30分（北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -4453,8 +4460,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 29059.121824015165,
-      "tokens": 3760
+      "latency_ms": 48099.00012699654,
+      "tokens": 4963
     },
     {
       "method": "llm",
@@ -4489,8 +4496,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 39715.53936897544,
-      "tokens": 4456
+      "latency_ms": 25404.784255020786,
+      "tokens": 3573
     },
     {
       "method": "llm",
@@ -4512,7 +4519,7 @@
         "budget_yuan": [
           "预算金额（元）：1400000"
         ],
-        "bid_deadline": "提交投标文件截止时间：2026年12月17日 13:30"
+        "bid_deadline": "提交投标文件截止时间：2026年12月17日 13:30（北京时间）"
       },
       "sources": {
         "project_name": "llm",
@@ -4525,8 +4532,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 20620.439035992604,
-      "tokens": 3952
+      "latency_ms": 21731.42608598573,
+      "tokens": 4042
     },
     {
       "method": "llm",
@@ -4561,8 +4568,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19148.061432002578,
-      "tokens": 3503
+      "latency_ms": 19105.018816015217,
+      "tokens": 3493
     },
     {
       "method": "llm",
@@ -4573,7 +4580,7 @@
         "project_code": "2026BFFHZ51201",
         "purchaser": "合肥幼儿师范高等专科学校",
         "agency": "合肥市政府采购中心",
-        "budget_yuan": 3100000.0,
+        "budget_yuan": null,
         "bid_deadline": "2026-12-14 09:30"
       },
       "evidence": {
@@ -4582,9 +4589,7 @@
         "purchaser": "名称：合肥幼儿师范高等专科学校",
         "agency": "名称：合肥市政府采购中心",
         "budget_yuan": [
-          "第1包100万元",
-          "第2包150万元",
-          "第3包60万元"
+          "预算金额：第1包100万元；第2包150万元；第3包60万元"
         ],
         "bid_deadline": "时间：2026年12月14日09点30分"
       },
@@ -4596,11 +4601,17 @@
         "budget_yuan": "llm",
         "bid_deadline": "llm"
       },
-      "needs_review": [],
-      "issues": [],
-      "evidence_dropped": [],
-      "latency_ms": 28496.721981005976,
-      "tokens": 3519
+      "needs_review": [
+        "budget_yuan"
+      ],
+      "issues": [
+        "budget_yuan: must be in (0, 100000000000)"
+      ],
+      "evidence_dropped": [
+        "budget_yuan"
+      ],
+      "latency_ms": 19647.91056595277,
+      "tokens": 2966
     },
     {
       "method": "llm",
@@ -4635,8 +4646,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 28212.128659011796,
-      "tokens": 4402
+      "latency_ms": 20997.53557902295,
+      "tokens": 4007
     },
     {
       "method": "llm",
@@ -4671,8 +4682,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19578.489238017937,
-      "tokens": 4122
+      "latency_ms": 25288.974310969934,
+      "tokens": 4480
     },
     {
       "method": "hybrid",
@@ -4705,8 +4716,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19628.15109998337,
-      "tokens": 3460
+      "latency_ms": 17278.023588005453,
+      "tokens": 3293
     },
     {
       "method": "hybrid",
@@ -4739,8 +4750,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 48533.06730199256,
-      "tokens": 5638
+      "latency_ms": 16363.271191949025,
+      "tokens": 3691
     },
     {
       "method": "hybrid",
@@ -4773,8 +4784,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 14281.200390018057,
-      "tokens": 2418
+      "latency_ms": 22235.31819600612,
+      "tokens": 2971
     },
     {
       "method": "hybrid",
@@ -4807,8 +4818,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 18995.286786026554,
-      "tokens": 2718
+      "latency_ms": 13726.31154494593,
+      "tokens": 2403
     },
     {
       "method": "hybrid",
@@ -4841,8 +4852,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 32432.13064802694,
-      "tokens": 4381
+      "latency_ms": 35919.84844999388,
+      "tokens": 4663
     },
     {
       "method": "hybrid",
@@ -4862,7 +4873,7 @@
         "purchaser": "名称：民权县南华街道办事处",
         "agency": "名称：安徽天瑜建设工程管理有限公司",
         "budget_yuan": "4、预算金额：2,602,790.00元",
-        "bid_deadline": "并于2026年12月16日09时00分（北京时间）前递交投标文件"
+        "bid_deadline": "1.时间：2026年12月16日09时00分（北京时间）"
       },
       "sources": {
         "project_name": "rule",
@@ -4875,8 +4886,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 23152.14861999266,
-      "tokens": 3587
+      "latency_ms": 44130.668796016835,
+      "tokens": 4935
     },
     {
       "method": "hybrid",
@@ -4909,8 +4920,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25423.27961398405,
-      "tokens": 3433
+      "latency_ms": 22158.813402056694,
+      "tokens": 3315
     },
     {
       "method": "hybrid",
@@ -4943,8 +4954,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19573.60199498362,
-      "tokens": 3908
+      "latency_ms": 19544.239627954084,
+      "tokens": 3938
     },
     {
       "method": "hybrid",
@@ -4977,8 +4988,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 28546.14443896571,
-      "tokens": 3959
+      "latency_ms": 17494.506471964996,
+      "tokens": 3391
     },
     {
       "method": "hybrid",
@@ -5011,8 +5022,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 45653.30085999449,
-      "tokens": 6996
+      "latency_ms": 19640.328907000367,
+      "tokens": 5535
     },
     {
       "method": "hybrid",
@@ -5045,8 +5056,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 50496.3774200296,
-      "tokens": 5699
+      "latency_ms": 19778.89374701772,
+      "tokens": 4074
     },
     {
       "method": "hybrid",
@@ -5079,8 +5090,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25533.685301983496,
-      "tokens": 3318
+      "latency_ms": 32878.55267402483,
+      "tokens": 4466
     },
     {
       "method": "hybrid",
@@ -5113,8 +5124,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 31508.417647972237,
-      "tokens": 3891
+      "latency_ms": 33621.79630796891,
+      "tokens": 4241
     },
     {
       "method": "hybrid",
@@ -5147,8 +5158,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 20697.01219999115,
-      "tokens": 3187
+      "latency_ms": 26402.14535902487,
+      "tokens": 3745
     },
     {
       "method": "hybrid",
@@ -5181,8 +5192,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17522.334247012623,
-      "tokens": 2535
+      "latency_ms": 22248.60702402657,
+      "tokens": 3009
     },
     {
       "method": "hybrid",
@@ -5215,8 +5226,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 23403.095029003453,
-      "tokens": 3023
+      "latency_ms": 16441.837732039858,
+      "tokens": 2649
     },
     {
       "method": "hybrid",
@@ -5249,8 +5260,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 16285.520852979971,
-      "tokens": 3153
+      "latency_ms": 19917.296911997255,
+      "tokens": 3463
     },
     {
       "method": "hybrid",
@@ -5283,8 +5294,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17067.675066005904,
-      "tokens": 2759
+      "latency_ms": 24690.27932494646,
+      "tokens": 3424
     },
     {
       "method": "hybrid",
@@ -5317,7 +5328,7 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 60014.522176992614,
+      "latency_ms": 60093.84459495777,
       "tokens": 0
     },
     {
@@ -5351,8 +5362,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 46897.23177597625,
-      "tokens": 4993
+      "latency_ms": 29871.98607402388,
+      "tokens": 3938
     },
     {
       "method": "hybrid",
@@ -5385,8 +5396,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 27906.32281199214,
-      "tokens": 3913
+      "latency_ms": 18985.178018920124,
+      "tokens": 3361
     },
     {
       "method": "hybrid",
@@ -5419,8 +5430,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 13187.352497974643,
-      "tokens": 2338
+      "latency_ms": 28712.40505098831,
+      "tokens": 3262
     },
     {
       "method": "hybrid",
@@ -5453,8 +5464,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 23839.37485597562,
-      "tokens": 4199
+      "latency_ms": 28866.53577996185,
+      "tokens": 4410
     },
     {
       "method": "hybrid",
@@ -5487,8 +5498,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 12829.760030988837,
-      "tokens": 2905
+      "latency_ms": 14022.165955975652,
+      "tokens": 2903
     },
     {
       "method": "hybrid",
@@ -5507,7 +5518,11 @@
         "project_code": "项目编号：JH26-210181-00141",
         "purchaser": "名 称： 新民市大红旗镇人民政府",
         "agency": "名 称：辽宁正润招标代理有限公司",
-        "budget_yuan": "预算金额（元）：130000",
+        "budget_yuan": [
+          "预算金额（元）：130000",
+          "预算金额（元）：480000",
+          "预算金额（元）：390000"
+        ],
         "bid_deadline": "2026年12月15日 10时00分（北京时间）"
       },
       "sources": {
@@ -5521,8 +5536,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 53142.5980910135,
-      "tokens": 7381
+      "latency_ms": 22830.169082037173,
+      "tokens": 5469
     },
     {
       "method": "hybrid",
@@ -5541,7 +5556,10 @@
         "project_code": "项目编号：JH26-210000-79105",
         "purchaser": "名 称： 辽宁中医药大学附属医院",
         "agency": "名 称：依诚招标有限公司",
-        "budget_yuan": "预算金额（元）：540000",
+        "budget_yuan": [
+          "预算金额（元）：540000",
+          "预算金额（元）：250000"
+        ],
         "bid_deadline": "2026年12月15日 09时00分（北京时间）"
       },
       "sources": {
@@ -5554,11 +5572,9 @@
       },
       "needs_review": [],
       "issues": [],
-      "evidence_dropped": [
-        "project_name"
-      ],
-      "latency_ms": 46381.61038598628,
-      "tokens": 8742
+      "evidence_dropped": [],
+      "latency_ms": 33414.17330695549,
+      "tokens": 7769
     },
     {
       "method": "hybrid",
@@ -5577,7 +5593,10 @@
         "project_code": "项目编号：JH26-210000-79112",
         "purchaser": "名 称： 辽宁中医药大学附属医院",
         "agency": "名 称：乔泰工程管理集团有限公司",
-        "budget_yuan": "预算金额（元）：628000",
+        "budget_yuan": [
+          "预算金额（元）：628000",
+          "预算金额（元）：600000"
+        ],
         "bid_deadline": "2026年12月16日 09时00分（北京时间）"
       },
       "sources": {
@@ -5590,9 +5609,11 @@
       },
       "needs_review": [],
       "issues": [],
-      "evidence_dropped": [],
-      "latency_ms": 52670.51115797949,
-      "tokens": 11842
+      "evidence_dropped": [
+        "project_name"
+      ],
+      "latency_ms": 56918.63136499887,
+      "tokens": 11921
     },
     {
       "method": "hybrid",
@@ -5611,7 +5632,10 @@
         "project_code": "项目编号：JH26-210000-79116",
         "purchaser": "名 称： 辽宁中医药大学附属医院",
         "agency": "名 称：乔泰工程管理集团有限公司",
-        "budget_yuan": "预算金额（元）：240000",
+        "budget_yuan": [
+          "预算金额（元）：240000",
+          "预算金额（元）：260000"
+        ],
         "bid_deadline": "2026年12月15日 09时00分（北京时间）"
       },
       "sources": {
@@ -5624,11 +5648,9 @@
       },
       "needs_review": [],
       "issues": [],
-      "evidence_dropped": [
-        "project_name"
-      ],
-      "latency_ms": 46570.444084034534,
-      "tokens": 7319
+      "evidence_dropped": [],
+      "latency_ms": 60105.371263984125,
+      "tokens": 0
     },
     {
       "method": "hybrid",
@@ -5647,7 +5669,10 @@
         "project_code": "项目编号：JH26-210500-04644",
         "purchaser": "名 称： 本溪市疾病预防控制中心（本溪市卫生监督所）",
         "agency": "名 称：中科高盛咨询集团有限公司",
-        "budget_yuan": "预算金额（元）：4000000",
+        "budget_yuan": [
+          "预算金额（元）：4000000",
+          "预算金额（元）：220000"
+        ],
         "bid_deadline": "2026年12月15日 09时00分（北京时间）"
       },
       "sources": {
@@ -5661,8 +5686,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 51061.19648501044,
-      "tokens": 14020
+      "latency_ms": 51411.04567295406,
+      "tokens": 14065
     },
     {
       "method": "hybrid",
@@ -5695,8 +5720,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 18556.33658100851,
-      "tokens": 3410
+      "latency_ms": 18515.753754996695,
+      "tokens": 3404
     },
     {
       "method": "hybrid",
@@ -5728,11 +5753,9 @@
       },
       "needs_review": [],
       "issues": [],
-      "evidence_dropped": [
-        "budget_yuan"
-      ],
-      "latency_ms": 13146.664361993317,
-      "tokens": 2965
+      "evidence_dropped": [],
+      "latency_ms": 24958.727751974948,
+      "tokens": 3701
     },
     {
       "method": "hybrid",
@@ -5764,11 +5787,9 @@
       },
       "needs_review": [],
       "issues": [],
-      "evidence_dropped": [
-        "budget_yuan"
-      ],
-      "latency_ms": 25752.687080035685,
-      "tokens": 3760
+      "evidence_dropped": [],
+      "latency_ms": 33622.95729294419,
+      "tokens": 4253
     },
     {
       "method": "hybrid",
@@ -5801,8 +5822,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 24125.380815006793,
-      "tokens": 3282
+      "latency_ms": 16849.551571009215,
+      "tokens": 2854
     },
     {
       "method": "hybrid",
@@ -5835,8 +5856,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17380.346384015866,
-      "tokens": 3261
+      "latency_ms": 47821.91960205091,
+      "tokens": 5156
     },
     {
       "method": "hybrid",
@@ -5869,8 +5890,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 15150.351251009852,
-      "tokens": 2720
+      "latency_ms": 13243.498866038863,
+      "tokens": 2612
     },
     {
       "method": "hybrid",
@@ -5903,8 +5924,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25958.91799297533,
-      "tokens": 3634
+      "latency_ms": 27875.69579697447,
+      "tokens": 3736
     },
     {
       "method": "hybrid",
@@ -5937,8 +5958,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17643.85158396908,
-      "tokens": 3445
+      "latency_ms": 15817.242836055811,
+      "tokens": 3280
     },
     {
       "method": "hybrid",
@@ -5971,8 +5992,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 21677.834928006632,
-      "tokens": 4676
+      "latency_ms": 25545.949320017826,
+      "tokens": 4897
     },
     {
       "method": "hybrid",
@@ -6005,8 +6026,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25546.29174800357,
-      "tokens": 3189
+      "latency_ms": 22580.41520701954,
+      "tokens": 3016
     },
     {
       "method": "hybrid",
@@ -6039,8 +6060,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 25909.925740998005,
-      "tokens": 3467
+      "latency_ms": 39461.9654060225,
+      "tokens": 4322
     },
     {
       "method": "hybrid",
@@ -6073,8 +6094,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 20992.83019496943,
-      "tokens": 4083
+      "latency_ms": 34503.7091759732,
+      "tokens": 4932
     },
     {
       "method": "hybrid",
@@ -6107,8 +6128,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 14016.95191199542,
-      "tokens": 3168
+      "latency_ms": 39194.185046013445,
+      "tokens": 4742
     },
     {
       "method": "hybrid",
@@ -6141,8 +6162,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19737.94128600275,
-      "tokens": 3349
+      "latency_ms": 21438.995173026342,
+      "tokens": 3435
     },
     {
       "method": "hybrid",
@@ -6175,8 +6196,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 26152.648191986373,
-      "tokens": 4120
+      "latency_ms": 29420.335899980273,
+      "tokens": 4333
     },
     {
       "method": "hybrid",
@@ -6209,8 +6230,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 16960.285387991462,
-      "tokens": 3301
+      "latency_ms": 39488.5761020123,
+      "tokens": 4711
     },
     {
       "method": "hybrid",
@@ -6243,8 +6264,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 29343.019393010763,
-      "tokens": 4066
+      "latency_ms": 19669.76593696745,
+      "tokens": 3473
     },
     {
       "method": "hybrid",
@@ -6277,8 +6298,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 18810.223171982216,
-      "tokens": 3709
+      "latency_ms": 13096.78389702458,
+      "tokens": 3378
     },
     {
       "method": "hybrid",
@@ -6311,8 +6332,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 18415.000748966122,
-      "tokens": 3505
+      "latency_ms": 34998.077791999094,
+      "tokens": 4530
     },
     {
       "method": "hybrid",
@@ -6345,8 +6366,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 15167.569710989483,
-      "tokens": 3289
+      "latency_ms": 15378.82212002296,
+      "tokens": 3274
     },
     {
       "method": "hybrid",
@@ -6379,8 +6400,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 13912.042488984298,
-      "tokens": 3239
+      "latency_ms": 19146.483105025254,
+      "tokens": 3596
     },
     {
       "method": "hybrid",
@@ -6413,8 +6434,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 39893.987866002135,
-      "tokens": 5155
+      "latency_ms": 20270.710265031084,
+      "tokens": 3913
     },
     {
       "method": "hybrid",
@@ -6447,8 +6468,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 17554.395253013354,
-      "tokens": 2698
+      "latency_ms": 18039.628096972592,
+      "tokens": 2719
     },
     {
       "method": "hybrid",
@@ -6481,8 +6502,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 22188.574753003195,
-      "tokens": 3570
+      "latency_ms": 17109.54220907297,
+      "tokens": 3239
     },
     {
       "method": "hybrid",
@@ -6515,8 +6536,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 29059.316466009477,
-      "tokens": 3760
+      "latency_ms": 48099.1783090285,
+      "tokens": 4963
     },
     {
       "method": "hybrid",
@@ -6549,8 +6570,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 39715.69993896992,
-      "tokens": 4456
+      "latency_ms": 25404.974606994074,
+      "tokens": 3573
     },
     {
       "method": "hybrid",
@@ -6583,8 +6604,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 20620.56526800734,
-      "tokens": 3952
+      "latency_ms": 21731.576934980694,
+      "tokens": 4042
     },
     {
       "method": "hybrid",
@@ -6617,8 +6638,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19148.18393002497,
-      "tokens": 3503
+      "latency_ms": 19105.171769973822,
+      "tokens": 3493
     },
     {
       "method": "hybrid",
@@ -6650,9 +6671,11 @@
       },
       "needs_review": [],
       "issues": [],
-      "evidence_dropped": [],
-      "latency_ms": 28496.87770399032,
-      "tokens": 3519
+      "evidence_dropped": [
+        "budget_yuan"
+      ],
+      "latency_ms": 19648.051840951666,
+      "tokens": 2966
     },
     {
       "method": "hybrid",
@@ -6685,8 +6708,8 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 28212.255425023613,
-      "tokens": 4402
+      "latency_ms": 20997.693370038178,
+      "tokens": 4007
     },
     {
       "method": "hybrid",
@@ -6719,13 +6742,18 @@
       "needs_review": [],
       "issues": [],
       "evidence_dropped": [],
-      "latency_ms": 19578.625114023453,
-      "tokens": 4122
+      "latency_ms": 25289.10898597678,
+      "tokens": 4480
     }
   ],
   "errors": [
     {
       "doc_id": "gkzb_t20261124_27747174",
+      "method": "llm",
+      "error": "HTTPSConnectionPool(host='llm-szgb63ufrao5dpts.cn-beijing.maas.aliyuncs.com', port=443): Read timed out. (read timeout=60)"
+    },
+    {
+      "doc_id": "gkzb_t20261124_27747208",
       "method": "llm",
       "error": "HTTPSConnectionPool(host='llm-szgb63ufrao5dpts.cn-beijing.maas.aliyuncs.com', port=443): Read timed out. (read timeout=60)"
     }

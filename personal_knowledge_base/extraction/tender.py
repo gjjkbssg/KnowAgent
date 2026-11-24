@@ -439,19 +439,31 @@ def _response_fields(response: dict) -> dict:
     return arguments
 
 
-def extract_llm(text: str, tenant) -> tuple[dict[str, FieldValue], dict[str, int]]:
-    before = _model_usage_totals(tenant)
-    response = model_providers.chat_completion_raw(
-        tenant,
-        [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": "公告正文：\n" + text},
-        ],
-        tools=[TOOL],
-        temperature=0,
-    )
-    after = _model_usage_totals(tenant)
-    usage = response.get("usage") or _usage_delta(before, after)
+def extract_llm(
+    text: str,
+    tenant,
+    *,
+    response: dict | None = None,
+    usage_override: dict | None = None,
+    include_response: bool = False,
+) -> tuple[dict[str, FieldValue], dict[str, int]] | tuple[
+    dict[str, FieldValue], dict[str, int], dict
+]:
+    if response is None:
+        before = _model_usage_totals(tenant)
+        response = model_providers.chat_completion_raw(
+            tenant,
+            [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": "公告正文：\n" + text},
+            ],
+            tools=[TOOL],
+            temperature=0,
+        )
+        after = _model_usage_totals(tenant)
+        usage = response.get("usage") or _usage_delta(before, after)
+    else:
+        usage = usage_override or response.get("usage") or {}
     fields = {}
     values = _response_fields(response)
     for field in FIELDS:
@@ -472,10 +484,13 @@ def extract_llm(text: str, tenant) -> tuple[dict[str, FieldValue], dict[str, int
         elif not isinstance(evidence, str):
             evidence = None
         fields[field] = FieldValue(normalized, evidence, "llm")
-    return fields, {
+    normalized_usage = {
         key: int(usage.get(key, 0) or 0)
         for key in ("prompt_tokens", "completion_tokens", "total_tokens")
     }
+    if include_response:
+        return fields, normalized_usage, response
+    return fields, normalized_usage
 
 
 def verify_evidence(

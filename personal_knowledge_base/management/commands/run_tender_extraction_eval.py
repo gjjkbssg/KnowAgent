@@ -204,6 +204,30 @@ def _render_metric(value):
     return "n/a" if value is None else str(value)
 
 
+def _load_llm_replay(path):
+    records = {}
+    try:
+        lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise CommandError(f"Unable to read LLM replay file: {exc}") from exc
+    for line_number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise CommandError(
+                f"Invalid LLM replay JSON on line {line_number}: {exc}"
+            ) from exc
+        doc_id = record.get("doc_id") if isinstance(record, dict) else None
+        if not doc_id or doc_id in records:
+            raise CommandError(
+                f"Invalid or duplicate doc_id in LLM replay on line {line_number}"
+            )
+        records[doc_id] = record
+    return records
+
+
 class Command(BaseCommand):
     help = "Evaluate tender notice field extraction methods against the labeled dataset."
 
@@ -211,6 +235,7 @@ class Command(BaseCommand):
         parser.add_argument("--methods", default="rules,llm,hybrid")
         parser.add_argument("--split", choices=("dev", "test", "all"), default="all")
         parser.add_argument("--no-evidence-check", action="store_true")
+        parser.add_argument("--replay-llm")
         parser.add_argument(
             "--output-dir",
             default="interview_materials/results/tender_extraction",
@@ -226,6 +251,11 @@ class Command(BaseCommand):
         output_dir = Path(options["output_dir"])
         if not output_dir.is_absolute():
             output_dir = Path(settings.BASE_DIR) / output_dir
+        replay_path = options.get("replay_llm")
+        if replay_path:
+            replay_path = Path(replay_path)
+            if not replay_path.is_absolute():
+                replay_path = Path(settings.BASE_DIR) / replay_path
 
         data_dir = Path(settings.BASE_DIR) / "interview_materials" / "tender_eval"
         try:
@@ -242,9 +272,21 @@ class Command(BaseCommand):
         needs_llm = any(method in {"llm", "hybrid"} for method in methods)
         if needs_llm and tenant is None:
             raise CommandError("LLM evaluation requires at least one configured tenant")
+        replay_records = _load_llm_replay(replay_path) if replay_path else None
+        if replay_records is not None:
+            missing = [
+                document["doc_id"]
+                for document in documents
+                if document["doc_id"] not in replay_records
+            ]
+            if missing:
+                raise CommandError(
+                    f"LLM replay is missing documents: {', '.join(missing[:5])}"
+                )
 
         method_predictions = {method: [] for method in methods}
         errors = []
+        raw_records = []
         docs_dir = data_dir / "docs"
         for document in documents:
             doc_id = document["doc_id"]
@@ -266,19 +308,67 @@ class Command(BaseCommand):
             llm_latency_ms = 0.0
             evidence_dropped = []
             if needs_llm:
-                started = time.perf_counter()
-                try:
-                    llm_fields, usage = extract_llm(text, tenant)
-                except Exception as exc:
-                    llm_fields = _new_null_llm_fields()
-                    errors.append(
+                if replay_records is not None:
+                    raw_record = replay_records[doc_id]
+                    raw_records.append(raw_record)
+                    usage = raw_record.get("usage") or {}
+                    llm_latency_ms = float(raw_record.get("latency_ms") or 0)
+                    if "rule_latency_ms" in raw_record:
+                        rule_latency_ms = float(raw_record["rule_latency_ms"] or 0)
+                    if raw_record.get("error"):
+                        llm_fields = _new_null_llm_fields()
+                        errors.append(
+                            {
+                                "doc_id": doc_id,
+                                "method": "llm",
+                                "error": str(raw_record["error"])[:500],
+                            }
+                        )
+                    elif isinstance(raw_record.get("response"), dict):
+                        llm_fields, usage = extract_llm(
+                            text,
+                            tenant,
+                            response=raw_record["response"],
+                            usage_override=usage,
+                        )
+                    else:
+                        llm_fields = _new_null_llm_fields()
+                else:
+                    started = time.perf_counter()
+                    error = None
+                    response = None
+                    try:
+                        llm_fields, usage, response = extract_llm(
+                            text,
+                            tenant,
+                            include_response=True,
+                        )
+                    except Exception as exc:
+                        llm_fields = _new_null_llm_fields()
+                        usage = {
+                            "prompt_tokens": 0,
+                            "completion_tokens": 0,
+                            "total_tokens": 0,
+                        }
+                        error = str(exc)[:500]
+                        errors.append(
+                            {"doc_id": doc_id, "method": "llm", "error": error}
+                        )
+                    llm_latency_ms = (time.perf_counter() - started) * 1000
+                    raw_records.append(
                         {
                             "doc_id": doc_id,
-                            "method": "llm",
-                            "error": str(exc)[:500],
+                            "response": response,
+                            "latency_ms": llm_latency_ms,
+                            "rule_latency_ms": rule_latency_ms,
+                            "usage": usage,
+                            **({"error": error} if error else {}),
                         }
                     )
-                llm_latency_ms = (time.perf_counter() - started) * 1000
+                usage = {
+                    key: int(usage.get(key, 0) or 0)
+                    for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+                }
                 if not no_evidence_check:
                     llm_fields, evidence_dropped = verify_evidence(llm_fields, text)
 
@@ -310,6 +400,11 @@ class Command(BaseCommand):
                 method_predictions[method].append(prediction)
 
         output_dir.mkdir(parents=True, exist_ok=True)
+        with (output_dir / "llm_raw.jsonl").open(
+            "w", encoding="utf-8", newline=""
+        ) as raw_file:
+            for record in raw_records:
+                raw_file.write(json.dumps(record, ensure_ascii=False) + "\n")
         summary_rows = []
         csv_rows = []
         for method, predictions in method_predictions.items():
