@@ -4,11 +4,12 @@ import tempfile
 from pathlib import Path
 
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import SimpleTestCase
 
 
 class TenderWarehouseTests(SimpleTestCase):
-    def test_two_document_warehouse_aliases_queries_review_queue_and_csv(self):
+    def test_two_document_warehouse_and_failed_rebuild_preserves_existing_db(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             docs_dir = root / "docs"
@@ -142,3 +143,44 @@ class TenderWarehouseTests(SimpleTestCase):
             report = (export_dir / "report.md").read_text(encoding="utf-8")
             self.assertIn("## data_quality", report)
             self.assertIn("julianday", report)
+
+            schema_path = root / "schema_with_failed_insert.sql"
+            schema = (
+                Path(__file__).resolve().parents[1]
+                / "interview_materials"
+                / "tender_warehouse"
+                / "schema.sql"
+            ).read_text(encoding="utf-8")
+            schema_path.write_text(
+                schema
+                + """
+CREATE TRIGGER fail_notice_insert
+BEFORE INSERT ON notice
+BEGIN
+    SELECT RAISE(ABORT, 'forced insertion failure');
+END;
+""",
+                encoding="utf-8",
+            )
+            with self.assertRaises(CommandError):
+                call_command(
+                    "build_tender_warehouse",
+                    output=str(db_path),
+                    export_dir=str(export_dir),
+                    labels=str(labels_path),
+                    gold=str(gold_path),
+                    docs_dir=str(docs_dir),
+                    summaries=str(summaries_path),
+                    llm_raw=str(replay_path),
+                    schema=str(schema_path),
+                    expected_notices=2,
+                    expected_gkzb=2,
+                    verbosity=0,
+                )
+
+            with sqlite3.connect(db_path) as connection:
+                existing_notices = connection.execute(
+                    "SELECT COUNT(*) FROM notice"
+                ).fetchone()[0]
+            self.assertEqual(existing_notices, 2)
+            self.assertEqual(list(root.glob(".warehouse.sqlite3.*.tmp")), [])

@@ -1,7 +1,9 @@
 import csv
 import json
+import os
 import re
 import sqlite3
+import tempfile
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -405,8 +407,17 @@ class Command(BaseCommand):
         export_dir = path_option("export_dir")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         export_dir.mkdir(parents=True, exist_ok=True)
+        temp_path = None
+        conn = None
         try:
-            conn = sqlite3.connect(output_path)
+            with tempfile.NamedTemporaryFile(
+                prefix=f".{output_path.name}.",
+                suffix=".tmp",
+                dir=output_path.parent,
+                delete=False,
+            ) as temp_file:
+                temp_path = Path(temp_file.name)
+            conn = sqlite3.connect(temp_path)
             conn.execute("PRAGMA foreign_keys = ON")
             conn.executescript(schema_sql)
             org_ids = {}
@@ -551,11 +562,19 @@ class Command(BaseCommand):
                 "\n".join(report_lines).rstrip() + "\n",
                 encoding="utf-8",
             )
+            conn.close()
+            conn = None
+            os.replace(temp_path, output_path)
+            temp_path = None
         except sqlite3.Error as exc:
             raise CommandError(f"Unable to build tender warehouse: {exc}") from exc
         finally:
-            if "conn" in locals():
-                conn.close()
+            try:
+                if conn is not None:
+                    conn.close()
+            finally:
+                if temp_path is not None:
+                    temp_path.unlink(missing_ok=True)
         self.stdout.write(
             f"Built tender warehouse at {output_path}; exports and report: {export_dir}"
         )
