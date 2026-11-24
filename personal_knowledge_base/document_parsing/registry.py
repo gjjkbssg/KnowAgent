@@ -224,6 +224,13 @@ def _markdown_table(rows: list[list[str]]) -> str:
     return "\n".join(lines)
 
 
+def _table_header_like(row: list[str], previous_header: list[str]) -> bool:
+    return row != previous_header and all(
+        cell and len(cell) <= 12 and not re.search(r"\d", cell)
+        for cell in row
+    )
+
+
 def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
     """Serialize table extraction because PyMuPDF table globals are shared across uploads."""
     import fitz
@@ -403,14 +410,16 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
         for page_index in range(1, len(page_records)):
             previous_record = page_records[page_index - 1]
             previous_items = previous_record.get("items", [])
-            current_items = page_records[page_index].get("items", [])
+            current_record = page_records[page_index]
+            current_items = current_record.get("items", [])
             if not current_items:
                 continue
-            previous = (
-                previous_items[-1]
-                if previous_items
-                else previous_record.get("merged_table")
-            )
+            if previous_items:
+                previous = previous_items[-1]
+                previous_bbox = previous.get("bbox")
+            else:
+                previous = previous_record.get("merged_table")
+                previous_bbox = previous_record.get("merged_bbox")
             if previous is None:
                 continue
             continuation = current_items[0]
@@ -421,11 +430,24 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
             column_count = previous_metadata["column_count"]
             if column_count != continuation_metadata["column_count"]:
                 continue
+            previous_page_height = float(previous_record["page"].rect.height)
+            current_page_height = float(current_record["page"].rect.height)
+            if (
+                previous_bbox is None
+                or previous_bbox[3] < previous_page_height * 0.80
+                or continuation["bbox"][1] > current_page_height * 0.20
+            ):
+                continue
 
             merged_rows = previous_metadata["table_rows"]
             continuation_rows = continuation_metadata["table_rows"]
             if continuation_rows and continuation_rows[0] == previous_metadata["header"]:
                 continuation_rows = continuation_rows[1:]
+            elif continuation_rows and _table_header_like(
+                continuation_rows[0],
+                previous_metadata["header"],
+            ):
+                continue
             for row in continuation_rows:
                 row = (row + [""] * column_count)[:column_count]
                 if not row[0].strip() and len(merged_rows) > 1:
@@ -443,7 +465,8 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
             previous["text"] = _markdown_table(merged_rows)
             current_items.pop(0)
             if not current_items:
-                page_records[page_index]["merged_table"] = previous
+                current_record["merged_table"] = previous
+                current_record["merged_bbox"] = continuation["bbox"]
             cross_page_merges += 1
 
         block_index = 0

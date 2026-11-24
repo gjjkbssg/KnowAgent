@@ -139,6 +139,7 @@ class PdfLayoutParsingTests(TestCase):
                 ["条款号", "名称", "内容"],
                 ["31.1", "履约保证金", "不收取"],
             ],
+            y=380,
         )
         second_page = pdf.new_page(width=400, height=500)
         _draw_table(
@@ -147,6 +148,7 @@ class PdfLayoutParsingTests(TestCase):
                 ["条款号", "名称", "内容"],
                 ["", "", "收取合同价的2.5%"],
             ],
+            row_height=200,
         )
         third_page = pdf.new_page(width=400, height=500)
         _draw_table(
@@ -182,6 +184,40 @@ class PdfLayoutParsingTests(TestCase):
         )
         self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 2)
         self.assertEqual(parsed.metadata["pdf_layout"]["tables"], 3)
+
+    def test_unrelated_same_width_tables_are_not_merged(self):
+        pdf = fitz.open()
+        first_page = pdf.new_page(width=400, height=500)
+        _draw_table(
+            first_page,
+            [
+                ["条款号", "名称", "内容"],
+                ["31.1", "履约保证金", "不收取"],
+            ],
+            y=380,
+        )
+        second_page = pdf.new_page(width=400, height=500)
+        _draw_table(
+            second_page,
+            [
+                ["序号", "品名", "规格"],
+                ["1", "检测设备", "进口"],
+            ],
+        )
+
+        parsed = parse_document("unrelated-tables.pdf", _pdf_bytes(pdf))
+        table_blocks = [
+            block
+            for block in parsed.text_blocks
+            if block.metadata.get("block_type") == "table"
+        ]
+
+        self.assertEqual(len(table_blocks), 2)
+        self.assertEqual(
+            [block.metadata["page_span"] for block in table_blocks],
+            [[1, 1], [2, 2]],
+        )
+        self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 0)
 
     def test_toc_headings_are_ignored_and_content_gets_heading_paths(self):
         pdf = fitz.open()
