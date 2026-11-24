@@ -6,7 +6,7 @@
   "modes": {
     "legacy": {
       "knowledge_base": {
-        "id": "4039cb3d-f799-4a19-95fa-cb017acdde74",
+        "id": "c885acf9-2825-45f1-b36c-20ee8ee758d9",
         "name": "pdf-eval-legacy"
       },
       "parse_stats": {
@@ -23,13 +23,13 @@
           "hit_at_1": 0.4615,
           "hit_at_5": 0.6538,
           "mrr_at_10": 0.5577,
-          "mean_search_latency_ms": 3635.75,
+          "mean_search_latency_ms": 3927.426,
           "answer_accuracy": null,
           "answer_count": 0,
           "answer_tokens": {
             "prompt_tokens": 21488,
-            "completion_tokens": 5894,
-            "total_tokens": 27382
+            "completion_tokens": 5299,
+            "total_tokens": 26787
           }
         },
         "by_category": {
@@ -38,13 +38,13 @@
             "hit_at_1": 0.4,
             "hit_at_5": 0.6,
             "mrr_at_10": 0.5,
-            "mean_search_latency_ms": 3770.205,
+            "mean_search_latency_ms": 3754.302,
             "answer_accuracy": null,
             "answer_count": 0,
             "answer_tokens": {
               "prompt_tokens": 11604,
-              "completion_tokens": 3393,
-              "total_tokens": 14997
+              "completion_tokens": 2919,
+              "total_tokens": 14523
             }
           },
           "跨页表格": {
@@ -52,13 +52,13 @@
             "hit_at_1": 0.0,
             "hit_at_5": 0.6667,
             "mrr_at_10": 0.3333,
-            "mean_search_latency_ms": 2524.1,
+            "mean_search_latency_ms": 4565.197,
             "answer_accuracy": null,
             "answer_count": 0,
             "answer_tokens": {
               "prompt_tokens": 2377,
-              "completion_tokens": 578,
-              "total_tokens": 2955
+              "completion_tokens": 548,
+              "total_tokens": 2925
             }
           },
           "正文": {
@@ -66,13 +66,13 @@
             "hit_at_1": 0.75,
             "hit_at_5": 0.75,
             "mrr_at_10": 0.75,
-            "mean_search_latency_ms": 3800.516,
+            "mean_search_latency_ms": 4012.87,
             "answer_accuracy": null,
             "answer_count": 0,
             "answer_tokens": {
               "prompt_tokens": 7507,
-              "completion_tokens": 1923,
-              "total_tokens": 9430
+              "completion_tokens": 1832,
+              "total_tokens": 9339
             }
           }
         }
@@ -83,13 +83,13 @@
           "hit_at_1": 0.4615,
           "hit_at_5": 0.6538,
           "mrr_at_10": 0.5577,
-          "mean_search_latency_ms": 3635.75,
+          "mean_search_latency_ms": 3927.426,
           "answer_accuracy": 0.8077,
           "answer_count": 26,
           "answer_tokens": {
             "prompt_tokens": 21488,
-            "completion_tokens": 5894,
-            "total_tokens": 27382
+            "completion_tokens": 5299,
+            "total_tokens": 26787
           }
         },
         "by_category": {
@@ -98,13 +98,13 @@
             "hit_at_1": 0.4,
             "hit_at_5": 0.6,
             "mrr_at_10": 0.5,
-            "mean_search_latency_ms": 3770.205,
+            "mean_search_latency_ms": 3754.302,
             "answer_accuracy": 0.7333,
             "answer_count": 15,
             "answer_tokens": {
               "prompt_tokens": 11604,
-              "completion_tokens": 3393,
-              "total_tokens": 14997
+              "completion_tokens": 2919,
+              "total_tokens": 14523
             }
           },
           "跨页表格": {
@@ -112,13 +112,13 @@
             "hit_at_1": 0.0,
             "hit_at_5": 0.6667,
             "mrr_at_10": 0.3333,
-            "mean_search_latency_ms": 2524.1,
+            "mean_search_latency_ms": 4565.197,
             "answer_accuracy": 1.0,
             "answer_count": 3,
             "answer_tokens": {
               "prompt_tokens": 2377,
-              "completion_tokens": 578,
-              "total_tokens": 2955
+              "completion_tokens": 548,
+              "total_tokens": 2925
             }
           },
           "正文": {
@@ -126,13 +126,13 @@
             "hit_at_1": 0.75,
             "hit_at_5": 0.75,
             "mrr_at_10": 0.75,
-            "mean_search_latency_ms": 3800.516,
+            "mean_search_latency_ms": 4012.87,
             "answer_accuracy": 0.875,
             "answer_count": 8,
             "answer_tokens": {
               "prompt_tokens": 7507,
-              "completion_tokens": 1923,
-              "total_tokens": 9430
+              "completion_tokens": 1832,
+              "total_tokens": 9339
             }
           }
         }
@@ -146,13 +146,13 @@
           "hit@1": false,
           "hit@5": true,
           "reciprocal_rank": 0.5,
-          "search_latency_ms": 3398.7253079540096,
+          "search_latency_ms": 2851.287204946857,
           "answer": "120日历日。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 713,
-            "completion_tokens": 134,
-            "total_tokens": 847
+            "completion_tokens": 110,
+            "total_tokens": 823
           },
           "answer_error": null
         },
@@ -164,13 +164,13 @@
           "hit@1": false,
           "hit@5": false,
           "reciprocal_rank": 0.0,
-          "search_latency_ms": 2685.3351250174455,
+          "search_latency_ms": 6122.092279023491,
           "answer": "资料中未找到。",
           "answer_correct": false,
           "answer_tokens": {
             "prompt_tokens": 780,
-            "completion_tokens": 209,
-            "total_tokens": 989
+            "completion_tokens": 242,
+            "total_tokens": 1022
           },
           "answer_error": null
         },
@@ -182,13 +182,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3442.64662603382,
+          "search_latency_ms": 5699.406891944818,
           "answer": "询标回复时间为20分钟内。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 728,
-            "completion_tokens": 333,
-            "total_tokens": 1061
+            "completion_tokens": 126,
+            "total_tokens": 854
           },
           "answer_error": null
         },
@@ -200,13 +200,13 @@
           "hit@1": false,
           "hit@5": false,
           "reciprocal_rank": 0.0,
-          "search_latency_ms": 2540.503834025003,
-          "answer": "1-3家。",
+          "search_latency_ms": 5101.327105017845,
+          "answer": "1-3家",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 668,
-            "completion_tokens": 152,
-            "total_tokens": 820
+            "completion_tokens": 79,
+            "total_tokens": 747
           },
           "answer_error": null
         },
@@ -218,13 +218,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2493.810676969588,
+          "search_latency_ms": 2751.790145004634,
           "answer": "10%",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 760,
-            "completion_tokens": 79,
-            "total_tokens": 839
+            "completion_tokens": 66,
+            "total_tokens": 826
           },
           "answer_error": null
         },
@@ -236,13 +236,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 4618.023407005239,
+          "search_latency_ms": 2914.050536986906,
           "answer": "投标文件提交截止时间后30分钟内（以电子交易系统解密倒计时为准）。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 673,
-            "completion_tokens": 161,
-            "total_tokens": 834
+            "completion_tokens": 194,
+            "total_tokens": 867
           },
           "answer_error": null
         },
@@ -254,7 +254,7 @@
           "hit@1": false,
           "hit@5": false,
           "reciprocal_rank": 0.0,
-          "search_latency_ms": 5238.28950303141,
+          "search_latency_ms": 3017.0713789993897,
           "answer": "安徽省财政厅",
           "answer_correct": true,
           "answer_tokens": {
@@ -272,13 +272,13 @@
           "hit@1": false,
           "hit@5": true,
           "reciprocal_rank": 0.5,
-          "search_latency_ms": 2206.7629079683684,
+          "search_latency_ms": 5755.948716017883,
           "answer": "本项目的资金来源是财政资金。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 660,
-            "completion_tokens": 83,
-            "total_tokens": 743
+            "completion_tokens": 89,
+            "total_tokens": 749
           },
           "answer_error": null
         },
@@ -290,13 +290,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 7902.284668991342,
+          "search_latency_ms": 3733.7501340080053,
           "answer": "自验收合格后3年。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 974,
-            "completion_tokens": 126,
-            "total_tokens": 1100
+            "completion_tokens": 272,
+            "total_tokens": 1246
           },
           "answer_error": null
         },
@@ -308,13 +308,13 @@
           "hit@1": false,
           "hit@5": true,
           "reciprocal_rank": 0.5,
-          "search_latency_ms": 2888.4374650078826,
-          "answer": "0-5分。",
+          "search_latency_ms": 2564.425021992065,
+          "answer": "0-5分",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 1200,
-            "completion_tokens": 105,
-            "total_tokens": 1305
+            "completion_tokens": 121,
+            "total_tokens": 1321
           },
           "answer_error": null
         },
@@ -326,13 +326,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 4335.51729604369,
+          "search_latency_ms": 2913.4491059812717,
           "answer": "第六章投标文件格式一",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 770,
-            "completion_tokens": 106,
-            "total_tokens": 876
+            "completion_tokens": 104,
+            "total_tokens": 874
           },
           "answer_error": null
         },
@@ -344,13 +344,13 @@
           "hit@1": false,
           "hit@5": false,
           "reciprocal_rank": 0.0,
-          "search_latency_ms": 5435.092022991739,
-          "answer": "详见投标人须知正文第19.2款要求。即投标人（含其不具有独立法人资格的分支机构）存在不良信用记录的，其投标将被认定为投标无效。不良信用记录是指：\n（1）投标人被人民法院列入失信被执行人名单；\n（2）投标人被税务部门列入重大税收违法案件当事人名单；\n（3）投标人被政府采购监管部门列入政府采购严重违法失信行为记录名单；\n（4）投标人被工商行政管理部门列入企业经营异常名录的。",
+          "search_latency_ms": 2777.002895018086,
+          "answer": "详见投标人须知正文第19.2款要求：投标人（含其不具有独立法人资格的分支机构）存在不良信用记录的，其投标将被认定为投标无效。",
           "answer_correct": false,
           "answer_tokens": {
             "prompt_tokens": 502,
-            "completion_tokens": 1228,
-            "total_tokens": 1730
+            "completion_tokens": 866,
+            "total_tokens": 1368
           },
           "answer_error": null
         },
@@ -362,13 +362,13 @@
           "hit@1": false,
           "hit@5": false,
           "reciprocal_rank": 0.0,
-          "search_latency_ms": 4601.407619018573,
+          "search_latency_ms": 3062.3262299923226,
           "answer": "资料中未找到。",
           "answer_correct": false,
           "answer_tokens": {
             "prompt_tokens": 686,
-            "completion_tokens": 236,
-            "total_tokens": 922
+            "completion_tokens": 206,
+            "total_tokens": 892
           },
           "answer_error": null
         },
@@ -380,13 +380,13 @@
           "hit@1": false,
           "hit@5": false,
           "reciprocal_rank": 0.0,
-          "search_latency_ms": 2295.10195099283,
+          "search_latency_ms": 2238.529935013503,
           "answer": "资料中未找到。",
           "answer_correct": false,
           "answer_tokens": {
             "prompt_tokens": 676,
-            "completion_tokens": 145,
-            "total_tokens": 821
+            "completion_tokens": 148,
+            "total_tokens": 824
           },
           "answer_error": null
         },
@@ -398,13 +398,13 @@
           "hit@1": false,
           "hit@5": true,
           "reciprocal_rank": 0.5,
-          "search_latency_ms": 2144.443029013928,
+          "search_latency_ms": 6606.901819992345,
           "answer": "不超过合同价的2.5%。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 683,
-            "completion_tokens": 318,
-            "total_tokens": 1001
+            "completion_tokens": 299,
+            "total_tokens": 982
           },
           "answer_error": null
         },
@@ -416,13 +416,13 @@
           "hit@1": false,
           "hit@5": true,
           "reciprocal_rank": 0.5,
-          "search_latency_ms": 2359.2318859882653,
+          "search_latency_ms": 3182.6111200498417,
           "answer": "验收合格后一次性退还。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 679,
-            "completion_tokens": 138,
-            "total_tokens": 817
+            "completion_tokens": 126,
+            "total_tokens": 805
           },
           "answer_error": null
         },
@@ -434,13 +434,13 @@
           "hit@1": false,
           "hit@5": false,
           "reciprocal_rank": 0.0,
-          "search_latency_ms": 3068.624228995759,
+          "search_latency_ms": 3906.0785219771788,
           "answer": "安徽医科大学",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 1015,
-            "completion_tokens": 122,
-            "total_tokens": 1137
+            "completion_tokens": 123,
+            "total_tokens": 1138
           },
           "answer_error": null
         },
@@ -452,13 +452,13 @@
           "hit@1": false,
           "hit@5": false,
           "reciprocal_rank": 0.0,
-          "search_latency_ms": 6260.136814031284,
-          "answer": "资料中未找到。",
+          "search_latency_ms": 5828.498448012397,
+          "answer": "以优质采招标采购平台（www.yzczb.com）时间为准。",
           "answer_correct": false,
           "answer_tokens": {
             "prompt_tokens": 620,
-            "completion_tokens": 916,
-            "total_tokens": 1536
+            "completion_tokens": 727,
+            "total_tokens": 1347
           },
           "answer_error": null
         },
@@ -470,7 +470,7 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2189.548083988484,
+          "search_latency_ms": 2725.7223229971714,
           "answer": "680万元。",
           "answer_correct": true,
           "answer_tokens": {
@@ -488,13 +488,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3625.897146994248,
-          "answer": "FSKY340001202610854 号/ZF2026-35-1476",
+          "search_latency_ms": 3043.922503013164,
+          "answer": "FSKY340001202610854号/ZF2026-35-1476",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 1104,
-            "completion_tokens": 377,
-            "total_tokens": 1481
+            "completion_tokens": 449,
+            "total_tokens": 1553
           },
           "answer_error": null
         },
@@ -506,7 +506,7 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 5479.028435016517,
+          "search_latency_ms": 2399.895747017581,
           "answer": "70%",
           "answer_correct": true,
           "answer_tokens": {
@@ -524,13 +524,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3090.1376379770227,
+          "search_latency_ms": 2080.4533589980565,
           "answer": "技术资信分占70%，价格分占30%。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 1258,
-            "completion_tokens": 157,
-            "total_tokens": 1415
+            "completion_tokens": 170,
+            "total_tokens": 1428
           },
           "answer_error": null
         },
@@ -542,13 +542,13 @@
           "hit@1": false,
           "hit@5": false,
           "reciprocal_rank": 0.0,
-          "search_latency_ms": 4240.404682001099,
+          "search_latency_ms": 8058.7492769700475,
           "answer": "3分。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 1217,
-            "completion_tokens": 96,
-            "total_tokens": 1313
+            "completion_tokens": 117,
+            "total_tokens": 1334
           },
           "answer_error": null
         },
@@ -560,13 +560,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2274.5333209750243,
+          "search_latency_ms": 3169.4235960021615,
           "answer": "65%",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 757,
-            "completion_tokens": 112,
-            "total_tokens": 869
+            "completion_tokens": 137,
+            "total_tokens": 894
           },
           "answer_error": null
         },
@@ -578,13 +578,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3244.4432649645023,
+          "search_latency_ms": 4796.296966960654,
           "answer": "≤0.21nm",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 631,
-            "completion_tokens": 123,
-            "total_tokens": 754
+            "completion_tokens": 90,
+            "total_tokens": 721
           },
           "answer_error": null
         },
@@ -596,7 +596,7 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2471.1341020301916,
+          "search_latency_ms": 4812.072956992779,
           "answer": "2026年11月30日17时00分",
           "answer_correct": true,
           "answer_tokens": {
@@ -610,19 +610,19 @@
     },
     "structured": {
       "knowledge_base": {
-        "id": "f893f92e-b48b-4944-9d19-4452d05ad0ab",
+        "id": "884f4011-9a61-439b-8acb-c8e35abe50db",
         "name": "pdf-eval-structured"
       },
       "parse_stats": {
-        "chunk_count": 220,
-        "mean_chunk_chars": 290.891,
-        "footer_pattern_chunks": 9,
-        "table_chunks": 68,
-        "heading_path_chunks": 215,
+        "chunk_count": 216,
+        "mean_chunk_chars": 295.269,
+        "footer_pattern_chunks": 0,
+        "table_chunks": 67,
+        "heading_path_chunks": 211,
         "pdf_layout": {
           "tables": 48,
-          "cross_page_merges": 21,
-          "header_footer_removed": 85,
+          "cross_page_merges": 24,
+          "header_footer_removed": 94,
           "toc_pages": [
             2,
             17
@@ -632,45 +632,45 @@
       "retrieval": {
         "overall": {
           "question_count": 26,
-          "hit_at_1": 0.7692,
-          "hit_at_5": 0.9615,
-          "mrr_at_10": 0.8654,
-          "mean_search_latency_ms": 3735.469,
+          "hit_at_1": 0.8462,
+          "hit_at_5": 1.0,
+          "mrr_at_10": 0.9231,
+          "mean_search_latency_ms": 3606.064,
           "answer_accuracy": null,
           "answer_count": 0,
           "answer_tokens": {
-            "prompt_tokens": 18894,
-            "completion_tokens": 4093,
-            "total_tokens": 22987
+            "prompt_tokens": 19334,
+            "completion_tokens": 3265,
+            "total_tokens": 22599
           }
         },
         "by_category": {
           "表格行": {
             "question_count": 15,
-            "hit_at_1": 0.7333,
-            "hit_at_5": 0.9333,
-            "mrr_at_10": 0.8333,
-            "mean_search_latency_ms": 3866.258,
+            "hit_at_1": 0.8,
+            "hit_at_5": 1.0,
+            "mrr_at_10": 0.9,
+            "mean_search_latency_ms": 3634.483,
             "answer_accuracy": null,
             "answer_count": 0,
             "answer_tokens": {
-              "prompt_tokens": 10565,
-              "completion_tokens": 2037,
-              "total_tokens": 12602
+              "prompt_tokens": 11033,
+              "completion_tokens": 1701,
+              "total_tokens": 12734
             }
           },
           "跨页表格": {
             "question_count": 3,
-            "hit_at_1": 0.3333,
+            "hit_at_1": 0.6667,
             "hit_at_5": 1.0,
-            "mrr_at_10": 0.6667,
-            "mean_search_latency_ms": 2454.793,
+            "mrr_at_10": 0.8333,
+            "mean_search_latency_ms": 2704.277,
             "answer_accuracy": null,
             "answer_count": 0,
             "answer_tokens": {
-              "prompt_tokens": 1814,
-              "completion_tokens": 776,
-              "total_tokens": 2590
+              "prompt_tokens": 1732,
+              "completion_tokens": 402,
+              "total_tokens": 2134
             }
           },
           "正文": {
@@ -678,13 +678,13 @@
             "hit_at_1": 1.0,
             "hit_at_5": 1.0,
             "mrr_at_10": 1.0,
-            "mean_search_latency_ms": 3970.494,
+            "mean_search_latency_ms": 3890.948,
             "answer_accuracy": null,
             "answer_count": 0,
             "answer_tokens": {
-              "prompt_tokens": 6515,
-              "completion_tokens": 1280,
-              "total_tokens": 7795
+              "prompt_tokens": 6569,
+              "completion_tokens": 1162,
+              "total_tokens": 7731
             }
           }
         }
@@ -692,45 +692,45 @@
       "answers": {
         "overall": {
           "question_count": 26,
-          "hit_at_1": 0.7692,
-          "hit_at_5": 0.9615,
-          "mrr_at_10": 0.8654,
-          "mean_search_latency_ms": 3735.469,
-          "answer_accuracy": 0.8846,
+          "hit_at_1": 0.8462,
+          "hit_at_5": 1.0,
+          "mrr_at_10": 0.9231,
+          "mean_search_latency_ms": 3606.064,
+          "answer_accuracy": 0.9615,
           "answer_count": 26,
           "answer_tokens": {
-            "prompt_tokens": 18894,
-            "completion_tokens": 4093,
-            "total_tokens": 22987
+            "prompt_tokens": 19334,
+            "completion_tokens": 3265,
+            "total_tokens": 22599
           }
         },
         "by_category": {
           "表格行": {
             "question_count": 15,
-            "hit_at_1": 0.7333,
-            "hit_at_5": 0.9333,
-            "mrr_at_10": 0.8333,
-            "mean_search_latency_ms": 3866.258,
-            "answer_accuracy": 0.8667,
+            "hit_at_1": 0.8,
+            "hit_at_5": 1.0,
+            "mrr_at_10": 0.9,
+            "mean_search_latency_ms": 3634.483,
+            "answer_accuracy": 0.9333,
             "answer_count": 15,
             "answer_tokens": {
-              "prompt_tokens": 10565,
-              "completion_tokens": 2037,
-              "total_tokens": 12602
+              "prompt_tokens": 11033,
+              "completion_tokens": 1701,
+              "total_tokens": 12734
             }
           },
           "跨页表格": {
             "question_count": 3,
-            "hit_at_1": 0.3333,
+            "hit_at_1": 0.6667,
             "hit_at_5": 1.0,
-            "mrr_at_10": 0.6667,
-            "mean_search_latency_ms": 2454.793,
-            "answer_accuracy": 0.6667,
+            "mrr_at_10": 0.8333,
+            "mean_search_latency_ms": 2704.277,
+            "answer_accuracy": 1.0,
             "answer_count": 3,
             "answer_tokens": {
-              "prompt_tokens": 1814,
-              "completion_tokens": 776,
-              "total_tokens": 2590
+              "prompt_tokens": 1732,
+              "completion_tokens": 402,
+              "total_tokens": 2134
             }
           },
           "正文": {
@@ -738,13 +738,13 @@
             "hit_at_1": 1.0,
             "hit_at_5": 1.0,
             "mrr_at_10": 1.0,
-            "mean_search_latency_ms": 3970.494,
+            "mean_search_latency_ms": 3890.948,
             "answer_accuracy": 1.0,
             "answer_count": 8,
             "answer_tokens": {
-              "prompt_tokens": 6515,
-              "completion_tokens": 1280,
-              "total_tokens": 7795
+              "prompt_tokens": 6569,
+              "completion_tokens": 1162,
+              "total_tokens": 7731
             }
           }
         }
@@ -754,17 +754,17 @@
           "id": "t-validity",
           "category": "表格行",
           "mode": "structured",
-          "first_hit_rank": 2,
-          "hit@1": false,
+          "first_hit_rank": 1,
+          "hit@1": true,
           "hit@5": true,
-          "reciprocal_rank": 0.5,
-          "search_latency_ms": 2347.940838022623,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 3464.8450349923223,
           "answer": "120日历日。",
           "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 625,
-            "completion_tokens": 103,
-            "total_tokens": 728
+            "prompt_tokens": 610,
+            "completion_tokens": 123,
+            "total_tokens": 733
           },
           "answer_error": null
         },
@@ -772,17 +772,17 @@
           "id": "t-bond",
           "category": "表格行",
           "mode": "structured",
-          "first_hit_rank": null,
+          "first_hit_rank": 2,
           "hit@1": false,
-          "hit@5": false,
-          "reciprocal_rank": 0.0,
-          "search_latency_ms": 4736.73389601754,
-          "answer": "资料中未找到。",
-          "answer_correct": false,
+          "hit@5": true,
+          "reciprocal_rank": 0.5,
+          "search_latency_ms": 5010.816310008522,
+          "answer": "本项目免收投标保证金。",
+          "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 562,
-            "completion_tokens": 191,
-            "total_tokens": 753
+            "prompt_tokens": 614,
+            "completion_tokens": 80,
+            "total_tokens": 694
           },
           "answer_error": null
         },
@@ -794,13 +794,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3980.0129229552113,
-          "answer": "20分钟内（或询标函载明的时间内）。",
+          "search_latency_ms": 4578.457995026838,
+          "answer": "询标回复时间为20分钟内。",
           "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 903,
-            "completion_tokens": 432,
-            "total_tokens": 1335
+            "prompt_tokens": 1103,
+            "completion_tokens": 186,
+            "total_tokens": 1289
           },
           "answer_error": null
         },
@@ -812,13 +812,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 5599.767902982421,
+          "search_latency_ms": 2612.0495020295493,
           "answer": "1-3家",
           "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 582,
+            "prompt_tokens": 586,
             "completion_tokens": 82,
-            "total_tokens": 664
+            "total_tokens": 668
           },
           "answer_error": null
         },
@@ -830,13 +830,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 5416.524180036504,
+          "search_latency_ms": 2462.206676020287,
           "answer": "10%",
           "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 842,
-            "completion_tokens": 93,
-            "total_tokens": 935
+            "prompt_tokens": 666,
+            "completion_tokens": 80,
+            "total_tokens": 746
           },
           "answer_error": null
         },
@@ -848,13 +848,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3397.9721129871905,
+          "search_latency_ms": 2583.8044839911163,
           "answer": "投标文件提交截止时间后30分钟内（以电子交易系统解密倒计时为准）。",
           "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 669,
-            "completion_tokens": 165,
-            "total_tokens": 834
+            "prompt_tokens": 1072,
+            "completion_tokens": 188,
+            "total_tokens": 1260
           },
           "answer_error": null
         },
@@ -866,13 +866,13 @@
           "hit@1": false,
           "hit@5": true,
           "reciprocal_rank": 0.5,
-          "search_latency_ms": 3325.75664203614,
+          "search_latency_ms": 3766.2345220451243,
           "answer": "安徽省财政厅",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 822,
-            "completion_tokens": 69,
-            "total_tokens": 891
+            "completion_tokens": 70,
+            "total_tokens": 892
           },
           "answer_error": null
         },
@@ -884,7 +884,7 @@
           "hit@1": false,
           "hit@5": true,
           "reciprocal_rank": 0.5,
-          "search_latency_ms": 7495.928291988093,
+          "search_latency_ms": 2016.0593980108388,
           "answer": "本项目的资金来源是财政资金。",
           "answer_correct": true,
           "answer_tokens": {
@@ -902,13 +902,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2523.546645010356,
+          "search_latency_ms": 2906.474713992793,
           "answer": "自验收合格后3年。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 665,
-            "completion_tokens": 212,
-            "total_tokens": 877
+            "completion_tokens": 119,
+            "total_tokens": 784
           },
           "answer_error": null
         },
@@ -920,7 +920,7 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3338.2401170092635,
+          "search_latency_ms": 5552.089747041464,
           "answer": "0-5分。",
           "answer_correct": true,
           "answer_tokens": {
@@ -938,13 +938,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2005.537586985156,
-          "answer": "第六章投标文件格式一",
+          "search_latency_ms": 2301.5825650072657,
+          "answer": "详见第六章投标文件格式一。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 849,
-            "completion_tokens": 87,
-            "total_tokens": 936
+            "completion_tokens": 166,
+            "total_tokens": 1015
           },
           "answer_error": null
         },
@@ -956,13 +956,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3840.22792999167,
+          "search_latency_ms": 2980.438411992509,
           "answer": "投标人不得存在投标人须知正文第19.2.1 项中的不良信用记录情形。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 534,
-            "completion_tokens": 125,
-            "total_tokens": 659
+            "completion_tokens": 124,
+            "total_tokens": 658
           },
           "answer_error": null
         },
@@ -974,13 +974,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 4653.9105189731345,
+          "search_latency_ms": 3452.583771024365,
           "answer": "允许。",
           "answer_correct": false,
           "answer_tokens": {
             "prompt_tokens": 1101,
-            "completion_tokens": 113,
-            "total_tokens": 1214
+            "completion_tokens": 115,
+            "total_tokens": 1216
           },
           "answer_error": null
         },
@@ -992,13 +992,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2257.5889930012636,
+          "search_latency_ms": 6626.357477973215,
           "answer": "工业",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 588,
-            "completion_tokens": 57,
-            "total_tokens": 645
+            "completion_tokens": 58,
+            "total_tokens": 646
           },
           "answer_error": null
         },
@@ -1010,13 +1010,13 @@
           "hit@1": false,
           "hit@5": true,
           "reciprocal_rank": 0.5,
-          "search_latency_ms": 2432.8571379883215,
-          "answer": "不超过合同价的2.5%。",
+          "search_latency_ms": 2767.371501016896,
+          "answer": "2.5%",
           "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 569,
-            "completion_tokens": 455,
-            "total_tokens": 1024
+            "prompt_tokens": 578,
+            "completion_tokens": 187,
+            "total_tokens": 765
           },
           "answer_error": null
         },
@@ -1024,17 +1024,17 @@
           "id": "x-perf-refund",
           "category": "跨页表格",
           "mode": "structured",
-          "first_hit_rank": 2,
-          "hit@1": false,
+          "first_hit_rank": 1,
+          "hit@1": true,
           "hit@5": true,
-          "reciprocal_rank": 0.5,
-          "search_latency_ms": 2247.089343960397,
-          "answer": "验收合格后（或合同履约完成验收合格后）。",
-          "answer_correct": false,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2885.2072180015966,
+          "answer": "验收合格后一次性退还。",
+          "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 565,
-            "completion_tokens": 238,
-            "total_tokens": 803
+            "prompt_tokens": 574,
+            "completion_tokens": 138,
+            "total_tokens": 712
           },
           "answer_error": null
         },
@@ -1046,13 +1046,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2684.4318810035475,
+          "search_latency_ms": 2460.2524130023085,
           "answer": "安徽医科大学",
           "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 680,
-            "completion_tokens": 83,
-            "total_tokens": 763
+            "prompt_tokens": 580,
+            "completion_tokens": 77,
+            "total_tokens": 657
           },
           "answer_error": null
         },
@@ -1064,13 +1064,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2733.327196969185,
+          "search_latency_ms": 2328.3715680008754,
           "answer": "2026年12月14日14点30分（北京时间）。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 588,
-            "completion_tokens": 192,
-            "total_tokens": 780
+            "completion_tokens": 169,
+            "total_tokens": 757
           },
           "answer_error": null
         },
@@ -1082,13 +1082,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 7836.729987990111,
+          "search_latency_ms": 6304.799464996904,
           "answer": "680万元。",
           "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 709,
-            "completion_tokens": 83,
-            "total_tokens": 792
+            "prompt_tokens": 704,
+            "completion_tokens": 75,
+            "total_tokens": 779
           },
           "answer_error": null
         },
@@ -1100,13 +1100,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3001.7247080104426,
+          "search_latency_ms": 2338.62231799867,
           "answer": "FSKY340001202610854 号/ZF2026-35-1476",
           "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 764,
-            "completion_tokens": 377,
-            "total_tokens": 1141
+            "prompt_tokens": 759,
+            "completion_tokens": 364,
+            "total_tokens": 1123
           },
           "answer_error": null
         },
@@ -1118,13 +1118,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3531.9414240075275,
+          "search_latency_ms": 4003.6561129963957,
           "answer": "70%",
           "answer_correct": true,
           "answer_tokens": {
-            "prompt_tokens": 644,
+            "prompt_tokens": 708,
             "completion_tokens": 67,
-            "total_tokens": 711
+            "total_tokens": 775
           },
           "answer_error": null
         },
@@ -1136,7 +1136,7 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 5462.0000250288285,
+          "search_latency_ms": 5775.975168042351,
           "answer": "技术资信分占70%，价格分占30%。",
           "answer_correct": true,
           "answer_tokens": {
@@ -1154,13 +1154,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2365.2489070082083,
-          "answer": "3分。",
+          "search_latency_ms": 2722.5663969875313,
+          "answer": "标注★的技术条款满足一项得3分。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 1127,
-            "completion_tokens": 135,
-            "total_tokens": 1262
+            "completion_tokens": 139,
+            "total_tokens": 1266
           },
           "answer_error": null
         },
@@ -1172,13 +1172,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 2082.5160529930145,
+          "search_latency_ms": 4668.677524954546,
           "answer": "65%",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 1076,
-            "completion_tokens": 136,
-            "total_tokens": 1212
+            "completion_tokens": 109,
+            "total_tokens": 1185
           },
           "answer_error": null
         },
@@ -1190,13 +1190,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 4750.4630369949155,
+          "search_latency_ms": 2984.918973001186,
           "answer": "≤0.21nm",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 743,
-            "completion_tokens": 133,
-            "total_tokens": 876
+            "completion_tokens": 82,
+            "total_tokens": 825
           },
           "answer_error": null
         },
@@ -1208,13 +1208,13 @@
           "hit@1": true,
           "hit@5": true,
           "reciprocal_rank": 1.0,
-          "search_latency_ms": 3074.1835639928468,
+          "search_latency_ms": 4203.251442988403,
           "answer": "2026年11月30日17时00分。",
           "answer_correct": true,
           "answer_tokens": {
             "prompt_tokens": 625,
-            "completion_tokens": 176,
-            "total_tokens": 801
+            "completion_tokens": 178,
+            "total_tokens": 803
           },
           "answer_error": null
         }
