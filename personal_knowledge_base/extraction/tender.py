@@ -277,7 +277,7 @@ def _budget_value(text: str) -> FieldValue | None:
             section = section[: next_section.start()]
         rows = [line.strip() for line in section.splitlines() if line.strip()]
         amounts = []
-        evidence = None
+        evidence_quotes = []
         for row in rows:
             tokens = [
                 match.group(0).strip()
@@ -288,9 +288,10 @@ def _budget_value(text: str) -> FieldValue | None:
             amount = normalize_amount(tokens[-1], default_unit="元")
             if amount is not None:
                 amounts.append(amount)
-                evidence = evidence or row
+                evidence_quotes.append(row)
         if not amounts:
             return None
+        evidence = evidence_quotes if len(evidence_quotes) > 1 else evidence_quotes[0]
         return FieldValue(round(sum(amounts), 2), evidence, "rule")
     first_package = _PACKAGE_MARKER_RE.search(text)
     package_start = first_package.start() if first_package else len(text)
@@ -302,12 +303,17 @@ def _budget_value(text: str) -> FieldValue | None:
     ]
     chosen = project_lines[:1] if project_lines else matches
     amounts = []
+    evidence_quotes = []
     for match in chosen:
-        amounts.extend(_budget_values(match.group("value"), match.group("label")))
+        line_amounts = _budget_values(match.group("value"), match.group("label"))
+        if line_amounts:
+            amounts.extend(line_amounts)
+            evidence_quotes.append(match.group(0).strip())
     if not amounts:
         return None
-    evidence = chosen[0].group(0)
-    return FieldValue(round(sum(amounts), 2), evidence.strip(), "rule")
+    is_package_total = not project_lines and len(amounts) > 1
+    evidence = evidence_quotes if is_package_total else evidence_quotes[0]
+    return FieldValue(round(sum(amounts), 2), evidence, "rule")
 
 
 def _deadline_value(text: str) -> FieldValue | None:

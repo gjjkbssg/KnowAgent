@@ -16,6 +16,7 @@ from personal_knowledge_base.extraction.tender import (
     FieldValue,
     SYSTEM_PROMPT,
     TOOL,
+    _budget_value,
     build_extraction_result,
     extract,
     extract_llm,
@@ -127,6 +128,38 @@ class TenderRuleTests(SimpleTestCase):
 """
         fields = extract_rules(text)
         self.assertEqual(fields["budget_yuan"].value, 1000000.0)
+
+    def test_rule_package_budget_sum_retains_all_evidence_quotes(self):
+        text = """包组编号：001
+预算金额（元）：130000
+包组编号：002
+预算金额（元）：480000
+"""
+
+        value = _budget_value(text)
+
+        self.assertEqual(value.value, 610000.0)
+        self.assertEqual(
+            value.evidence,
+            ["预算金额（元）：130000", "预算金额（元）：480000"],
+        )
+
+    def test_table_package_budget_sum_retains_each_row(self):
+        text = """本包预算总金额（元）
+包一 130000
+包二 480000
+"""
+
+        value = _budget_value(text)
+
+        self.assertEqual(value.value, 610000.0)
+        self.assertEqual(value.evidence, ["包一 130000", "包二 480000"])
+
+    def test_single_project_budget_keeps_string_evidence(self):
+        value = _budget_value("预算金额（元）：800000")
+
+        self.assertEqual(value.value, 800000.0)
+        self.assertEqual(value.evidence, "预算金额（元）：800000")
 
     def test_hubei_deadline_uses_cutoff_not_file_start_time(self):
         text = """四、提交投标文件截止时间、开标时间和地点
