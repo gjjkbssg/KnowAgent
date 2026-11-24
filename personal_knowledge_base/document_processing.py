@@ -6,6 +6,7 @@ import mimetypes
 import re
 from pathlib import Path
 
+from django.conf import settings
 from django.core.files.storage import default_storage
 from django.utils import timezone
 
@@ -111,6 +112,300 @@ def _text_segments(parsed) -> list[tuple[str, TextBlock, TextBlock]]:
     return segments
 
 
+_PDF_L1_HEADING_RE = re.compile(r"^第[一二三四五六七八九十百]+[章篇部分]")
+_PDF_L1_MARKER_RE = re.compile(r"第[一二三四五六七八九十百]+[章篇部分]")
+_PDF_L2_HEADING_RE = re.compile(r"^[一二三四五六七八九十]+、\S")
+_PDF_L3_HEADING_RE = re.compile(r"^（[一二三四五六七八九十]+）\S")
+
+
+def _pdf_heading(line: str):
+    line = line.strip()
+    if not line:
+        return None
+    if _PDF_L1_HEADING_RE.match(line):
+        return 1, line
+    if len(line) <= 40 and _PDF_L2_HEADING_RE.match(line):
+        return 2, line
+    if len(line) <= 40 and _PDF_L3_HEADING_RE.match(line):
+        return 3, line
+    return None
+
+
+def _pdf_heading_path(stack: list[str], level: int, heading: str) -> list[str]:
+    if level == 1:
+        return [heading]
+    if level == 2:
+        return [*stack[:1], heading]
+    return [*stack[:2], heading]
+
+
+def _structured_pdf_units(parsed, minimum_pdf_segment: int):
+    units = []
+    current_lines = []
+    current_first = None
+    current_last = None
+    current_page = None
+    current_path = []
+    heading_stack = []
+    toc_pages = set(
+        (parsed.metadata.get("pdf_layout") or {}).get("toc_pages") or []
+    )
+    events = []
+    for block in parsed.ordered_blocks:
+        if isinstance(block, ImageBlock):
+            events.append({"type": "image", "block": block})
+        elif isinstance(block, TextBlock) and block.metadata.get("block_type") == "table":
+            events.append({"type": "table", "block": block})
+        elif isinstance(block, TextBlock) and block.text.strip():
+            for line in block.text.splitlines() or [block.text]:
+                events.append({"type": "line", "line": line, "block": block})
+
+    def flush():
+        nonlocal current_first, current_last, current_page, current_path
+        text = "\n".join(current_lines).strip()
+        if text and current_first is not None:
+            unit = {
+                "type": "text",
+                "text": text,
+                "first": current_first,
+                "last": current_last,
+                "page_index": current_page,
+                "heading_path": list(current_path),
+            }
+            if (
+                len(text) < minimum_pdf_segment
+                and units
+                and units[-1]["type"] == "text"
+                and units[-1]["page_index"] == current_page
+                and units[-1]["heading_path"] == current_path
+            ):
+                units[-1]["text"] += "\n" + text
+                units[-1]["last"] = current_last
+            else:
+                units.append(unit)
+        current_lines.clear()
+        current_first = current_last = current_page = None
+        current_path = []
+
+    def append_line(line, block, path):
+        nonlocal current_first, current_last, current_page, current_path
+        if not current_lines:
+            current_first = block
+            current_page = block.page_index
+            current_path = list(path)
+        current_lines.append(line)
+        current_last = block
+
+    index = 0
+    while index < len(events):
+        event = events[index]
+        block = event["block"]
+        if event["type"] == "image":
+            flush()
+            index += 1
+            continue
+        if event["type"] == "table":
+            flush()
+            units.append(
+                {
+                    "type": "table",
+                    "block": block,
+                    "page_index": block.page_index,
+                    "heading_path": list(heading_stack),
+                }
+            )
+            index += 1
+            continue
+        if current_lines and block.page_index != current_page:
+            flush()
+        page_number = (block.page_index or 0) + 1
+        if page_number in toc_pages:
+            append_line(event["line"].strip(), block, [])
+            index += 1
+            continue
+        line = event["line"].strip()
+        heading = _pdf_heading(line)
+        if heading:
+            level, title = heading
+            consumed = False
+            marker = _PDF_L1_MARKER_RE.fullmatch(line) if level == 1 else None
+            if marker and index + 1 < len(events):
+                next_event = events[index + 1]
+                next_title = (
+                    next_event.get("line", "").strip()
+                    if next_event["type"] == "line"
+                    and next_event["block"].page_index == block.page_index
+                    else ""
+                )
+                if 0 < len(next_title) <= 20:
+                    title = f"{line} {next_title}"
+                    consumed = True
+            flush()
+            heading_stack = _pdf_heading_path(heading_stack, level, title)
+            append_line(title, block, heading_stack)
+            if consumed:
+                current_last = events[index + 1]["block"]
+            index += 2 if consumed else 1
+            continue
+        append_line(line, block, heading_stack)
+        index += 1
+    flush()
+    return units
+
+
+def _markdown_table_row(row: list[str]) -> str:
+    cells = [str(cell or "").replace("|", r"\|") for cell in row]
+    return "| " + " | ".join(cells) + " |"
+
+
+def _table_chunk_text(header: list[str], rows: list[list[str]], prefix: str) -> str:
+    lines = [_markdown_table_row(header), _markdown_table_row(["---"] * len(header))]
+    lines.extend(_markdown_table_row(row) for row in rows)
+    return prefix + "\n".join(lines)
+
+
+def _oversized_table_rows(header, row, prefix, chunking_config, chunk_size):
+    column_count = len(header)
+    key_indices = {
+        index for index, cell in enumerate(row) if len(str(cell or "")) <= 20
+    }
+    key_indices.update(range(min(2, column_count)))
+    long_indices = [
+        index for index, cell in enumerate(row) if len(str(cell or "")) > 20
+    ]
+    if not long_indices:
+        return [row]
+
+    key_row = [
+        cell if index in key_indices else ""
+        for index, cell in enumerate(row)
+    ]
+    overhead = len(_table_chunk_text(header, [key_row], prefix))
+    split_config = dict(chunking_config)
+    split_config["chunk_size"] = max(128, chunk_size - overhead)
+    chunks = []
+    for long_index in long_indices:
+        for _, _, piece in split_text(str(row[long_index]), split_config):
+            piece_row = list(key_row)
+            if long_index not in key_indices:
+                piece_row[long_index] = piece
+            chunks.append(piece_row)
+    return chunks or [row]
+
+
+def _create_structured_pdf_chunks(knowledge, parsed, chunking_config):
+    for chunk in Chunk.objects.filter(knowledge=knowledge):
+        delete_chunk_index(chunk.id, chunk.seq_id)
+    Chunk.objects.filter(knowledge=knowledge).delete()
+    chunks = []
+    chunk_index = 0
+    configured_size = max(
+        128,
+        int(
+            chunking_config.get("chunk_size")
+            or chunking_config.get("child_chunk_size")
+            or 512
+        ),
+    )
+    minimum_pdf_segment = min(128, configured_size // 4)
+    units = _structured_pdf_units(parsed, minimum_pdf_segment)
+
+    def add_chunk(content, start, end, metadata):
+        nonlocal chunk_index
+        chunks.append(
+            Chunk.objects.create(
+                tenant=knowledge.tenant,
+                knowledge_base=knowledge.knowledge_base,
+                knowledge=knowledge,
+                content=content,
+                chunk_index=chunk_index,
+                start_at=start,
+                end_at=end,
+                metadata=metadata,
+                content_hash=hashlib.sha256(content.encode("utf-8")).hexdigest(),
+            )
+        )
+        chunk_index += 1
+
+    for unit in units:
+        heading_path = list(unit["heading_path"])
+        prefix = f"【{' > '.join(heading_path)}】\n" if heading_path else ""
+        if unit["type"] == "text":
+            first, last = unit["first"], unit["last"]
+            metadata = {
+                "title": knowledge.title,
+                "block_index": last.block_index,
+                "source_block_start": first.block_index,
+                "source_block_end": last.block_index,
+                "page_index": first.page_index,
+                "heading_path": heading_path,
+            }
+            if first is last:
+                metadata.update(first.metadata)
+                metadata["heading_path"] = heading_path
+            for start, end, text in split_text(unit["text"], chunking_config):
+                add_chunk(prefix + text, start, end, dict(metadata))
+            continue
+
+        block = unit["block"]
+        table_metadata = block.metadata or {}
+        rows = table_metadata.get("table_rows") or []
+        header = list(table_metadata.get("header") or (rows[0] if rows else []))
+        if not header:
+            continue
+        row_count = len(header)
+        rows = [
+            (list(row) + [""] * row_count)[:row_count]
+            for row in rows
+        ]
+        body_rows = rows[1:] if rows and rows[0] == header else rows
+        metadata = {
+            **table_metadata,
+            "title": knowledge.title,
+            "block_index": block.block_index,
+            "source_block_start": block.block_index,
+            "source_block_end": block.block_index,
+            "page_index": block.page_index,
+            "heading_path": heading_path,
+            "block_type": "table",
+        }
+        pending_rows = []
+
+        def emit_table_rows(table_rows):
+            if table_rows:
+                content = _table_chunk_text(header, table_rows, prefix)
+            else:
+                content = _table_chunk_text(header, [], prefix)
+            add_chunk(
+                content,
+                block.block_index,
+                block.block_index + len(content),
+                dict(metadata),
+            )
+
+        for row in body_rows:
+            candidate = pending_rows + [row]
+            candidate_text = _table_chunk_text(header, candidate, prefix)
+            if len(candidate_text) <= configured_size:
+                pending_rows.append(row)
+                continue
+            if pending_rows:
+                emit_table_rows(pending_rows)
+                pending_rows = []
+            single_row_text = _table_chunk_text(header, [row], prefix)
+            if len(single_row_text) <= configured_size:
+                pending_rows = [row]
+                continue
+            for split_row in _oversized_table_rows(
+                header, row, prefix, chunking_config, configured_size
+            ):
+                emit_table_rows([split_row])
+        if pending_rows or not body_rows:
+            emit_table_rows(pending_rows)
+    _link_chunks(chunks)
+    return chunks
+
+
 def _link_chunks(chunks: list[Chunk]):
     ordered = sorted(chunks, key=lambda item: item.chunk_index)
     for idx, chunk in enumerate(ordered):
@@ -156,6 +451,13 @@ def create_text_chunks(knowledge: Knowledge, parsed, process_config: dict | None
     override = process_config.get("chunking_config") or process_config.get("chunkingConfig")
     if isinstance(override, dict):
         chunking_config.update(override)
+    is_pdf = detect_file_type(knowledge.file_name or knowledge.title) == "pdf"
+    if (
+        is_pdf
+        and settings.PDF_LAYOUT_PARSING
+        and (parsed.metadata.get("pdf_layout") is not None)
+    ):
+        return _create_structured_pdf_chunks(knowledge, parsed, chunking_config)
     for chunk in Chunk.objects.filter(knowledge=knowledge):
         delete_chunk_index(chunk.id, chunk.seq_id)
     Chunk.objects.filter(knowledge=knowledge).delete()
@@ -163,7 +465,6 @@ def create_text_chunks(knowledge: Knowledge, parsed, process_config: dict | None
     chunk_index = 0
     configured_size = max(128, int(chunking_config.get("chunk_size") or chunking_config.get("child_chunk_size") or 512))
     minimum_pdf_segment = min(128, configured_size // 4)
-    is_pdf = detect_file_type(knowledge.file_name or knowledge.title) == "pdf"
     for segment, first_block, last_block in _text_segments(parsed):
         if (
             is_pdf

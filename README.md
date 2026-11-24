@@ -332,6 +332,34 @@ DuRetrieval 子集（5,489 个 Chunk）：
 
 复现：`python manage.py run_agent_eval --output-dir interview_materials/results/agent_eval/baseline`（需先准备领域集、人物多跳库和 DuRetrieval 子集）。
 
+### PDF 布局解析评测：legacy vs structured
+
+使用 1 份 94 页招标文件和 26 道问题。两种模式均通过正常入库流程处理文档，并调用常规 `hybrid_search` 检索 Top-10；检索命中要求同一结果包含该题全部 `must_contain` 字符串（忽略空白）。答案评测每题用 Top-5 片段调用一次模型，按 `answer_contains` 字符串判定。
+
+| 模式 | 类别 | 题数 | Hit@1 | Hit@5 | MRR@10 | 检索 ms/题 | 答案正确率 | 答案 tokens（总） |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| legacy | overall | 26 | 0.4615 | 0.6538 | 0.5577 | 4332.77 | 0.8462 | 26748 |
+| legacy | 表格行 | 15 | 0.4000 | 0.6000 | 0.5000 | 3917.61 | 0.8000 | 15076 |
+| legacy | 跨页表格 | 3 | 0.0000 | 0.6667 | 0.3333 | 4916.34 | 1.0000 | 2979 |
+| legacy | 正文 | 8 | 0.7500 | 0.7500 | 0.7500 | 4892.35 | 0.8750 | 8693 |
+| structured | overall | 26 | 0.8077 | 0.9615 | 0.8846 | 4023.80 | 1.0000 | 21696 |
+| structured | 表格行 | 15 | 0.7333 | 0.9333 | 0.8333 | 3993.44 | 1.0000 | 12170 |
+| structured | 跨页表格 | 3 | 0.6667 | 1.0000 | 0.8333 | 2586.31 | 1.0000 | 2132 |
+| structured | 正文 | 8 | 1.0000 | 1.0000 | 1.0000 | 4619.79 | 1.0000 | 7394 |
+
+解析统计：legacy 132 个 chunk（平均 395.80 字符，94 个含页脚模式，无表格/heading-path chunk）；structured 218 个 chunk（平均 294.56 字符，0 个含页脚模式，69 个表格 chunk、213 个带 heading path）。`pdf_layout` 统计为 48 张检测表、24 次跨页合并、移除 94 个页眉/页脚行，TOC 页为第 2、17 页。检测表数是按页统计的 `find_tables()` 结果，表格 chunk 数是结构化切分后的结果。
+
+评测限制：只有 1 份文档；26 道问题由我阅读文档后编写；每种模式只跑 1 次，不能据此判断泛化效果。`t-install-plan` 的生成答案“0-5分”正确，但 Top-5 未命中满足该题全部字符串条件的片段，说明回答正确率不能替代检索命中率。
+
+复现时先准备隔离的评测数据库副本（不要指向源 Agent 评测库），设置模型环境后运行：
+
+```bash
+source /home/ubuntu/work/eval_env.sh
+export APP_DB_PATH=/home/ubuntu/work/pdf_eval_db/db.sqlite3
+export APP_MEDIA_ROOT=/home/ubuntu/work/pdf_eval_db/media
+python manage.py run_pdf_parsing_eval --modes legacy,structured --with-answers
+```
+
 ## 快速开始
 
 ### 1. 环境要求

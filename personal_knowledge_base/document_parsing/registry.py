@@ -87,7 +87,7 @@ def parse_markdown(name: str, data: bytes) -> ParsedDocument:
     return document
 
 
-def parse_pdf(name: str, data: bytes) -> ParsedDocument:
+def _parse_pdf_legacy(name: str, data: bytes) -> ParsedDocument:
     import fitz
 
     document = ParsedDocument()
@@ -136,6 +136,406 @@ def parse_pdf(name: str, data: bytes) -> ParsedDocument:
                     block_index += 1
                 except InvalidImageError:
                     continue
+    finally:
+        pdf.close()
+    return document
+
+
+def parse_pdf(name: str, data: bytes) -> ParsedDocument:
+    from django.conf import settings
+
+    if not settings.PDF_LAYOUT_PARSING:
+        return _parse_pdf_legacy(name, data)
+    return _parse_pdf_layout(name, data)
+
+
+_PDF_PAGE_NUMBER_PATTERNS = (
+    re.compile(r"^[—\-–]\s*\d+\s*[—\-–]$"),
+    re.compile(r"^第\s*\d+\s*页(\s*共\s*\d+\s*页)?$"),
+    re.compile(r"^\d+\s*/\s*\d+$"),
+    re.compile(r"^\d+$"),
+)
+_PDF_L1_HEADING_RE = re.compile(r"^第[一二三四五六七八九十百]+[章篇部分]")
+_CJK_CELL_CHAR_RE = re.compile(r"[\u3400-\u9fff]")
+
+
+def _pdf_in_margin(bbox, page_height: float) -> bool:
+    center_y = (float(bbox[1]) + float(bbox[3])) / 2
+    return center_y <= page_height * 0.08 or center_y >= page_height * 0.92
+
+
+def _pdf_header_key(text: str) -> str:
+    return re.sub(r"\s+", "", re.sub(r"\d", "#", text))
+
+
+def _pdf_point_in_bbox(point, bbox) -> bool:
+    return bbox[0] <= point[0] <= bbox[2] and bbox[1] <= point[1] <= bbox[3]
+
+
+def _join_table_cell(left: str, right: str) -> str:
+    left, right = (left or "").strip(), (right or "").strip()
+    if not left:
+        return right
+    if not right:
+        return left
+    separator = (
+        ""
+        if _CJK_CELL_CHAR_RE.search(left[-1])
+        and _CJK_CELL_CHAR_RE.search(right[0])
+        else " "
+    )
+    return left + separator + right
+
+
+def _normalize_table_cell(value) -> str:
+    if value is None:
+        return ""
+    lines = [line.strip() for line in str(value).splitlines() if line.strip()]
+    result = ""
+    for line in lines:
+        result = _join_table_cell(result, line)
+    return result
+
+
+def _normalize_table_rows(rows) -> list[list[str]]:
+    normalized = [
+        [_normalize_table_cell(cell) for cell in row]
+        for row in (rows or [])
+    ]
+    column_count = max((len(row) for row in normalized), default=0)
+    if not column_count:
+        return []
+    return [row + [""] * (column_count - len(row)) for row in normalized]
+
+
+def _markdown_table(rows: list[list[str]]) -> str:
+    if not rows:
+        return ""
+    column_count = len(rows[0])
+
+    def format_row(row):
+        cells = [cell.replace("|", r"\|") for cell in row]
+        return "| " + " | ".join(cells) + " |"
+
+    lines = [format_row(rows[0]), format_row(["---"] * column_count)]
+    lines.extend(format_row(row) for row in rows[1:])
+    return "\n".join(lines)
+
+
+def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
+    import fitz
+
+    document = ParsedDocument()
+    pdf = fitz.open(stream=data, filetype="pdf")
+    page_records = []
+    header_pages = {}
+    header_footer_removed = 0
+    cross_page_merges = 0
+    detected_tables = 0
+    toc_pages = []
+    try:
+        for page_index, page in enumerate(pdf):
+            page_text = page.get_text("text").strip()
+            has_visual = bool(page.get_images(full=True) or page.get_drawings())
+            if len(page_text) < 20 and has_visual:
+                page_records.append(
+                    {
+                        "page": page,
+                        "page_index": page_index,
+                        "scanned_image": page.get_pixmap(dpi=150, alpha=False).tobytes("jpeg"),
+                    }
+                )
+                continue
+
+            text_items = []
+            image_items = []
+            for raw in page.get_text("dict").get("blocks", []):
+                bbox = raw.get("bbox") or (0, 0, 0, 0)
+                if raw.get("type") == 0:
+                    for line in raw.get("lines", []):
+                        value = "".join(
+                            span.get("text", "") for span in line.get("spans", [])
+                        ).strip()
+                        if value:
+                            text_items.append(
+                                {
+                                    "kind": "text",
+                                    "text": value,
+                                    "bbox": line.get("bbox") or bbox,
+                                }
+                            )
+                elif raw.get("type") == 1 and raw.get("image"):
+                    image_items.append(
+                        {
+                            "kind": "image",
+                            "data": raw["image"],
+                            "ext": raw.get("ext", "png"),
+                            "bbox": bbox,
+                        }
+                    )
+
+            table_items = []
+            try:
+                found_tables = page.find_tables().tables
+            except Exception as exc:
+                found_tables = []
+                _warning(
+                    document,
+                    "pdf_table_extraction_failed",
+                    str(exc),
+                    source_ref=f"page:{page_index + 1}",
+                )
+            for table in found_tables:
+                rows = _normalize_table_rows(table.extract())
+                if not rows:
+                    continue
+                bbox = list(table.bbox)
+                table_items.append(
+                    {
+                        "kind": "table",
+                        "bbox": bbox,
+                        "y": bbox[1],
+                        "x": bbox[0],
+                        "text": _markdown_table(rows),
+                        "rows": rows,
+                        "metadata": {
+                            "bbox": bbox,
+                            "block_type": "table",
+                            "header": rows[0],
+                            "table_rows": rows,
+                            "column_count": len(rows[0]),
+                            "page_span": [page_index + 1, page_index + 1],
+                        },
+                    }
+                )
+                detected_tables += 1
+
+            page_height = float(page.rect.height)
+            page_candidate_keys = set()
+            for item in text_items:
+                if _pdf_in_margin(item["bbox"], page_height):
+                    key = _pdf_header_key(item["text"])
+                    if key:
+                        page_candidate_keys.add(key)
+            for key in page_candidate_keys:
+                header_pages.setdefault(key, set()).add(page_index)
+
+            page_records.append(
+                {
+                    "page": page,
+                    "page_index": page_index,
+                    "text_items": text_items,
+                    "image_items": image_items,
+                    "table_items": table_items,
+                }
+            )
+
+        minimum_pages = max(3, len(pdf) * 0.5)
+        repeated_header_keys = {
+            key
+            for key, pages in header_pages.items()
+            if len(pages) >= minimum_pages
+        }
+
+        for record in page_records:
+            if "scanned_image" in record:
+                record["items"] = [
+                    {
+                        "kind": "scanned_image",
+                        "data": record["scanned_image"],
+                        "bbox": None,
+                    }
+                ]
+                continue
+            page_index = record["page_index"]
+            page_height = float(record["page"].rect.height)
+            tables = record["table_items"]
+            table_bboxes = [table["bbox"] for table in tables]
+            retained_text = []
+            for item in record["text_items"]:
+                in_margin = _pdf_in_margin(item["bbox"], page_height)
+                value = item["text"].strip()
+                if in_margin and (
+                    any(pattern.fullmatch(value) for pattern in _PDF_PAGE_NUMBER_PATTERNS)
+                    or _pdf_header_key(value) in repeated_header_keys
+                ):
+                    header_footer_removed += 1
+                    continue
+                bbox = item["bbox"]
+                center = (
+                    (float(bbox[0]) + float(bbox[2])) / 2,
+                    (float(bbox[1]) + float(bbox[3])) / 2,
+                )
+                if any(_pdf_point_in_bbox(center, table_bbox) for table_bbox in table_bboxes):
+                    continue
+                retained_text.append(
+                    {
+                        "kind": "text",
+                        "text": value,
+                        "bbox": bbox,
+                        "y": bbox[1],
+                        "x": bbox[0],
+                    }
+                )
+
+            headings = {
+                item["text"].strip()
+                for item in retained_text
+                if _PDF_L1_HEADING_RE.match(item["text"].strip())
+            }
+            if len(headings) >= 4:
+                toc_pages.append(page_index + 1)
+
+            for item in record["image_items"]:
+                bbox = item["bbox"]
+                item.update({"y": bbox[1], "x": bbox[0]})
+            record["items"] = sorted(
+                [*retained_text, *tables, *record["image_items"]],
+                key=lambda item: (item["y"], item["x"]),
+            )
+
+        for page_index in range(1, len(page_records)):
+            previous_record = page_records[page_index - 1]
+            previous_items = previous_record.get("items", [])
+            current_items = page_records[page_index].get("items", [])
+            if not current_items:
+                continue
+            previous = (
+                previous_items[-1]
+                if previous_items
+                else previous_record.get("merged_table")
+            )
+            if previous is None:
+                continue
+            continuation = current_items[0]
+            if previous["kind"] != "table" or continuation["kind"] != "table":
+                continue
+            previous_metadata = previous["metadata"]
+            continuation_metadata = continuation["metadata"]
+            column_count = previous_metadata["column_count"]
+            if column_count != continuation_metadata["column_count"]:
+                continue
+
+            merged_rows = previous_metadata["table_rows"]
+            continuation_rows = continuation_metadata["table_rows"]
+            if continuation_rows and continuation_rows[0] == previous_metadata["header"]:
+                continuation_rows = continuation_rows[1:]
+            for row in continuation_rows:
+                row = (row + [""] * column_count)[:column_count]
+                if not row[0].strip() and len(merged_rows) > 1:
+                    merged_rows[-1] = [
+                        _join_table_cell(old, new)
+                        for old, new in zip(merged_rows[-1], row)
+                    ]
+                else:
+                    merged_rows.append(row)
+            previous_metadata["table_rows"] = merged_rows
+            previous_metadata["page_span"] = [
+                previous_metadata["page_span"][0],
+                page_index + 1,
+            ]
+            previous["text"] = _markdown_table(merged_rows)
+            current_items.pop(0)
+            if not current_items:
+                page_records[page_index]["merged_table"] = previous
+            cross_page_merges += 1
+
+        block_index = 0
+        for record in page_records:
+            page_index = record["page_index"]
+            if "scanned_image" in record:
+                document.images.append(
+                    _image_block(
+                        record["scanned_image"],
+                        "image/jpeg",
+                        "scanned_pdf",
+                        f"page:{page_index + 1}",
+                        block_index,
+                        page_index,
+                    )
+                )
+                block_index += 1
+                continue
+
+            for item in record.get("items", []):
+                if item["kind"] == "text":
+                    document.text_blocks.append(
+                        TextBlock(
+                            item["text"],
+                            block_index,
+                            page_index,
+                            {"bbox": list(item["bbox"])},
+                        )
+                    )
+                elif item["kind"] == "table":
+                    document.text_blocks.append(
+                        TextBlock(
+                            item["text"],
+                            block_index,
+                            page_index,
+                            item["metadata"],
+                        )
+                    )
+                elif item["kind"] == "image":
+                    try:
+                        document.images.append(
+                            _image_block(
+                                item["data"],
+                                guess_image_mime(f"image.{item['ext']}"),
+                                "pdf_embedded",
+                                f"page:{page_index + 1}",
+                                block_index,
+                                page_index,
+                                {"bbox": list(item["bbox"])},
+                            )
+                        )
+                    except ImageTooSmallError as exc:
+                        _warning(
+                            document,
+                            "small_image_skipped",
+                            str(exc),
+                            block_index,
+                            f"page:{page_index + 1}",
+                        )
+                    except InvalidImageError as exc:
+                        _warning(
+                            document,
+                            "invalid_image",
+                            str(exc),
+                            block_index,
+                            f"page:{page_index + 1}",
+                        )
+                block_index += 1
+
+            for drawing_index, drawing in enumerate(record["page"].get_drawings()):
+                rect = drawing.get("rect")
+                if not rect or rect.width < 64 or rect.height < 64:
+                    continue
+                try:
+                    pixmap = record["page"].get_pixmap(
+                        clip=rect, dpi=150, alpha=False
+                    )
+                    rendered = pixmap.tobytes("png")
+                    document.images.append(
+                        _image_block(
+                            rendered,
+                            "image/png",
+                            "pdf_vector",
+                            f"page:{page_index + 1}:drawing:{drawing_index}",
+                            block_index,
+                            page_index,
+                            {"bbox": [rect.x0, rect.y0, rect.x1, rect.y1]},
+                        )
+                    )
+                    block_index += 1
+                except InvalidImageError:
+                    continue
+        document.metadata["pdf_layout"] = {
+            "tables": detected_tables,
+            "cross_page_merges": cross_page_merges,
+            "header_footer_removed": header_footer_removed,
+            "toc_pages": toc_pages,
+        }
     finally:
         pdf.close()
     return document

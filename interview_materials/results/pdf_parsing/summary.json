@@ -1,0 +1,1224 @@
+{
+  "pdf": "ahmu_tender_2026.pdf",
+  "pdf_sha256": "fc869967c1d02e4e2f4fe205d6305dc50f4cb91ec1bc8a16fc14798e7b7e3229",
+  "question_count": 26,
+  "with_answers": true,
+  "modes": {
+    "legacy": {
+      "knowledge_base": {
+        "id": "98923130-0e0a-4f92-9560-3b5207918e9a",
+        "name": "pdf-eval-legacy"
+      },
+      "parse_stats": {
+        "chunk_count": 132,
+        "mean_chunk_chars": 395.795,
+        "footer_pattern_chunks": 94,
+        "table_chunks": 0,
+        "heading_path_chunks": 0,
+        "pdf_layout": {}
+      },
+      "retrieval": {
+        "overall": {
+          "question_count": 26,
+          "hit_at_1": 0.4615,
+          "hit_at_5": 0.6538,
+          "mrr_at_10": 0.5577,
+          "mean_search_latency_ms": 4332.767,
+          "answer_accuracy": null,
+          "answer_count": 0,
+          "answer_tokens": {
+            "prompt_tokens": 21488,
+            "completion_tokens": 5260,
+            "total_tokens": 26748
+          }
+        },
+        "by_category": {
+          "表格行": {
+            "question_count": 15,
+            "hit_at_1": 0.4,
+            "hit_at_5": 0.6,
+            "mrr_at_10": 0.5,
+            "mean_search_latency_ms": 3917.611,
+            "answer_accuracy": null,
+            "answer_count": 0,
+            "answer_tokens": {
+              "prompt_tokens": 11604,
+              "completion_tokens": 3472,
+              "total_tokens": 15076
+            }
+          },
+          "跨页表格": {
+            "question_count": 3,
+            "hit_at_1": 0.0,
+            "hit_at_5": 0.6667,
+            "mrr_at_10": 0.3333,
+            "mean_search_latency_ms": 4916.337,
+            "answer_accuracy": null,
+            "answer_count": 0,
+            "answer_tokens": {
+              "prompt_tokens": 2377,
+              "completion_tokens": 602,
+              "total_tokens": 2979
+            }
+          },
+          "正文": {
+            "question_count": 8,
+            "hit_at_1": 0.75,
+            "hit_at_5": 0.75,
+            "mrr_at_10": 0.75,
+            "mean_search_latency_ms": 4892.345,
+            "answer_accuracy": null,
+            "answer_count": 0,
+            "answer_tokens": {
+              "prompt_tokens": 7507,
+              "completion_tokens": 1186,
+              "total_tokens": 8693
+            }
+          }
+        }
+      },
+      "answers": {
+        "overall": {
+          "question_count": 26,
+          "hit_at_1": 0.4615,
+          "hit_at_5": 0.6538,
+          "mrr_at_10": 0.5577,
+          "mean_search_latency_ms": 4332.767,
+          "answer_accuracy": 0.8462,
+          "answer_count": 26,
+          "answer_tokens": {
+            "prompt_tokens": 21488,
+            "completion_tokens": 5260,
+            "total_tokens": 26748
+          }
+        },
+        "by_category": {
+          "表格行": {
+            "question_count": 15,
+            "hit_at_1": 0.4,
+            "hit_at_5": 0.6,
+            "mrr_at_10": 0.5,
+            "mean_search_latency_ms": 3917.611,
+            "answer_accuracy": 0.8,
+            "answer_count": 15,
+            "answer_tokens": {
+              "prompt_tokens": 11604,
+              "completion_tokens": 3472,
+              "total_tokens": 15076
+            }
+          },
+          "跨页表格": {
+            "question_count": 3,
+            "hit_at_1": 0.0,
+            "hit_at_5": 0.6667,
+            "mrr_at_10": 0.3333,
+            "mean_search_latency_ms": 4916.337,
+            "answer_accuracy": 1.0,
+            "answer_count": 3,
+            "answer_tokens": {
+              "prompt_tokens": 2377,
+              "completion_tokens": 602,
+              "total_tokens": 2979
+            }
+          },
+          "正文": {
+            "question_count": 8,
+            "hit_at_1": 0.75,
+            "hit_at_5": 0.75,
+            "mrr_at_10": 0.75,
+            "mean_search_latency_ms": 4892.345,
+            "answer_accuracy": 0.875,
+            "answer_count": 8,
+            "answer_tokens": {
+              "prompt_tokens": 7507,
+              "completion_tokens": 1186,
+              "total_tokens": 8693
+            }
+          }
+        }
+      },
+      "per_question": [
+        {
+          "id": "t-validity",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": 2,
+          "hit@1": false,
+          "hit@5": true,
+          "reciprocal_rank": 0.5,
+          "search_latency_ms": 2982.482641993556,
+          "answer": "120日历日。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 713,
+            "completion_tokens": 110,
+            "total_tokens": 823
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-bond",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": null,
+          "hit@1": false,
+          "hit@5": false,
+          "reciprocal_rank": 0.0,
+          "search_latency_ms": 3242.6263550296426,
+          "answer": "资料中未找到。",
+          "answer_correct": false,
+          "answer_tokens": {
+            "prompt_tokens": 780,
+            "completion_tokens": 254,
+            "total_tokens": 1034
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-clarify",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 4997.040810005274,
+          "answer": "询标回复时间为20分钟内。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 728,
+            "completion_tokens": 219,
+            "total_tokens": 947
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-candidates",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": null,
+          "hit@1": false,
+          "hit@5": false,
+          "reciprocal_rank": 0.0,
+          "search_latency_ms": 2210.6748740188777,
+          "answer": "1-3家",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 668,
+            "completion_tokens": 79,
+            "total_tokens": 747
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-sme",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2267.82925799489,
+          "answer": "10%",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 760,
+            "completion_tokens": 81,
+            "total_tokens": 841
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-decrypt",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2355.1379330456257,
+          "answer": "投标文件提交截止时间后30分钟内（以电子交易系统解密倒计时为准）。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 673,
+            "completion_tokens": 164,
+            "total_tokens": 837
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-supervisor",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": null,
+          "hit@1": false,
+          "hit@5": false,
+          "reciprocal_rank": 0.0,
+          "search_latency_ms": 3373.867076996248,
+          "answer": "安徽省财政厅",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 1141,
+            "completion_tokens": 73,
+            "total_tokens": 1214
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-funds",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": 2,
+          "hit@1": false,
+          "hit@5": true,
+          "reciprocal_rank": 0.5,
+          "search_latency_ms": 3758.897772000637,
+          "answer": "本项目的资金来源是财政资金。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 660,
+            "completion_tokens": 74,
+            "total_tokens": 734
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-warranty",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 4731.686933024321,
+          "answer": "免费质保期为3年（自验收合格之日起开始计算）。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 974,
+            "completion_tokens": 191,
+            "total_tokens": 1165
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-install-plan",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": 2,
+          "hit@1": false,
+          "hit@5": true,
+          "reciprocal_rank": 0.5,
+          "search_latency_ms": 5271.388838998973,
+          "answer": "0-5分。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 1200,
+            "completion_tokens": 135,
+            "total_tokens": 1335
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-opening-form",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 6402.949918003287,
+          "answer": "第六章投标文件格式一。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 770,
+            "completion_tokens": 105,
+            "total_tokens": 875
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-credit",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": null,
+          "hit@1": false,
+          "hit@5": false,
+          "reciprocal_rank": 0.0,
+          "search_latency_ms": 2255.264987004921,
+          "answer": "详见投标人须知正文第19.2.1项中的查询，即：\n（1）投标人被人民法院列入失信被执行人名单；\n（2）投标人被税务部门列入重大税收违法案件当事人名单；\n（3）投标人被政府采购监管部门列入政府采购严重违法失信行为记录名单；\n（4）投标人被工商行政管理部门列入企业经营异常名录。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 502,
+            "completion_tokens": 1421,
+            "total_tokens": 1923
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-tem-import",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": null,
+          "hit@1": false,
+          "hit@5": false,
+          "reciprocal_rank": 0.0,
+          "search_latency_ms": 3896.5213819756173,
+          "answer": "资料中未找到。",
+          "answer_correct": false,
+          "answer_tokens": {
+            "prompt_tokens": 686,
+            "completion_tokens": 195,
+            "total_tokens": 881
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-mia-import",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": null,
+          "hit@1": false,
+          "hit@5": false,
+          "reciprocal_rank": 0.0,
+          "search_latency_ms": 7735.675640986301,
+          "answer": "资料中未找到。",
+          "answer_correct": false,
+          "answer_tokens": {
+            "prompt_tokens": 676,
+            "completion_tokens": 141,
+            "total_tokens": 817
+          },
+          "answer_error": null
+        },
+        {
+          "id": "x-perf-bond",
+          "category": "跨页表格",
+          "mode": "legacy",
+          "first_hit_rank": 2,
+          "hit@1": false,
+          "hit@5": true,
+          "reciprocal_rank": 0.5,
+          "search_latency_ms": 3088.725007022731,
+          "answer": "不超过合同价的2.5%（或合同价的2.5%）。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 683,
+            "completion_tokens": 372,
+            "total_tokens": 1055
+          },
+          "answer_error": null
+        },
+        {
+          "id": "x-perf-refund",
+          "category": "跨页表格",
+          "mode": "legacy",
+          "first_hit_rank": 2,
+          "hit@1": false,
+          "hit@5": true,
+          "reciprocal_rank": 0.5,
+          "search_latency_ms": 2871.6883289744146,
+          "answer": "验收合格后一次性退还。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 679,
+            "completion_tokens": 125,
+            "total_tokens": 804
+          },
+          "answer_error": null
+        },
+        {
+          "id": "x-perf-payee",
+          "category": "跨页表格",
+          "mode": "legacy",
+          "first_hit_rank": null,
+          "hit@1": false,
+          "hit@5": false,
+          "reciprocal_rank": 0.0,
+          "search_latency_ms": 8788.598203973379,
+          "answer": "安徽医科大学",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 1015,
+            "completion_tokens": 105,
+            "total_tokens": 1120
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-deadline",
+          "category": "正文",
+          "mode": "legacy",
+          "first_hit_rank": null,
+          "hit@1": false,
+          "hit@5": false,
+          "reciprocal_rank": 0.0,
+          "search_latency_ms": 6461.002063006163,
+          "answer": "资料中未找到。",
+          "answer_correct": false,
+          "answer_tokens": {
+            "prompt_tokens": 620,
+            "completion_tokens": 331,
+            "total_tokens": 951
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-budget",
+          "category": "正文",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 11778.03888899507,
+          "answer": "680万元。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 679,
+            "completion_tokens": 73,
+            "total_tokens": 752
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-code",
+          "category": "正文",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 3873.1840699911118,
+          "answer": "FSKY340001202610854 号/ZF2026-35-1476",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 1104,
+            "completion_tokens": 186,
+            "total_tokens": 1290
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-prepay",
+          "category": "正文",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2275.2046849927865,
+          "answer": "70%",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 1241,
+            "completion_tokens": 73,
+            "total_tokens": 1314
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-weights",
+          "category": "正文",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 5580.137127020862,
+          "answer": "技术资信分占70%，价格分占30%。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 1258,
+            "completion_tokens": 170,
+            "total_tokens": 1428
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-star",
+          "category": "正文",
+          "mode": "legacy",
+          "first_hit_rank": null,
+          "hit@1": false,
+          "hit@5": false,
+          "reciprocal_rank": 0.0,
+          "search_latency_ms": 2458.0622219946235,
+          "answer": "3分。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 1217,
+            "completion_tokens": 114,
+            "total_tokens": 1331
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-lowbid",
+          "category": "正文",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2993.0956849711947,
+          "answer": "65%",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 757,
+            "completion_tokens": 149,
+            "total_tokens": 906
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-resolution",
+          "category": "正文",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 3720.0388710480183,
+          "answer": "≤0.21nm",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 631,
+            "completion_tokens": 90,
+            "total_tokens": 721
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-inquiry",
+          "category": "表格行",
+          "mode": "legacy",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 3282.1179660386406,
+          "answer": "2026年11月30日17时00分。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 673,
+            "completion_tokens": 230,
+            "total_tokens": 903
+          },
+          "answer_error": null
+        }
+      ]
+    },
+    "structured": {
+      "knowledge_base": {
+        "id": "e5341c0d-6f09-4724-9bac-32dd6294aa74",
+        "name": "pdf-eval-structured"
+      },
+      "parse_stats": {
+        "chunk_count": 218,
+        "mean_chunk_chars": 294.564,
+        "footer_pattern_chunks": 0,
+        "table_chunks": 69,
+        "heading_path_chunks": 213,
+        "pdf_layout": {
+          "tables": 48,
+          "cross_page_merges": 24,
+          "header_footer_removed": 94,
+          "toc_pages": [
+            2,
+            17
+          ]
+        }
+      },
+      "retrieval": {
+        "overall": {
+          "question_count": 26,
+          "hit_at_1": 0.8077,
+          "hit_at_5": 0.9615,
+          "mrr_at_10": 0.8846,
+          "mean_search_latency_ms": 4023.803,
+          "answer_accuracy": null,
+          "answer_count": 0,
+          "answer_tokens": {
+            "prompt_tokens": 18312,
+            "completion_tokens": 3384,
+            "total_tokens": 21696
+          }
+        },
+        "by_category": {
+          "表格行": {
+            "question_count": 15,
+            "hit_at_1": 0.7333,
+            "hit_at_5": 0.9333,
+            "mrr_at_10": 0.8333,
+            "mean_search_latency_ms": 3993.442,
+            "answer_accuracy": null,
+            "answer_count": 0,
+            "answer_tokens": {
+              "prompt_tokens": 10187,
+              "completion_tokens": 1983,
+              "total_tokens": 12170
+            }
+          },
+          "跨页表格": {
+            "question_count": 3,
+            "hit_at_1": 0.6667,
+            "hit_at_5": 1.0,
+            "mrr_at_10": 0.8333,
+            "mean_search_latency_ms": 2586.308,
+            "answer_accuracy": null,
+            "answer_count": 0,
+            "answer_tokens": {
+              "prompt_tokens": 1732,
+              "completion_tokens": 400,
+              "total_tokens": 2132
+            }
+          },
+          "正文": {
+            "question_count": 8,
+            "hit_at_1": 1.0,
+            "hit_at_5": 1.0,
+            "mrr_at_10": 1.0,
+            "mean_search_latency_ms": 4619.79,
+            "answer_accuracy": null,
+            "answer_count": 0,
+            "answer_tokens": {
+              "prompt_tokens": 6393,
+              "completion_tokens": 1001,
+              "total_tokens": 7394
+            }
+          }
+        }
+      },
+      "answers": {
+        "overall": {
+          "question_count": 26,
+          "hit_at_1": 0.8077,
+          "hit_at_5": 0.9615,
+          "mrr_at_10": 0.8846,
+          "mean_search_latency_ms": 4023.803,
+          "answer_accuracy": 1.0,
+          "answer_count": 26,
+          "answer_tokens": {
+            "prompt_tokens": 18312,
+            "completion_tokens": 3384,
+            "total_tokens": 21696
+          }
+        },
+        "by_category": {
+          "表格行": {
+            "question_count": 15,
+            "hit_at_1": 0.7333,
+            "hit_at_5": 0.9333,
+            "mrr_at_10": 0.8333,
+            "mean_search_latency_ms": 3993.442,
+            "answer_accuracy": 1.0,
+            "answer_count": 15,
+            "answer_tokens": {
+              "prompt_tokens": 10187,
+              "completion_tokens": 1983,
+              "total_tokens": 12170
+            }
+          },
+          "跨页表格": {
+            "question_count": 3,
+            "hit_at_1": 0.6667,
+            "hit_at_5": 1.0,
+            "mrr_at_10": 0.8333,
+            "mean_search_latency_ms": 2586.308,
+            "answer_accuracy": 1.0,
+            "answer_count": 3,
+            "answer_tokens": {
+              "prompt_tokens": 1732,
+              "completion_tokens": 400,
+              "total_tokens": 2132
+            }
+          },
+          "正文": {
+            "question_count": 8,
+            "hit_at_1": 1.0,
+            "hit_at_5": 1.0,
+            "mrr_at_10": 1.0,
+            "mean_search_latency_ms": 4619.79,
+            "answer_accuracy": 1.0,
+            "answer_count": 8,
+            "answer_tokens": {
+              "prompt_tokens": 6393,
+              "completion_tokens": 1001,
+              "total_tokens": 7394
+            }
+          }
+        }
+      },
+      "per_question": [
+        {
+          "id": "t-validity",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 8591.744314006064,
+          "answer": "120日历日。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 610,
+            "completion_tokens": 123,
+            "total_tokens": 733
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-bond",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 2,
+          "hit@1": false,
+          "hit@5": true,
+          "reciprocal_rank": 0.5,
+          "search_latency_ms": 3100.462935050018,
+          "answer": "本项目免收投标保证金。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 614,
+            "completion_tokens": 73,
+            "total_tokens": 687
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-clarify",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2332.8233499778435,
+          "answer": "询标回复时间为20分钟内。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 685,
+            "completion_tokens": 272,
+            "total_tokens": 957
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-candidates",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 6830.968445981853,
+          "answer": "1-3家",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 540,
+            "completion_tokens": 90,
+            "total_tokens": 630
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-sme",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2219.9790839804336,
+          "answer": "10%",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 708,
+            "completion_tokens": 83,
+            "total_tokens": 791
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-decrypt",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2700.967500975821,
+          "answer": "投标文件提交截止时间后30分钟内（以电子交易系统解密倒计时为准）。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 622,
+            "completion_tokens": 187,
+            "total_tokens": 809
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-supervisor",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 2,
+          "hit@1": false,
+          "hit@5": true,
+          "reciprocal_rank": 0.5,
+          "search_latency_ms": 4035.6392500107177,
+          "answer": "安徽省财政厅",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 822,
+            "completion_tokens": 70,
+            "total_tokens": 892
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-funds",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 2,
+          "hit@1": false,
+          "hit@5": true,
+          "reciprocal_rank": 0.5,
+          "search_latency_ms": 4843.675502983388,
+          "answer": "本项目的资金来源是财政资金。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 616,
+            "completion_tokens": 74,
+            "total_tokens": 690
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-warranty",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2373.797935026232,
+          "answer": "自验收合格后3年。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 665,
+            "completion_tokens": 138,
+            "total_tokens": 803
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-install-plan",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": null,
+          "hit@1": false,
+          "hit@5": false,
+          "reciprocal_rank": 0.0,
+          "search_latency_ms": 3775.5106720142066,
+          "answer": "0-5分。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 608,
+            "completion_tokens": 233,
+            "total_tokens": 841
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-opening-form",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 7642.348999972455,
+          "answer": "第六章投标文件格式一",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 849,
+            "completion_tokens": 98,
+            "total_tokens": 947
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-credit",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 3408.1277410150506,
+          "answer": "投标人不得存在投标人须知正文第19.2.1项中的不良信用记录情形。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 534,
+            "completion_tokens": 139,
+            "total_tokens": 673
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-tem-import",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2689.8460399825126,
+          "answer": "允许。根据资料，透射电镜的备注为“进口”。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 1101,
+            "completion_tokens": 155,
+            "total_tokens": 1256
+          },
+          "answer_error": null
+        },
+        {
+          "id": "t-mia-import",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2496.485469979234,
+          "answer": "工业",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 588,
+            "completion_tokens": 58,
+            "total_tokens": 646
+          },
+          "answer_error": null
+        },
+        {
+          "id": "x-perf-bond",
+          "category": "跨页表格",
+          "mode": "structured",
+          "first_hit_rank": 2,
+          "hit@1": false,
+          "hit@5": true,
+          "reciprocal_rank": 0.5,
+          "search_latency_ms": 3601.354530954268,
+          "answer": "2.5%",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 578,
+            "completion_tokens": 188,
+            "total_tokens": 766
+          },
+          "answer_error": null
+        },
+        {
+          "id": "x-perf-refund",
+          "category": "跨页表格",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2048.1186829856597,
+          "answer": "验收合格后一次性退还。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 574,
+            "completion_tokens": 135,
+            "total_tokens": 709
+          },
+          "answer_error": null
+        },
+        {
+          "id": "x-perf-payee",
+          "category": "跨页表格",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2109.451014024671,
+          "answer": "安徽医科大学",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 580,
+            "completion_tokens": 77,
+            "total_tokens": 657
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-deadline",
+          "category": "正文",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2787.91860997444,
+          "answer": "2026年12月14日14点30分（北京时间）。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 588,
+            "completion_tokens": 140,
+            "total_tokens": 728
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-budget",
+          "category": "正文",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2217.893504013773,
+          "answer": "680万元。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 704,
+            "completion_tokens": 75,
+            "total_tokens": 779
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-code",
+          "category": "正文",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2012.9923779750243,
+          "answer": "FSKY340001202610854 号/ZF2026-35-1476",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 759,
+            "completion_tokens": 197,
+            "total_tokens": 956
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-prepay",
+          "category": "正文",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 10195.45554096112,
+          "answer": "70%",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 694,
+            "completion_tokens": 79,
+            "total_tokens": 773
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-weights",
+          "category": "正文",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 4303.061481972691,
+          "answer": "技术资信分占70%，价格分占30%。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 864,
+            "completion_tokens": 157,
+            "total_tokens": 1021
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-star",
+          "category": "正文",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 5698.744920955505,
+          "answer": "3分。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 965,
+            "completion_tokens": 102,
+            "total_tokens": 1067
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-lowbid",
+          "category": "正文",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 6948.489736998454,
+          "answer": "65%",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 1076,
+            "completion_tokens": 128,
+            "total_tokens": 1204
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-resolution",
+          "category": "正文",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2793.765362002887,
+          "answer": "≤0.21nm",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 743,
+            "completion_tokens": 123,
+            "total_tokens": 866
+          },
+          "answer_error": null
+        },
+        {
+          "id": "p-inquiry",
+          "category": "表格行",
+          "mode": "structured",
+          "first_hit_rank": 1,
+          "hit@1": true,
+          "hit@5": true,
+          "reciprocal_rank": 1.0,
+          "search_latency_ms": 2859.2524800333194,
+          "answer": "2026年11月30日17时00分。",
+          "answer_correct": true,
+          "answer_tokens": {
+            "prompt_tokens": 625,
+            "completion_tokens": 190,
+            "total_tokens": 815
+          },
+          "answer_error": null
+        }
+      ]
+    }
+  }
+}
