@@ -412,6 +412,69 @@ python manage.py run_pdf_parsing_eval --modes legacy,structured --with-answers
 
 复现前先创建评测数据库副本并使用独立的媒体目录，然后配置模型环境，运行 `python manage.py run_ocr_eval --pdf interview_materials/pdf_eval/ahmu_tender_2026.pdf --p4 interview_materials/ocr_eval/p4.pdf --p7 interview_materials/ocr_eval/p7.pdf --output-dir interview_materials/results/ocr`。必须将 `APP_DB_PATH` 指向新副本；不要对源评测数据库写入。离线重算：`python manage.py run_ocr_eval --rescore interview_materials/results/ocr/ocr_raw.jsonl --output-dir interview_materials/results/ocr`。
 
+### 公告类型分类与投标数据仓库
+
+公告类型分类使用 150 篇平台公告正文，类别代码为 `gkzb`、`zbgg`、`cjgg`、`gzgg`。其中 60 篇 `gkzb` 保留既有 dev/test 划分（20/40）；其余每类 30 篇按 doc ID 排序，前 10 篇进入 dev、其余 20 篇进入 test，最终为 50/100；test 中 `gkzb` 有 40 篇，其余类别各 20 篇。标签是平台分类而非人工裁定的语义真值。标题仅作为元数据；截取正文前 3000 字符前，评测会删除所有忽略空白后与标题相同的独立正文行，行内提及保留。本次 dev 受影响 9/50 篇、test 受影响 12/100 篇；12 篇受影响的 test 正文现均无独立标题行，且未发现行内标题出现。规则只使用 dev 正文编写和调整，test 在规则冻结后用于评测。
+
+| 方法 | Test accuracy | Macro-F1 | 覆盖率 | 平均延迟（ms/篇） | 平均 token/篇 | LLM 证据有效率 |
+|---|---:|---:|---:|---:|---:|---:|
+| Rules | 0.8100 | 0.8262 | 0.8600 | 0.11 | 0.00 | n/a |
+| TF-IDF char | 0.8800 | 0.8466 | 1.0000 | 2.55 | 0.00 | n/a |
+| TF-IDF word | 0.8800 | 0.8466 | 1.0000 | 4.99 | 0.00 | n/a |
+| LLM | 0.8800 | 0.8389 | 0.9900 | 13040.91 | 2167.52 | 0.9800 |
+
+规则有 14/100 个 no-fire 结果，按要求计为错误，同时单独报告 86% 覆盖率。逐类 P/R/F1、混淆矩阵、证据有效率和逐篇预测见[分类评测报告](interview_materials/results/notice_cls/report.md)、[summary](interview_materials/results/notice_cls/summary.json)及[per-doc CSV](interview_materials/results/notice_cls/per_doc.csv)。本次 live LLM 评测尝试了全部 100 篇，其中一次请求超时，故覆盖率为 99%；证据有效率为 98%。
+
+以下五折 StratifiedKFold 结果使用全部 150 篇数据，和上表的 test 结果分开报告；它不是独立留出集。
+
+| 方法 | CV accuracy（均值 ± 标准差） | CV macro-F1（均值 ± 标准差） |
+|---|---:|---:|
+| TF-IDF char | 0.9000 ± 0.0365 | 0.8699 ± 0.0503 |
+| TF-IDF word | 0.9067 ± 0.0442 | 0.8811 ± 0.0560 |
+
+`zbgg` 与 `cjgg` 的正文经常出现“中标（成交）”等通用措辞，且部分正文没有明确采购方式。Test 中 char/word 模型各将 9/20 篇 `zbgg` 判为 `cjgg`，并将 3/20 篇 `cjgg` 判为 `zbgg`；LLM 将 11/20 篇平台标记为 `zbgg` 的公告判为 `cjgg`，另有一篇没有有效预测。规则有 14 篇 no-fire，另将两篇 `gkzb` 判为 `gzgg`。LLM 证据有效率是正文子串校验，不代表证据具有区分类别的判别力。评测保留原平台标签，没有根据模型输出或公告措辞改标。
+
+Dev 训练出的 TF-IDF top-feature 示例包括：`gzgg` 的“更正”“原 公告”、`gkzb` 的“资格 要求”“投标”、`cjgg` 的“维修”“服务费”，以及 `zbgg` 的“南京市”“序号”“025”“320100”。后者及部分字符 n-gram 可能反映站点模板或地域，而非稳定的类别语义；特征仅用于说明这个小样本上的模型行为，完整列表见 [`top_features.json`](interview_materials/results/notice_cls/top_features.json)。
+
+Tender warehouse 使用 SQLite `schema.sql` 和命名 SQL 分析查询，不创建 Django 数据模型；60 篇 `gkzb` 项目由提交的 tender LLM 原始响应离线回放并与规则合并提取，不发起模型请求。
+
+```text
+organization 1 ── * organization_alias
+organization 1 ── * tender_project (purchaser_id / agency_id)
+notice 1 ── 0..1 tender_project
+notice 1 ── * field_extraction
+v_project_flat  = notice + tender_project + purchaser/agency organizations
+v_review_queue  = field_extraction joined to notice
+                  where in_review = 1 or correct = 0
+```
+
+仓库含 150 条 notice、60 个 tender_project 和 360 条 field_extraction；数据质量查询的四项检查全部通过。六个字段各有 60 条、与 gold 对照均为正确且无 review 项。预算总额为 404,361,015.35 元，其中 32 个项目的 province 未识别；将公告发布时间作为通知签发时间的近似值，再按 `julianday(bid_deadline) - julianday(publish_time)` 计算，有 8 个项目少于 20 天。104 个 organization 只有 104 个 alias 拼写，真实数据中没有多拼写折叠；测试夹具另验证了半角/全角括号名称归并。实际 SQL 及结果见[仓库报告](interview_materials/results/tender_warehouse/report.md)，所有表和视图均导出为带 UTF-8 BOM 的 CSV；SQLite 二进制数据库不提交。
+
+复现分类评测时配置模型环境并将 `APP_DB_PATH`、`APP_MEDIA_ROOT` 指向新建的隔离评测副本：
+
+```bash
+source /home/ubuntu/work/eval_env.sh
+export APP_DB_PATH=/path/to/fresh_eval_copy/db.sqlite3
+export APP_MEDIA_ROOT=/path/to/fresh_eval_copy/media
+python manage.py run_notice_classification_eval \
+  --methods rules,tfidf_char,tfidf_word,llm --split test --cv 5 \
+  --output-dir interview_materials/results/notice_cls
+python manage.py run_notice_classification_eval \
+  --methods llm --split test \
+  --replay-llm interview_materials/results/notice_cls/llm_raw.jsonl \
+  --output-dir interview_materials/results/notice_cls/replayed
+```
+
+无需模型调用即可构建仓库和导出查询结果：
+
+```bash
+python manage.py build_tender_warehouse \
+  --output /tmp/tender_warehouse.sqlite3 \
+  --export-dir interview_materials/results/tender_warehouse
+```
+
+局限：总计 150 篇、来自单一政府采购平台及其模板，类别是平台标签而非独立语义标注；`zbgg`/`cjgg` 在正文中的措辞重叠，50 篇 dev 和 100 篇 test 也不足以说明跨站点泛化。LLM 单次测试可能有输出波动，五折交叉验证包含全部样本，不能替代独立外部测试。
+
 ## 快速开始
 
 ### 1. 环境要求
