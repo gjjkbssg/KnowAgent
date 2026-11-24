@@ -277,6 +277,45 @@ class PdfLayoutParsingTests(TestCase):
         self.assertNotRegex(content, r"—\s*\d+\s*—")
         self.assertEqual(parsed.metadata["pdf_layout"]["header_footer_removed"], 4)
 
+    def test_repeated_single_unit_header_is_removed_and_does_not_block_merge(self):
+        pdf = fitz.open()
+        for page_number in range(1, 5):
+            page = pdf.new_page(width=400, height=500)
+            _text(page, "单元测试报告", 40, 20)
+            if page_number == 1:
+                _draw_table(
+                    page,
+                    [
+                        ["条款号", "名称", "内容"],
+                        ["31.1", "履约保证金", "不收取"],
+                    ],
+                    y=380,
+                )
+            elif page_number == 2:
+                _draw_table(
+                    page,
+                    [
+                        ["条款号", "名称", "内容"],
+                        ["", "", "收取合同价的2.5%"],
+                    ],
+                )
+            else:
+                _text(page, f"第{page_number}页正文内容，包含采购信息。", 40, 130)
+
+        parsed = parse_document("single-unit-header.pdf", _pdf_bytes(pdf))
+        content = "\n".join(block.text for block in parsed.text_blocks)
+        tables = [
+            block
+            for block in parsed.text_blocks
+            if block.metadata.get("block_type") == "table"
+        ]
+
+        self.assertNotIn("单元测试报告", content)
+        self.assertEqual(parsed.metadata["pdf_layout"]["header_footer_removed"], 4)
+        self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 1)
+        self.assertEqual(len(tables), 1)
+        self.assertEqual(tables[0].metadata["page_span"], [1, 2])
+
     def test_single_page_bare_margin_amount_is_preserved(self):
         pdf = fitz.open()
         page = pdf.new_page(width=400, height=500)
