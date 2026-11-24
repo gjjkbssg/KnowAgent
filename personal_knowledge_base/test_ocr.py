@@ -159,6 +159,35 @@ class OcrRoutingTests(TestCase):
                 if name == "exception":
                     self.assertIn("Paddle OCR:", errors[0])
 
+    def test_failed_vlm_fallback_preserves_paddle_text(self):
+        cases = [
+            ("exception", RuntimeError("VLM unavailable"), "VLM unavailable"),
+            ("empty", "", "VLM OCR returned no text"),
+        ]
+        for name, vlm_result, expected_error in cases:
+            with self.subTest(name=name):
+                with (
+                    override_settings(OCR_ENGINE="paddle_vlm_fallback"),
+                    patch(
+                        "personal_knowledge_base.multimodal.paddle_ocr",
+                        return_value=_result("paddle remains", mean=0.84),
+                    ),
+                    patch(
+                        "personal_knowledge_base.multimodal.vision_completion",
+                        side_effect=vlm_result if isinstance(vlm_result, Exception) else None,
+                        return_value=None if isinstance(vlm_result, Exception) else vlm_result,
+                    ),
+                ):
+                    text, metadata, errors, _, _ = recognize_image(
+                        self.image, "image/png", self.knowledge
+                    )
+
+                self.assertEqual(text, "paddle remains")
+                self.assertEqual(metadata["engine"], "paddle")
+                self.assertEqual(metadata["fallback_reason"], "mean_score_below_threshold")
+                self.assertTrue(metadata["fallback_failed"])
+                self.assertTrue(any(expected_error in error for error in errors))
+
     def test_paddle_exception_falls_back_even_in_paddle_mode(self):
         with (
             override_settings(OCR_ENGINE="paddle"),

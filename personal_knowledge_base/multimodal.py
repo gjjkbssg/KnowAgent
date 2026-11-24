@@ -131,6 +131,18 @@ def _recognize_with_data_url(
     metadata["fallback_reason"] = fallback_reason
     text, vlm_errors, circuit_error = _vlm_ocr(data_url, knowledge, model_id)
     errors.extend(vlm_errors)
+    if paddle_result and paddle_result.lines and not text:
+        metadata["engine"] = "paddle"
+        metadata["fallback_failed"] = True
+        if not vlm_errors:
+            errors.append("VLM OCR returned no text")
+        return (
+            paddle_result.text,
+            metadata,
+            errors,
+            circuit_error,
+            (time.perf_counter() - started) * 1000,
+        )
     return (
         text,
         metadata,
