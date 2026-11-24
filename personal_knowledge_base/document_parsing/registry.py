@@ -158,6 +158,7 @@ _PDF_PAGE_NUMBER_PATTERNS = (
     re.compile(r"^[-—–]\s*\d+\s*[-—–]$"),
     re.compile(r"^第\s*\d+\s*页$"),
     re.compile(r"^\d+\s*/\s*\d+$"),
+    re.compile(r"^\d{1,4}$"),
 )
 _PDF_AMOUNT_MARKER_RE = re.compile(r"(?:元|￥|¥|%|合计|小计|总计)")
 _CJK_CELL_CHAR_RE = re.compile(r"[\u3400-\u9fff]")

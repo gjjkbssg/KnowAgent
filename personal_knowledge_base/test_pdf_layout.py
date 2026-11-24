@@ -191,6 +191,39 @@ class PdfLayoutParsingTests(TestCase):
         self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 1)
         self.assertEqual(parsed.metadata["pdf_layout"]["header_footer_removed"], 0)
 
+    def test_two_page_bare_number_footers_do_not_block_table_merge(self):
+        pdf = fitz.open()
+        first_page = pdf.new_page(width=400, height=500)
+        _text(first_page, "1", 40, 490)
+        _draw_table(
+            first_page,
+            [
+                ["条款号", "名称", "内容"],
+                ["31.1", "履约保证金", "不收取"],
+            ],
+            y=380,
+        )
+        second_page = pdf.new_page(width=400, height=500)
+        _draw_table(
+            second_page,
+            [
+                ["条款号", "名称", "内容"],
+                ["", "", "收取合同价的2.5%"],
+            ],
+        )
+        _text(second_page, "2", 40, 490)
+
+        parsed = parse_document("bare-number-footers.pdf", _pdf_bytes(pdf))
+        table = next(
+            block
+            for block in parsed.text_blocks
+            if block.metadata.get("block_type") == "table"
+        )
+
+        self.assertEqual(table.metadata["page_span"], [1, 2])
+        self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 1)
+        self.assertEqual(parsed.metadata["pdf_layout"]["header_footer_removed"], 0)
+
     def test_top_margin_section_heading_blocks_table_merge(self):
         pdf = fitz.open()
         first_page = pdf.new_page(width=400, height=500)
