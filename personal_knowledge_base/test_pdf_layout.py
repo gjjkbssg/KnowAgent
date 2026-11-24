@@ -211,7 +211,11 @@ class PdfLayoutParsingTests(TestCase):
             first_page,
             [
                 ["条款号", "名称", "内容"],
-                ["31.1", "履约保证金", "不收取"],
+                [
+                    "31.1",
+                    "履约保证金",
+                    "履约保函的提交方式和金额标准详见招标文件",
+                ],
             ],
             y=380,
         )
@@ -219,8 +223,9 @@ class PdfLayoutParsingTests(TestCase):
         _draw_table(
             second_page,
             [
-                ["序号", "品名", "规格"],
+                ["采购序号", "设备名称", "主要规格"],
                 ["1", "检测设备", "进口"],
+                ["2", "激光设备", "国产"],
             ],
         )
 
@@ -244,7 +249,7 @@ class PdfLayoutParsingTests(TestCase):
         _draw_table(
             first_page,
             [
-                ["组别", "名称", "内容"],
+                ["项目分组", "设备名称", "采购说明内容"],
                 ["A", "设备", "主项说明"],
             ],
             y=380,
@@ -253,7 +258,7 @@ class PdfLayoutParsingTests(TestCase):
         _draw_table(
             second_page,
             [
-                ["组别", "名称", "内容"],
+                ["项目分组", "设备名称", "采购说明内容"],
                 ["", "", "续页说明"],
                 ["", "", "同组下一个独立项目"],
                 ["B", "另一设备", "另一组说明"],
