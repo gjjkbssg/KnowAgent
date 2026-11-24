@@ -160,8 +160,16 @@ def _pdf_in_margin(bbox, page_height: float) -> bool:
     return center_y <= page_height * 0.08 or center_y >= page_height * 0.92
 
 
+def _pdf_is_margin_text(item, page_height: float) -> bool:
+    return (
+        item["kind"] == "text"
+        and item.get("bbox") is not None
+        and _pdf_in_margin(item["bbox"], page_height)
+    )
+
+
 def _pdf_header_key(text: str) -> str:
-    return re.sub(r"\s+", "", re.sub(r"\d", "#", text))
+    return re.sub(r"\s+", "", re.sub(r"\d+", "#", text))
 
 
 def _pdf_point_in_bbox(point, bbox) -> bool:
@@ -405,15 +413,38 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
             current_items = current_record.get("items", [])
             if not current_items:
                 continue
-            if previous_items:
-                previous = previous_items[-1]
+            previous_page_height = float(previous_record["page"].rect.height)
+            current_page_height = float(current_record["page"].rect.height)
+            previous_index = next(
+                (
+                    index
+                    for index in range(len(previous_items) - 1, -1, -1)
+                    if not _pdf_is_margin_text(
+                        previous_items[index],
+                        previous_page_height,
+                    )
+                ),
+                None,
+            )
+            if previous_index is not None:
+                previous = previous_items[previous_index]
                 previous_bbox = previous.get("bbox")
             else:
                 previous = previous_record.get("merged_table")
                 previous_bbox = previous_record.get("merged_bbox")
             if previous is None:
                 continue
-            continuation = current_items[0]
+            continuation_item_index = next(
+                (
+                    index
+                    for index, item in enumerate(current_items)
+                    if not _pdf_is_margin_text(item, current_page_height)
+                ),
+                None,
+            )
+            if continuation_item_index is None:
+                continue
+            continuation = current_items[continuation_item_index]
             if previous["kind"] != "table" or continuation["kind"] != "table":
                 continue
             previous_metadata = previous["metadata"]
@@ -421,8 +452,6 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
             column_count = previous_metadata["column_count"]
             if column_count != continuation_metadata["column_count"]:
                 continue
-            previous_page_height = float(previous_record["page"].rect.height)
-            current_page_height = float(current_record["page"].rect.height)
             if (
                 previous_bbox is None
                 or previous_bbox[3] < previous_page_height * 0.80
@@ -458,10 +487,9 @@ def _parse_pdf_layout(name: str, data: bytes) -> ParsedDocument:
                 page_index + 1,
             ]
             previous["text"] = _markdown_table(merged_rows)
-            current_items.pop(0)
-            if not current_items:
-                current_record["merged_table"] = previous
-                current_record["merged_bbox"] = continuation["bbox"]
+            current_items.pop(continuation_item_index)
+            current_record["merged_table"] = previous
+            current_record["merged_bbox"] = continuation["bbox"]
             cross_page_merges += 1
 
         block_index = 0

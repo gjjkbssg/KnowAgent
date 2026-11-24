@@ -106,6 +106,91 @@ class PdfLayoutParsingTests(TestCase):
             8,
         )
 
+    def test_twelve_page_footers_are_removed_and_table_continuation_merges(self):
+        pdf = fitz.open()
+        for page_number in range(1, 13):
+            page = pdf.new_page(width=400, height=500)
+            if page_number not in (9, 10):
+                _text(page, f"正文内容第{page_number}页，包含足够长度的采购信息。", 40, 130)
+            _text(page, f"— {page_number} —", 40, 490)
+            if page_number == 9:
+                _draw_table(
+                    page,
+                    [
+                        ["条款号", "名称", "内容"],
+                        ["31.1", "履约保证金", "不收取"],
+                    ],
+                    y=380,
+                )
+            elif page_number == 10:
+                _draw_table(
+                    page,
+                    [
+                        ["条款号", "名称", "内容"],
+                        ["", "", "收取合同价的2.5%"],
+                    ],
+                )
+
+        parsed = parse_document("twelve-page-continuation.pdf", _pdf_bytes(pdf))
+        content = "\n".join(block.text for block in parsed.text_blocks)
+        table = next(
+            block
+            for block in parsed.text_blocks
+            if block.metadata.get("block_type") == "table"
+        )
+
+        self.assertNotRegex(content, r"—\s*\d+\s*—")
+        self.assertEqual(
+            parsed.metadata["pdf_layout"]["header_footer_removed"],
+            12,
+        )
+        self.assertEqual(table.metadata["page_span"], [9, 10])
+        self.assertEqual(
+            table.metadata["table_rows"][1],
+            ["31.1", "履约保证金", "不收取收取合同价的2.5%"],
+        )
+        self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 1)
+
+    def test_two_page_footers_do_not_block_table_continuation_merge(self):
+        pdf = fitz.open()
+        first_page = pdf.new_page(width=400, height=500)
+        _text(first_page, "— 1 —", 40, 490)
+        _draw_table(
+            first_page,
+            [
+                ["条款号", "名称", "内容"],
+                ["31.1", "履约保证金", "不收取"],
+            ],
+            y=380,
+        )
+        second_page = pdf.new_page(width=400, height=500)
+        _draw_table(
+            second_page,
+            [
+                ["条款号", "名称", "内容"],
+                ["", "", "收取合同价的2.5%"],
+            ],
+        )
+        _text(second_page, "— 2 —", 40, 490)
+
+        parsed = parse_document("two-page-continuation.pdf", _pdf_bytes(pdf))
+        content = "\n".join(block.text for block in parsed.text_blocks)
+        table = next(
+            block
+            for block in parsed.text_blocks
+            if block.metadata.get("block_type") == "table"
+        )
+
+        self.assertIn("— 1 —", content)
+        self.assertIn("— 2 —", content)
+        self.assertEqual(table.metadata["page_span"], [1, 2])
+        self.assertEqual(
+            table.metadata["table_rows"][1],
+            ["31.1", "履约保证金", "不收取收取合同价的2.5%"],
+        )
+        self.assertEqual(parsed.metadata["pdf_layout"]["cross_page_merges"], 1)
+        self.assertEqual(parsed.metadata["pdf_layout"]["header_footer_removed"], 0)
+
     def test_single_page_bare_margin_amount_is_preserved(self):
         pdf = fitz.open()
         page = pdf.new_page(width=400, height=500)
