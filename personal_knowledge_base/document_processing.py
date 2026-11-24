@@ -360,7 +360,10 @@ def _create_structured_pdf_chunks(knowledge, parsed, chunking_config):
         ]
         body_rows = rows[1:] if rows and rows[0] == header else rows
         metadata = {
-            **table_metadata,
+            "bbox": table_metadata.get("bbox"),
+            "header": header,
+            "page_span": table_metadata.get("page_span"),
+            "column_count": len(header),
             "title": knowledge.title,
             "block_index": block.block_index,
             "source_block_start": block.block_index,
@@ -370,38 +373,47 @@ def _create_structured_pdf_chunks(knowledge, parsed, chunking_config):
             "block_type": "table",
         }
         pending_rows = []
+        pending_start = None
 
-        def emit_table_rows(table_rows):
+        def emit_table_rows(table_rows, row_start, row_end):
             if table_rows:
                 content = _table_chunk_text(header, table_rows, prefix)
             else:
                 content = _table_chunk_text(header, [], prefix)
+            chunk_metadata = dict(metadata)
+            chunk_metadata["row_range"] = [row_start, row_end]
             add_chunk(
                 content,
                 block.block_index,
                 block.block_index + len(content),
-                dict(metadata),
+                chunk_metadata,
             )
 
-        for row in body_rows:
+        for row_index, row in enumerate(body_rows):
             candidate = pending_rows + [row]
             candidate_text = _table_chunk_text(header, candidate, prefix)
             if len(candidate_text) <= configured_size:
+                if not pending_rows:
+                    pending_start = row_index
                 pending_rows.append(row)
                 continue
             if pending_rows:
-                emit_table_rows(pending_rows)
+                emit_table_rows(pending_rows, pending_start, row_index)
                 pending_rows = []
+                pending_start = None
             single_row_text = _table_chunk_text(header, [row], prefix)
             if len(single_row_text) <= configured_size:
                 pending_rows = [row]
+                pending_start = row_index
                 continue
             for split_row in _oversized_table_rows(
                 header, row, prefix, chunking_config, configured_size
             ):
-                emit_table_rows([split_row])
-        if pending_rows or not body_rows:
-            emit_table_rows(pending_rows)
+                emit_table_rows([split_row], row_index, row_index + 1)
+        if pending_rows:
+            emit_table_rows(pending_rows, pending_start, len(body_rows))
+        elif not body_rows:
+            emit_table_rows([], 0, 0)
     _link_chunks(chunks)
     return chunks
 

@@ -347,6 +347,11 @@ class PdfLayoutParsingTests(TestCase):
         for chunk in chunks:
             self.assertEqual(chunk.metadata["block_type"], "table")
             self.assertEqual(chunk.metadata["heading_path"], [])
+            self.assertNotIn("table_rows", chunk.metadata)
+            self.assertEqual(chunk.metadata["header"], header)
+            self.assertEqual(chunk.metadata["page_span"], [1, 1])
+            self.assertEqual(chunk.metadata["column_count"], 3)
+            self.assertEqual(chunk.metadata["row_range"], [0, 1])
             self.assertIn("| 序号 | 名称 | 说明 |", chunk.content)
             self.assertIn("| 1 | 关键条款 |", chunk.content)
 
