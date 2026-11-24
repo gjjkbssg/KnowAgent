@@ -1,0 +1,151 @@
+{
+  "source_pdf": "ahmu_tender_2026.pdf",
+  "pages": [
+    3,
+    4,
+    5,
+    7,
+    8,
+    34,
+    35,
+    36,
+    48,
+    51,
+    52,
+    60,
+    70,
+    82,
+    86
+  ],
+  "variants": {
+    "clean": {
+      "dpi": 150,
+      "jpeg_quality": 90
+    },
+    "degraded": {
+      "dpi": 100,
+      "jpeg_quality": 35,
+      "center_stamp": "semi-transparent red circle"
+    }
+  },
+  "metrics": {
+    "paddle": {
+      "clean": {
+        "pages": 15,
+        "mean_cer": 0.085771,
+        "median_cer": 0.061538,
+        "pages_sent_to_vlm": 0,
+        "mean_latency_ms": 29698.75,
+        "vlm_tokens": 0
+      },
+      "degraded": {
+        "pages": 15,
+        "mean_cer": 0.086503,
+        "median_cer": 0.072658,
+        "pages_sent_to_vlm": 0,
+        "mean_latency_ms": 19741.43,
+        "vlm_tokens": 0
+      }
+    },
+    "vlm": {
+      "clean": {
+        "pages": 15,
+        "mean_cer": 0.107647,
+        "median_cer": 0.049399,
+        "pages_sent_to_vlm": 15,
+        "mean_latency_ms": 24714.59,
+        "vlm_tokens": 39239
+      },
+      "degraded": {
+        "pages": 15,
+        "mean_cer": 0.089977,
+        "median_cer": 0.028966,
+        "pages_sent_to_vlm": 15,
+        "mean_latency_ms": 16995.69,
+        "vlm_tokens": 21721
+      }
+    },
+    "paddle_vlm_fallback": {
+      "clean": {
+        "pages": 15,
+        "mean_cer": 0.085771,
+        "median_cer": 0.061538,
+        "pages_sent_to_vlm": 0,
+        "mean_latency_ms": 29344.69,
+        "vlm_tokens": 0
+      },
+      "degraded": {
+        "pages": 15,
+        "mean_cer": 0.086503,
+        "median_cer": 0.072658,
+        "pages_sent_to_vlm": 0,
+        "mean_latency_ms": 20038.81,
+        "vlm_tokens": 0
+      }
+    }
+  },
+  "scanned_pdfs": {
+    "p4.pdf": {
+      "line_count": 83,
+      "mean_score": 0.9503446853304484,
+      "lowest_five_lines": [
+        {
+          "page": 2,
+          "text": "组件成本占比≥()3。(/）的_()4在中国境内生产。(l）的_(/)⁵在中国境",
+          "score": 0.8488034009933472
+        },
+        {
+          "page": 2,
+          "text": "3。(1)的()4在中国境内生产。(l)的()5在中国境内完成。",
+          "score": 0.8493413925170898
+        },
+        {
+          "page": 1,
+          "text": "(l)的()⁵在中国境内完成。",
+          "score": 0.8548582792282104
+        },
+        {
+          "page": 1,
+          "text": "比≥()3。(l)的()4在中国境内生产。",
+          "score": 0.8653313517570496
+        },
+        {
+          "page": 2,
+          "text": "本占比≥()3。(l)的_()4在中国境内生产。(1)的_()⁵在中国境内完成。",
+          "score": 0.8721729516983032
+        }
+      ]
+    },
+    "p7.pdf": {
+      "line_count": 68,
+      "mean_score": 0.9618476918515038,
+      "lowest_five_lines": [
+        {
+          "page": 3,
+          "text": "。",
+          "score": 0.7411309480667114
+        },
+        {
+          "page": 2,
+          "text": "(规定比例)3。（产品名",
+          "score": 0.8942039608955383
+        },
+        {
+          "page": 2,
+          "text": "7. （视频轮巡抽帧）1，",
+          "score": 0.8960796594619751
+        },
+        {
+          "page": 2,
+          "text": "≥（规定比例）3。(产品名称1）的（关键组件)4在中国境内生产。(产品名称1）",
+          "score": 0.914477527141571
+        },
+        {
+          "page": 2,
+          "text": "(关键工序)5在中国境内完成。",
+          "score": 0.9161064624786377
+        }
+      ]
+    }
+  }
+}
