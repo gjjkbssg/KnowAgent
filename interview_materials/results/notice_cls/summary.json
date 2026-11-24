@@ -1,0 +1,397 @@
+{
+  "metadata": {
+    "dataset": "interview_materials/notice_cls/labels.json",
+    "generated_at": "2026-11-24T18:46:33.161820+00:00",
+    "methods": [
+      "rules",
+      "tfidf_char",
+      "tfidf_word",
+      "llm"
+    ],
+    "requested_split": "test",
+    "dev_documents": 50,
+    "evaluation_documents": 100
+  },
+  "metrics": {
+    "rules": {
+      "documents": 100,
+      "accuracy": 0.81,
+      "macro_f1": 0.8213,
+      "per_class": {
+        "gkzb": {
+          "precision": 1.0,
+          "recall": 0.95,
+          "f1": 0.9744,
+          "support": 40
+        },
+        "zbgg": {
+          "precision": 0.875,
+          "recall": 0.7,
+          "f1": 0.7778,
+          "support": 20
+        },
+        "cjgg": {
+          "precision": 0.8182,
+          "recall": 0.45,
+          "f1": 0.5806,
+          "support": 20
+        },
+        "gzgg": {
+          "precision": 0.9091,
+          "recall": 1.0,
+          "f1": 0.9524,
+          "support": 20
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "gkzb",
+          "zbgg",
+          "cjgg",
+          "gzgg"
+        ],
+        "predicted_labels": [
+          "gkzb",
+          "zbgg",
+          "cjgg",
+          "gzgg",
+          "<none>"
+        ],
+        "counts": [
+          [
+            38,
+            0,
+            0,
+            2,
+            0
+          ],
+          [
+            0,
+            14,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            9,
+            0,
+            9
+          ],
+          [
+            0,
+            0,
+            0,
+            20,
+            0
+          ]
+        ]
+      },
+      "coverage": 0.87,
+      "mean_latency_ms_per_doc": 0.11,
+      "mean_tokens_per_doc": 0.0,
+      "evidence_ok_rate": null
+    },
+    "tfidf_char": {
+      "documents": 100,
+      "accuracy": 0.88,
+      "macro_f1": 0.8466,
+      "per_class": {
+        "gkzb": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 40
+        },
+        "zbgg": {
+          "precision": 0.7857,
+          "recall": 0.55,
+          "f1": 0.6471,
+          "support": 20
+        },
+        "cjgg": {
+          "precision": 0.6538,
+          "recall": 0.85,
+          "f1": 0.7391,
+          "support": 20
+        },
+        "gzgg": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 20
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "gkzb",
+          "zbgg",
+          "cjgg",
+          "gzgg"
+        ],
+        "predicted_labels": [
+          "gkzb",
+          "zbgg",
+          "cjgg",
+          "gzgg",
+          "<none>"
+        ],
+        "counts": [
+          [
+            40,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            11,
+            9,
+            0,
+            0
+          ],
+          [
+            0,
+            3,
+            17,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            20,
+            0
+          ]
+        ]
+      },
+      "coverage": 1.0,
+      "mean_latency_ms_per_doc": 1.64,
+      "mean_tokens_per_doc": 0.0,
+      "evidence_ok_rate": null
+    },
+    "tfidf_word": {
+      "documents": 100,
+      "accuracy": 0.88,
+      "macro_f1": 0.8466,
+      "per_class": {
+        "gkzb": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 40
+        },
+        "zbgg": {
+          "precision": 0.7857,
+          "recall": 0.55,
+          "f1": 0.6471,
+          "support": 20
+        },
+        "cjgg": {
+          "precision": 0.6538,
+          "recall": 0.85,
+          "f1": 0.7391,
+          "support": 20
+        },
+        "gzgg": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 20
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "gkzb",
+          "zbgg",
+          "cjgg",
+          "gzgg"
+        ],
+        "predicted_labels": [
+          "gkzb",
+          "zbgg",
+          "cjgg",
+          "gzgg",
+          "<none>"
+        ],
+        "counts": [
+          [
+            40,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            11,
+            9,
+            0,
+            0
+          ],
+          [
+            0,
+            3,
+            17,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            20,
+            0
+          ]
+        ]
+      },
+      "coverage": 1.0,
+      "mean_latency_ms_per_doc": 4.15,
+      "mean_tokens_per_doc": 0.0,
+      "evidence_ok_rate": null
+    },
+    "llm": {
+      "documents": 100,
+      "accuracy": 0.86,
+      "macro_f1": 0.8005,
+      "per_class": {
+        "gkzb": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 40
+        },
+        "zbgg": {
+          "precision": 1.0,
+          "recall": 0.3,
+          "f1": 0.4615,
+          "support": 20
+        },
+        "cjgg": {
+          "precision": 0.5882,
+          "recall": 1.0,
+          "f1": 0.7407,
+          "support": 20
+        },
+        "gzgg": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 20
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "gkzb",
+          "zbgg",
+          "cjgg",
+          "gzgg"
+        ],
+        "predicted_labels": [
+          "gkzb",
+          "zbgg",
+          "cjgg",
+          "gzgg",
+          "<none>"
+        ],
+        "counts": [
+          [
+            40,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            6,
+            14,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            20,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            20,
+            0
+          ]
+        ]
+      },
+      "coverage": 1.0,
+      "mean_latency_ms_per_doc": 11952.78,
+      "mean_tokens_per_doc": 2145.27,
+      "evidence_ok_rate": 1.0
+    }
+  },
+  "cross_validation": {
+    "tfidf_char": {
+      "label": "5-fold cross-validation on all 150 documents",
+      "folds": [
+        {
+          "accuracy": 0.9333333333333333,
+          "macro_f1": 0.9166666666666667
+        },
+        {
+          "accuracy": 0.9333333333333333,
+          "macro_f1": 0.9142857142857143
+        },
+        {
+          "accuracy": 0.9,
+          "macro_f1": 0.8741258741258742
+        },
+        {
+          "accuracy": 0.8333333333333334,
+          "macro_f1": 0.7777777777777778
+        },
+        {
+          "accuracy": 0.8666666666666667,
+          "macro_f1": 0.8285714285714286
+        }
+      ],
+      "accuracy_mean": 0.8933,
+      "accuracy_std": 0.0389,
+      "macro_f1_mean": 0.8623,
+      "macro_f1_std": 0.0531
+    },
+    "tfidf_word": {
+      "label": "5-fold cross-validation on all 150 documents",
+      "folds": [
+        {
+          "accuracy": 0.9333333333333333,
+          "macro_f1": 0.9166666666666667
+        },
+        {
+          "accuracy": 0.9666666666666667,
+          "macro_f1": 0.9580419580419581
+        },
+        {
+          "accuracy": 0.9,
+          "macro_f1": 0.8741258741258742
+        },
+        {
+          "accuracy": 0.8333333333333334,
+          "macro_f1": 0.7902097902097902
+        },
+        {
+          "accuracy": 0.9,
+          "macro_f1": 0.8666666666666667
+        }
+      ],
+      "accuracy_mean": 0.9067,
+      "accuracy_std": 0.0442,
+      "macro_f1_mean": 0.8811,
+      "macro_f1_std": 0.056
+    }
+  }
+}

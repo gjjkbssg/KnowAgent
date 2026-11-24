@@ -1,2 +1,3 @@
 -r requirements.txt
+-r requirements-nlp.txt
 mcp>=1.27,<2
